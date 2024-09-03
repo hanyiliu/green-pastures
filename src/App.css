@@ -6,9 +6,11 @@
 }
 
 .home,
-.services,
-.products,
-.sign-up {
+.philosophy,
+.program,
+.culinary,
+.about,
+.documents {
   display: flex;
   height: 90vh;
   align-items: center;
@@ -16,8 +18,8 @@
   font-size: 3rem;
 }
 
-.services {
-  background-image: url('/images/img-2.jpg');
+.philosophy {
+  background-image: url('/images/kids_at_circle_time.jpg');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -25,8 +27,8 @@
   font-size: 100px;
 }
 
-.products {
-  background-image: url('/images/img-1.jpg');
+.program {
+  background-image: url('/images/kids_playing_in_playground.jpg');
   background-position: center;
   background-size: fill;
   background-repeat: no-repeat;
@@ -34,8 +36,8 @@
   font-size: 100px;
 }
 
-.sign-up {
-  background-image: url('/images/img-8.jpg');
+.culinary {
+  background-image: url('/images/meal.jpg');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -43,6 +45,23 @@
   font-size: 100px;
 }
 
+.about {
+  background-image: url('/images/ms_ping.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: #fff;
+  font-size: 100px;
+}
+
+.documents {
+  background-image: url('/images/main_classroom.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: #fff;
+  font-size: 100px;
+}
 
 /* Primary Colors */
 :root {

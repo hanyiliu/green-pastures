@@ -25,46 +25,8 @@ function Footer() {
           </form>
         </div>
       </section>
-      <div class='footer-links'>
-        <div className='footer-link-wrapper'>
-          <div class='footer-link-items'>
-            <h2>About Us</h2>
-            <Link to='/sign-up'>How it works</Link>
-            <Link to='/'>Testimonials</Link>
-            <Link to='/'>Careers</Link>
-            <Link to='/'>Investors</Link>
-            <Link to='/'>Terms of Service</Link>
-          </div>
-        </div>
-        <div className='footer-link-wrapper'>
-          <div class='footer-link-items'>
-            <h2>Contact Us</h2>
-            <Link to='/'>Contact</Link>
-            <Link to='/'>Support</Link>
-            <Link to='/'>Destinations</Link>
-            <Link to='/'>Sponsorships</Link>
-          </div>
-        </div>
-      </div>
       <section class='social-media'>
-        <div class='social-media-wrap'>
-          <div class='website-rights'>Green Pastures © 2024
-          </div>
-          <div class='footer-logo'>
-            <Link to='/'>
-              <img src="/logo/green_pastures_logo.png" alt='Logo' class='footer-logo-img'/>
-            </Link>
-          </div>
-          <div class='social-icons'>
-            <Link
-              class='social-icon-link wechat'
-              to='/'
-              target='_blank'
-              aria-label='Wechat'
-            >
-              <i class="fab fa-weixin"></i>
-            </Link>
-          </div>
+        <div class='website-rights'>Green Pastures © 2024
         </div>
       </section>
     </div>

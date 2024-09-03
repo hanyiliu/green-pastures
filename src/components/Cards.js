@@ -13,13 +13,13 @@ function Cards() {
               src='images/kids_at_circle_time.jpg'
               text='Discover Our Montessori and Christian Values Approach'
               label='Our Philosophy'
-              path='/services'
+              path='/philosophy'
             />
             <CardItem
               src='images/kids_playing_in_playground.jpg'
               text='Explore Our Educational and Play-Based Programs'
               label='Program'
-              path='/services'
+              path='/program'
             />
           </ul>
           <ul className='cards__items'>
@@ -27,19 +27,19 @@ function Cards() {
               src='images/meal.jpg'
               text='Learn About Our Nutritious and Delicious Meals'
               label='Culinary'
-              path='/services'
+              path='/culinary'
             />
             <CardItem
               src='images/ms_ping.jpg'
               text='Meet Our Team and Learn Our Story'
               label='About'
-              path='/products'
+              path='/about'
             />
             <CardItem
               src='images/main_classroom.jpg'
               text='Access Enrollment Forms and Important Documents'
               label='Documents'
-              path='/sign-up'
+              path='/documents'
             />
           </ul>
         </div>
