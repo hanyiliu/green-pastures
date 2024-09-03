@@ -1,0 +1,74 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.home,
+.services,
+.products,
+.sign-up {
+  display: flex;
+  height: 90vh;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.services {
+  background-image: url('/images/img-2.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: #fff;
+  font-size: 100px;
+}
+
+.products {
+  background-image: url('/images/img-1.jpg');
+  background-position: center;
+  background-size: fill;
+  background-repeat: no-repeat;
+  color: #fff;
+  font-size: 100px;
+}
+
+.sign-up {
+  background-image: url('/images/img-8.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: #fff;
+  font-size: 100px;
+}
+
+
+/* Primary Colors */
+:root {
+  --green-base: #ABD897;
+  --green-light: #43762D;
+  --green-dark: #2A4A1C;
+
+  --beige-base: #F2E6D8;
+  --beige-light: rgba(242, 230, 216, 0.8);
+  --beige-dark: rgba(212, 191, 167, 0.6);
+
+  --blue-base: #C8E4F8;
+  --blue-light: rgba(200, 228, 248, 0.8);
+  --blue-dark: rgba(168, 203, 227, 0.6);
+
+  --coral-base: #F9B3A4;
+  --coral-light: rgba(249, 179, 164, 0.8);
+  --coral-dark: rgba(216, 127, 106, 0.6);
+
+  --olive-base: #6A7B5F;
+  --olive-light: rgba(106, 123, 95, 0.8);
+  --olive-dark: rgba(79, 90, 67, 0.6);
+
+  /* Text Colors */
+  --text-dark: #333333;
+  --text-medium: #666666;
+  --text-light: #999999;
+  --text-muted: #B3B3B3;
+}
