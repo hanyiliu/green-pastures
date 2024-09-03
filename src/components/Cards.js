@@ -16,19 +16,13 @@ function Cards() {
               path='/philosophy'
             />
             <CardItem
-              src='images/kids_playing_in_playground.jpg'
-              text='Explore Our Educational and Play-Based Programs'
-              label='Program'
-              path='/program'
-            />
-          </ul>
-          <ul className='cards__items'>
-            <CardItem
               src='images/meal.jpg'
               text='Learn About Our Nutritious and Delicious Meals'
               label='Culinary'
               path='/culinary'
             />
+          </ul>
+          <ul className='cards__items'>
             <CardItem
               src='images/ms_ping.jpg'
               text='Meet Our Team and Learn Our Story'

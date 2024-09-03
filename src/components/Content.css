@@ -1,0 +1,49 @@
+.content-container {
+    display: flex;
+    align-items: center; /* Align items in the center vertically */
+    justify-content: center; /* Center content horizontally */
+    padding: 16px;
+    max-width: 1200px;
+    margin: auto;
+  }
+  
+  .content-image {
+    margin: 0 64px;
+    height: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .content-image.square {
+    width: 300px;
+    height: 300px;
+    object-fit: cover; /* Ensures the image fits the square */
+  }
+  
+  .content-container.only-image .content-image {
+    width: auto;
+    height: auto;
+    max-width: 70%;
+  }
+  
+  .content-text {
+    padding: 64px;
+    flex: 1;
+  }
+  
+  .content-header {
+    font-weight: bold;
+    font-size: 1.5em;
+    margin-bottom: 8px;
+  }
+  
+  .content-container.reverse {
+    flex-direction: row-reverse;
+  }
+  
+  .content-container.only-text,
+  .content-container.only-image {
+    justify-content: center; /* Center-align for single content */
+    text-align: center; /* Center-align text if it's text-only */
+  }
+  
+  
