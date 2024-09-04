@@ -64,6 +64,11 @@
   font-size: 100px;
 }
 
+.contact-container {
+  background-color: var(--olive-dark);
+  padding: 20px;
+}
+
 /* Primary Colors */
 :root {
   --green-base: #ABD897;
@@ -82,9 +87,9 @@
   --coral-light: rgba(249, 179, 164, 0.8);
   --coral-dark: rgba(216, 127, 106, 0.6);
 
-  --olive-base: #6A7B5F;
-  --olive-light: rgba(106, 123, 95, 0.8);
-  --olive-dark: rgba(79, 90, 67, 0.6);
+  --olive-base: #94ad84;
+  --olive-light: rgba(173, 202, 154, 0.8);
+  --olive-dark: rgba(156, 178, 132, 0.6);
 
   /* Text Colors */
   --text-dark: #333333;

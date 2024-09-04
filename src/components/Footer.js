@@ -10,20 +10,11 @@ function Footer() {
         <p className='footer-subscription-heading'>
         Join Us at Green Pastures!
         </p>
-        <p className='footer-subscription-text'>
-        Enter Your Contact Info to Begin Your Child's Adventure
-        </p>
-        <div className='input-areas'>
-          <form>
-            <input
-              className='footer-input'
-              name='email'
-              type='email'
-              placeholder='Your Email'
-            />
-            <Button buttonStyle='btn--outline'>Subscribe</Button>
-          </form>
-        </div>
+        <Link
+          to="/contact"
+        >
+          <Button buttonStyle='btn--outline'>Contact Us</Button>
+        </Link>
       </section>
       <section class='social-media'>
         <div class='website-rights'>Green Pastures © 2024

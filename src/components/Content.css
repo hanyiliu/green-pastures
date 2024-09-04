@@ -45,5 +45,10 @@
     justify-content: center; /* Center-align for single content */
     text-align: center; /* Center-align text if it's text-only */
   }
+
+  .header {
+    color: #fff;
+    margin-top: 16px;
+  }
   
   

@@ -7,6 +7,7 @@ import About from './components/pages/About';
 import Culinary from './components/pages/Culinary';
 import Documents from './components/pages/Documents';
 import Philosophy from './components/pages/Philosophy';
+import Contact from './components/pages/Contact';
 
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path='/culinary' component={Culinary} />
           <Route path='/documents' component={Documents} />
           <Route path='/philosophy' component={Philosophy} />
+          <Route path='/contact' component={Contact} />
         </Switch>
       </Router>
     </>
