@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<script src="image-slot.js"></script>
+<style>
+  body{margin:0;background:#e9e4d8;font-family:'Nunito',system-ui,sans-serif;color:#4a5040;-webkit-font-smoothing:antialiased;}
+  image-slot{display:block;}
+  a{color:#4f6b43;text-decoration:none;}a:hover{color:#3f5538;}
+  @keyframes gpfloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-10px) rotate(10deg)}}
+  @keyframes gpsun{0%,100%{transform:rotate(0deg)}50%{transform:rotate(22deg)}}
+  @keyframes gpbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  @keyframes gpsprout{0%{opacity:0;transform:scale(.6) scaleY(.25)}60%{opacity:1;transform:scale(1.05) scaleY(1.07)}80%{transform:scale(.985)}100%{opacity:1;transform:none}}
+  @keyframes gproll{0%{opacity:0;transform:translateX(-90px) rotate(-150deg)}60%{opacity:1;transform:translateX(10px) rotate(8deg)}100%{opacity:1;transform:none}}
+  @keyframes gpdrop{0%{opacity:0;transform:translateY(-34px)}55%{opacity:1;transform:translateY(7px)}75%{transform:translateY(-4px)}100%{opacity:1;transform:none}}
+  @keyframes gpdevelop{0%{opacity:0;filter:brightness(1.9) contrast(.6) saturate(.2) blur(1.5px)}45%{opacity:1}100%{opacity:1;filter:brightness(1) contrast(1) saturate(1) blur(0)}}
+  @keyframes gpswing{0%{opacity:0;transform:rotate(-9deg) translateY(-12px)}35%{opacity:1;transform:rotate(5deg)}60%{transform:rotate(-2.5deg)}80%{transform:rotate(1deg)}100%{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div style="position:absolute;left:60px;top:60px;width:430px">
+  <div data-drags-parent="1" style="position:absolute;top:-30px;left:2px;font-family:'Fredoka',cursive;font-size:18px;color:#5a5147">Mobile · 390px · same 7 worlds</div>
+  <!-- phone frame -->
+  <div style="background:#2b2b28;border-radius:44px;padding:12px;box-shadow:0 30px 80px rgba(60,50,40,.3)">
+    <div style="background:#fbf8f0;border-radius:34px;overflow:hidden;position:relative">
+      <!-- status bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px 6px;font:700 13px 'Nunito';color:#34402c"><span>9:41</span><div style="width:90px;height:24px;background:#2b2b28;border-radius:999px;margin:0 auto;position:absolute;left:50%;transform:translateX(-50%)"></div><span>📶 🔋</span></div>
+
+      <div data-gp-scroll style="height:760px;overflow-y:auto;overflow-x:hidden">
+
+      <!-- NAV -->
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;background:rgba(251,248,240,.92);backdrop-filter:blur(6px);position:sticky;top:0;z-index:30;box-shadow:0 4px 14px rgba(60,50,40,.06)">
+        <img src="assets/logo.png" alt="Green Pastures" style="height:38px;width:auto;display:block">
+        <div style="flex:1"></div>
+        <div data-scrollto="Visit" style="display:inline-flex;align-items:center;background:#6f8a5f;color:#fff;font:500 13px 'Fredoka';padding:10px 16px;border-radius:999px;box-shadow:0 6px 14px rgba(111,138,95,.3);cursor:pointer">Book a tour</div>
+        <div style="display:flex;flex-direction:column;gap:4px;padding:10px 6px"><div style="width:20px;height:2.5px;border-radius:2px;background:#34402c"></div><div style="width:20px;height:2.5px;border-radius:2px;background:#34402c"></div><div style="width:13px;height:2.5px;border-radius:2px;background:#34402c"></div></div>
+      </div>
+
+      <!-- 01 HERO -->
+      <div data-screen-label="Hero" style="position:relative;padding:36px 22px 40px;background:#fbf8f0;overflow:hidden">
+        <svg width="72" height="72" viewBox="0 0 120 120" fill="none" style="position:absolute;right:16px;top:16px;opacity:.9;transform-origin:60px 60px;animation:gpsun 9s ease-in-out infinite"><circle cx="60" cy="60" r="26" fill="#f4c64e"/><g stroke="#f4c64e" stroke-width="5" stroke-linecap="round"><line x1="60" y1="12" x2="60" y2="26"/><line x1="60" y1="94" x2="60" y2="108"/><line x1="12" y1="60" x2="26" y2="60"/><line x1="94" y1="60" x2="108" y2="60"/><line x1="26" y1="26" x2="36" y2="36"/><line x1="84" y1="84" x2="94" y2="94"/><line x1="94" y1="26" x2="84" y2="36"/><line x1="36" y1="84" x2="26" y2="94"/></g></svg>
+        <svg width="26" height="26" viewBox="0 0 28 28" style="position:absolute;left:16px;top:110px;opacity:.8;animation:gpfloat 7s ease-in-out infinite"><path d="M14 2 C22 6 24 18 14 26 C4 18 6 6 14 2 Z" fill="#a9c39a"></path></svg>
+        <div data-anim style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;position:relative">
+          <div style="display:inline-flex;align-items:center;gap:7px;background:#eef2e8;color:#4f6b43;font:700 11px 'Nunito';padding:6px 13px;border-radius:999px">🌿 Montessori daycare · Fremont, CA</div>
+          <div style="font:600 36px/1.08 'Fredoka';color:#34402c">Where small hands learn <span style="color:#6f8a5f">big things</span></div>
+          <div style="font:600 15px/1.6 'Nunito';color:#6b7060">A warm, bilingual home where children ages 6 months to 4½ grow at their own pace — guided by certified Montessori teachers.</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
+            <div data-scrollto="Visit" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#6f8a5f;color:#fff;font:500 17px 'Fredoka';padding:15px 0;border-radius:999px;box-shadow:0 10px 22px rgba(111,138,95,.32);width:100%;cursor:pointer">Book a tour →</div>
+            <div data-scrollto="Philosophy" style="display:inline-flex;align-items:center;font:700 14px 'Nunito';color:#4f6b43;border-bottom:2px solid #c3d2b6;padding-bottom:2px;cursor:pointer">See our philosophy</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="display:flex;align-items:center;gap:6px"><span style="color:#f0a93a;font-size:14px;letter-spacing:1px">★★★★★</span><span style="font:700 12px 'Nunito';color:#6b7060">5.0 on Yelp</span></div>
+            <div style="width:1px;height:16px;background:#e2dccf"></div>
+            <div style="font:700 12px 'Nunito';color:#6b7060">6 mo – 4½ yrs</div>
+          </div>
+        </div>
+        <div data-anim style="margin-top:26px;position:relative">
+          <image-slot id="gpm-hero" style="width:100%;height:230px" shape="rounded" radius="22" placeholder="Drop hero photo"></image-slot>
+          <div style="position:absolute;left:12px;bottom:-16px;background:#fff;border-radius:13px;box-shadow:0 10px 24px rgba(60,50,40,.16);padding:10px 13px;display:flex;align-items:center;gap:9px">
+            <div style="width:30px;height:30px;border-radius:50%;background:#eef2e8;display:flex;align-items:center;justify-content:center;font-size:14px">🍎</div>
+            <div><div style="font:700 12px 'Nunito';color:#34402c">Breakfast, lunch &amp; snack</div><div style="font:600 10px 'Nunito';color:#8a8170">cooked fresh daily</div></div>
+          </div>
+        </div>
+        <div data-scrollto="Philosophy" style="text-align:center;margin-top:36px;font:700 12px 'Nunito';color:#a89e8a;animation:gpbounce 2s ease-in-out infinite;cursor:pointer">scroll to come inside ⌄</div>
+      </div>
+
+      <!-- 02 PHILOSOPHY -->
+      <div data-screen-label="Philosophy" style="position:relative;padding:48px 24px;background:#e8efe0;overflow:hidden">
+        <svg width="24" height="24" viewBox="0 0 28 28" style="position:absolute;right:20px;top:26px;opacity:.7;animation:gpfloat 8s ease-in-out infinite"><path d="M14 2 C22 6 24 18 14 26 C4 18 6 6 14 2 Z" fill="#9fbb8f"></path></svg>
+        <div data-anim style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="font:700 11px 'Nunito';color:#6f8a5f;letter-spacing:1.5px;text-transform:uppercase">Our philosophy</div>
+          <div style="font:600 58px 'Fredoka';color:#c2d4b6;line-height:.5;margin-top:8px">“</div>
+          <div style="font:500 26px/1.35 'Fredoka';color:#34402c">We follow each child's pace — <span style="color:#6f8a5f">guiding, not pushing</span> — so curiosity leads the way.</div>
+          <div style="font:600 12px 'Nunito';color:#7e8a72">— the Montessori promise at Green Pastures</div>
+        </div>
+        <div data-anim style="margin-top:26px"><image-slot id="gpm-philosophy" style="width:100%;height:190px" shape="rounded" radius="18" placeholder="Drop a calm classroom photo"></image-slot></div>
+        <div data-anim style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:24px">
+          <div style="display:inline-flex;align-items:center;gap:7px;background:#6f8a5f;color:#fff;font:700 11px 'Nunito';padding:8px 14px;border-radius:999px">🌱 Certified Montessori credentials</div>
+          <div style="font:700 11px 'Nunito';color:#7e8a72">English · 中文 bilingual welcome</div>
+          <div data-subpage="philosophy" style="display:inline-flex;align-items:center;font:700 13px 'Nunito';color:#4f6b43;border-bottom:2px solid #b6c9a6;padding-bottom:2px;cursor:pointer">Read our approach →</div>
+        </div>
+      </div>
+
+      <!-- 03 PROGRAMS -->
+      <div data-screen-label="Programs" style="position:relative;padding:48px 24px;background:#f7ecdd;overflow:hidden">
+        <div data-anim style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;margin-bottom:30px">
+          <div style="font:700 11px 'Nunito';color:#c08552;letter-spacing:1.5px;text-transform:uppercase">Programs &amp; ages</div>
+          <div style="font:600 28px 'Fredoka';color:#34402c">Growing with us, step by step</div>
+        </div>
+        <div data-stagger style="display:flex;flex-direction:column;gap:22px;align-items:center">
+          <div style="display:flex;align-items:center;gap:16px;width:100%">
+            <div style="padding:6px;border-radius:50%;background:#fff;box-shadow:0 12px 26px rgba(90,70,40,.13);flex:none"><image-slot id="gpm-infant" style="width:104px;height:104px" shape="circle" placeholder="infant"></image-slot></div>
+            <div><div style="font:600 20px 'Fredoka';color:#34402c">Infant</div><div style="font:700 10px 'Nunito';color:#c08552;letter-spacing:.5px">6 – 18 MONTHS</div><div style="font:600 13px/1.5 'Nunito';color:#7d7468;margin-top:4px">Nurturing care, sensory play &amp; gentle rhythms.</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;width:100%;flex-direction:row-reverse;text-align:right">
+            <div style="padding:7px;border-radius:50%;background:#fff;box-shadow:0 16px 32px rgba(90,70,40,.17);flex:none"><image-slot id="gpm-toddler" style="width:122px;height:122px" shape="circle" placeholder="toddler"></image-slot></div>
+            <div style="flex:1"><div style="font:600 22px 'Fredoka';color:#34402c">Toddler</div><div style="font:700 10px 'Nunito';color:#c08552;letter-spacing:.5px">1.5 – 3 YEARS</div><div style="font:600 13px/1.5 'Nunito';color:#7d7468;margin-top:4px">Practical life, early language &amp; joyful movement.</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;width:100%">
+            <div style="padding:6px;border-radius:50%;background:#fff;box-shadow:0 12px 26px rgba(90,70,40,.13);flex:none"><image-slot id="gpm-preschool" style="width:104px;height:104px" shape="circle" placeholder="preschool"></image-slot></div>
+            <div><div style="font:600 20px 'Fredoka';color:#34402c">Preschool</div><div style="font:700 10px 'Nunito';color:#c08552;letter-spacing:.5px">3 – 4½ YEARS</div><div style="font:600 13px/1.5 'Nunito';color:#7d7468;margin-top:4px">Reading, math &amp; cultural studies.</div></div>
+          </div>
+        </div>
+        <div data-anim style="text-align:center;margin-top:28px"><span data-subpage="programs" style="display:inline-flex;align-items:center;font:700 13px 'Nunito';color:#b06a35;border-bottom:2px solid #e6bf95;padding-bottom:2px;cursor:pointer">See all programs →</span></div>
+      </div>
+
+      <!-- 04 MENU -->
+      <div data-screen-label="Menu" style="position:relative;padding:48px 24px;background:#fbf2db;overflow:hidden">
+        <div data-anim style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;margin-bottom:26px">
+          <div style="font:700 11px 'Nunito';color:#bd9326;letter-spacing:1.5px;text-transform:uppercase">A week of meals</div>
+          <div style="font:600 28px 'Fredoka';color:#34402c">Fresh breakfast, lunch &amp; snack 🍎</div>
+        </div>
+        <div data-stagger style="display:flex;flex-direction:column;align-items:center;gap:20px">
+          <div style="position:relative;width:190px;height:190px;border-radius:50%;background:#fff;box-shadow:0 16px 34px rgba(120,100,40,.16),inset 0 0 0 8px #fdf3da;display:flex;align-items:center;justify-content:center;gap:10px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:36px;height:36px;border-radius:50%;background:#f6d98f"></div><div style="font:700 8px 'Nunito';color:#bd9326">BREAKFAST</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:46px;height:46px;border-radius:50%;background:#a9c39a"></div><div style="font:700 8px 'Nunito';color:#5e7a4e">LUNCH</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:36px;height:36px;border-radius:50%;background:#e8b79e"></div><div style="font:700 8px 'Nunito';color:#bd7a55">SNACK</div></div>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <div style="font:600 13px 'Fredoka';color:#a89a72;background:#fff;border-radius:999px;padding:9px 13px;box-shadow:0 3px 8px rgba(120,100,40,.06)">Mon</div>
+            <div style="font:600 13px 'Fredoka';color:#a89a72;background:#fff;border-radius:999px;padding:9px 13px;box-shadow:0 3px 8px rgba(120,100,40,.06)">Tue</div>
+            <div style="font:600 13px 'Fredoka';color:#fff;background:#e0a93a;border-radius:999px;padding:9px 16px;box-shadow:0 6px 12px rgba(224,169,58,.35)">Wed</div>
+            <div style="font:600 13px 'Fredoka';color:#a89a72;background:#fff;border-radius:999px;padding:9px 13px;box-shadow:0 3px 8px rgba(120,100,40,.06)">Thu</div>
+            <div style="font:600 13px 'Fredoka';color:#a89a72;background:#fff;border-radius:999px;padding:9px 13px;box-shadow:0 3px 8px rgba(120,100,40,.06)">Fri</div>
+          </div>
+          <div style="font:600 13px/1.6 'Nunito';color:#897a4e;text-align:center"><b style="color:#34402c">Wednesday</b> — whole-grain pancakes · tofu &amp; veggie stir-fry with brown rice · hummus &amp; cucumber</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#897a4e;font:700 11px 'Nunito';padding:7px 12px;border-radius:999px;box-shadow:0 3px 8px rgba(120,100,40,.08)">🥦 Vegetarian daily</div>
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#897a4e;font:700 11px 'Nunito';padding:7px 12px;border-radius:999px;box-shadow:0 3px 8px rgba(120,100,40,.08)">🌾 Allergy-aware</div>
+          </div>
+          <span data-subpage="menu" style="display:inline-flex;align-items:center;font:700 13px 'Nunito';color:#a8852f;border-bottom:2px solid #e6cf86;padding-bottom:2px;cursor:pointer">See the full menu →</span>
+        </div>
+      </div>
+
+      <!-- 05 GALLERY -->
+      <div data-screen-label="Gallery" style="position:relative;padding:48px 0 48px;background:#eaf0f1;overflow:hidden">
+        <div data-anim style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;margin-bottom:26px;padding:0 24px">
+          <div style="font:700 11px 'Nunito';color:#6f8a9a;letter-spacing:1.5px;text-transform:uppercase">Our photo wall</div>
+          <div style="font:600 28px 'Fredoka';color:#34402c">Life at Green Pastures</div>
+        </div>
+        <div data-stagger style="position:relative;height:420px;margin:0 10px">
+          <div style="position:absolute;left:12px;top:8px"><div style="transform:rotate(-5deg);background:#fff;padding:8px 8px 24px;border-radius:5px;box-shadow:0 10px 22px rgba(60,70,90,.16)"><image-slot id="gpm-g1" style="width:150px;height:118px" shape="rect" placeholder="photo"></image-slot></div></div>
+          <div style="position:absolute;right:12px;top:26px"><div style="transform:rotate(4deg);background:#fff;padding:8px 8px 24px;border-radius:5px;box-shadow:0 10px 22px rgba(60,70,90,.16)"><image-slot id="gpm-g2" style="width:150px;height:118px" shape="rect" placeholder="photo"></image-slot></div></div>
+          <div style="position:absolute;left:26px;top:170px"><div style="transform:rotate(3deg);background:#fff;padding:8px 8px 24px;border-radius:5px;box-shadow:0 10px 22px rgba(60,70,90,.16)"><image-slot id="gpm-g3" style="width:150px;height:118px" shape="rect" placeholder="photo"></image-slot></div></div>
+          <div style="position:absolute;right:20px;top:196px"><div style="transform:rotate(-6deg);background:#fff;padding:8px 8px 24px;border-radius:5px;box-shadow:0 10px 22px rgba(60,70,90,.16)"><image-slot id="gpm-g4" style="width:146px;height:114px" shape="rect" placeholder="photo"></image-slot></div></div>
+          <div style="position:absolute;left:calc(50% - 88px);top:330px"><div style="transform:rotate(2deg);background:#fff;padding:8px 8px 24px;border-radius:5px;box-shadow:0 10px 22px rgba(60,70,90,.16)"><image-slot id="gpm-g5" style="width:160px;height:120px" shape="rect" placeholder="photo"></image-slot></div></div>
+        </div>
+        <div data-anim style="text-align:center;margin-top:20px"><span data-subpage="gallery" style="display:inline-flex;align-items:center;font:700 13px 'Nunito';color:#56707e;border-bottom:2px solid #b4c8d0;padding-bottom:2px;cursor:pointer">Browse the gallery →</span></div>
+      </div>
+
+      <!-- 06 TESTIMONIALS -->
+      <div data-screen-label="Reviews" style="position:relative;padding:48px 24px;background:#f6ece4;overflow:hidden">
+        <div data-anim style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px">
+          <div style="display:inline-flex;align-items:center;gap:9px">
+            <span style="color:#f0a93a;font-size:17px;letter-spacing:1px">★★★★★</span>
+            <span data-count="5" data-dec="1" style="font:600 22px 'Fredoka';color:#34402c">5.0</span>
+            <span style="background:#d3402e;color:#fff;font:800 11px 'Nunito';padding:4px 9px;border-radius:6px">Yelp</span>
+          </div>
+          <div style="font:600 26px 'Fredoka';color:#34402c">Kind words from our families</div>
+          <div style="font:600 13px 'Nunito';color:#8a7468"><span data-count="47">47</span> reviews · Fremont parents</div>
+        </div>
+        <div data-stagger style="display:flex;flex-direction:column;gap:16px">
+          <div style="background:#fff;border-radius:20px 20px 20px 5px;padding:20px;display:flex;flex-direction:column;gap:11px;box-shadow:0 12px 26px rgba(120,80,50,.10)">
+            <span style="color:#f0a93a;font-size:13px;letter-spacing:1px">★★★★★</span>
+            <div style="font:600 14px/1.6 'Nunito';color:#5c5045">“Our daughter runs to the door every morning. The teachers truly <i>see</i> her — and the calm, bilingual environment means the world to our family.”</div>
+            <div style="display:flex;align-items:center;gap:10px"><image-slot id="gpm-t1" style="width:38px;height:38px" shape="circle" placeholder=""></image-slot><div><div style="font:700 13px 'Nunito';color:#34402c">Mei L.</div><div style="font:600 11px 'Nunito';color:#9a8578">parent of a 3-year-old</div></div></div>
+          </div>
+          <div style="background:#fff;border-radius:20px 20px 5px 20px;padding:20px;display:flex;flex-direction:column;gap:11px;box-shadow:0 12px 26px rgba(120,80,50,.10)">
+            <span style="color:#f0a93a;font-size:13px;letter-spacing:1px">★★★★★</span>
+            <div style="font:600 14px/1.6 'Nunito';color:#5c5045">“Warm, thoughtful, and genuinely Montessori. The home-cooked meals and the teachers' patience sold us instantly.”</div>
+            <div style="display:flex;align-items:center;gap:10px"><image-slot id="gpm-t2" style="width:38px;height:38px" shape="circle" placeholder=""></image-slot><div><div style="font:700 13px 'Nunito';color:#34402c">David &amp; Priya</div><div style="font:600 11px 'Nunito';color:#9a8578">toddler parents</div></div></div>
+          </div>
+        </div>
+        <div data-anim style="text-align:center;margin-top:24px"><span data-subpage="reviews" style="display:inline-flex;align-items:center;font:700 13px 'Nunito';color:#c2553f;border-bottom:2px solid #e3b3a8;padding-bottom:2px;cursor:pointer">Read all reviews on Yelp →</span></div>
+      </div>
+
+      <!-- 07 TEACHERS -->
+      <div data-screen-label="Teachers" style="position:relative;padding:48px 24px;background:#f0edf4;overflow:hidden">
+        <svg width="22" height="22" viewBox="0 0 28 28" style="position:absolute;right:20px;top:26px;opacity:.6;transform:rotate(30deg)"><path d="M14 2 C22 6 24 18 14 26 C4 18 6 6 14 2 Z" fill="#c3b7d6"></path></svg>
+        <div data-anim style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;margin-bottom:28px">
+          <div style="font:700 11px 'Nunito';color:#8677a3;letter-spacing:1.5px;text-transform:uppercase">Who we are</div>
+          <div style="font:600 28px 'Fredoka';color:#34402c">The faces your child will love</div>
+          <div style="font:600 13px/1.6 'Nunito';color:#757080">One certified head teacher who partners with every family, and two assistant teachers by her side.</div>
+        </div>
+        <div data-stagger style="display:flex;flex-direction:column;gap:24px;align-items:center">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+            <div style="position:relative">
+              <div style="padding:8px;border-radius:50%;background:#fff;box-shadow:0 16px 34px rgba(90,80,120,.18)"><image-slot id="gpm-head" style="width:150px;height:150px" shape="circle" placeholder="head teacher"></image-slot></div>
+              <div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:#6f8a5f;color:#fff;font:700 10px 'Nunito';padding:4px 11px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 12px rgba(111,138,95,.35)">HEAD TEACHER</div>
+            </div>
+            <div style="text-align:center"><div style="font:600 22px 'Fredoka';color:#34402c">Ms. Ping</div><div style="font:700 10px 'Nunito';color:#8677a3;letter-spacing:.5px;margin-top:2px">AMS CERTIFIED · 15 YEARS WITH LITTLE ONES</div></div>
+            <div style="font:600 13px/1.6 'Nunito';color:#757080;text-align:center">Your main point of contact — she leads the classroom and chats with parents at pickup (English or 中文).</div>
+          </div>
+          <div style="display:flex;gap:16px;width:100%">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:9px">
+              <div style="width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 8px 20px rgba(90,80,120,.13);display:flex;align-items:center;justify-content:center;font-size:22px">🧸</div>
+              <div style="text-align:center"><div style="font:600 17px 'Fredoka';color:#34402c">Ms. Reyes</div><div style="font:700 9px 'Nunito';color:#8677a3;letter-spacing:.5px">ASSISTANT TEACHER</div></div>
+              <div style="font:600 12px/1.5 'Nunito';color:#757080;text-align:center">Infant &amp; toddler care and endless patience.</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:9px">
+              <div style="width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 8px 20px rgba(90,80,120,.13);display:flex;align-items:center;justify-content:center;font-size:22px">🎨</div>
+              <div style="text-align:center"><div style="font:600 17px 'Fredoka';color:#34402c">Ms. Chen 陈老师</div><div style="font:700 9px 'Nunito';color:#8677a3;letter-spacing:.5px">ASSISTANT TEACHER</div></div>
+              <div style="font:600 12px/1.5 'Nunito';color:#757080;text-align:center">Art, songs &amp; a warm bilingual voice.</div>
+            </div>
+          </div>
+        </div>
+        <div data-anim style="text-align:center;margin-top:26px"><span data-subpage="team" style="display:inline-flex;align-items:center;font:700 13px 'Nunito';color:#6d5f92;border-bottom:2px solid #c3b7d6;padding-bottom:2px;cursor:pointer">Meet the whole team →</span></div>
+      </div>
+
+      <!-- 08 VISIT + FOOTER -->
+      <div data-screen-label="Visit" style="position:relative;padding:48px 24px 0;background:#3f5538;overflow:hidden">
+        <svg width="70" height="70" viewBox="0 0 120 120" fill="none" style="position:absolute;right:16px;top:20px;opacity:.5"><circle cx="60" cy="60" r="26" fill="#f4c64e"/><g stroke="#f4c64e" stroke-width="5" stroke-linecap="round"><line x1="60" y1="12" x2="60" y2="26"/><line x1="60" y1="94" x2="60" y2="108"/><line x1="12" y1="60" x2="26" y2="60"/><line x1="94" y1="60" x2="108" y2="60"/><line x1="26" y1="26" x2="36" y2="36"/><line x1="84" y1="84" x2="94" y2="94"/><line x1="94" y1="26" x2="84" y2="36"/><line x1="36" y1="84" x2="26" y2="94"/></g></svg>
+        <div data-anim style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px;position:relative">
+          <div style="font:600 28px/1.2 'Fredoka';color:#fff">Come meet your little one's next home 🌱</div>
+          <div style="font:600 14px/1.6 'Nunito';color:#c8d6bd">Tell us about your family and we'll schedule a warm, no-pressure tour.</div>
+        </div>
+        <div data-anim style="background:#fff;border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:5px"><label style="font:700 11px 'Nunito';color:#6b7060">Parent name</label><div style="height:46px;border:1.5px solid #e2dccf;border-radius:11px;background:#fbf8f0"></div></div>
+          <div style="display:flex;flex-direction:column;gap:5px"><label style="font:700 11px 'Nunito';color:#6b7060">Email</label><div style="height:46px;border:1.5px solid #e2dccf;border-radius:11px;background:#fbf8f0"></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="display:flex;flex-direction:column;gap:5px"><label style="font:700 11px 'Nunito';color:#6b7060">Child's age</label><div style="height:46px;border:1.5px solid #e2dccf;border-radius:11px;background:#fbf8f0;display:flex;align-items:center;padding:0 12px;font:600 13px 'Nunito';color:#a89e8a">Select…</div></div>
+            <div style="display:flex;flex-direction:column;gap:5px"><label style="font:700 11px 'Nunito';color:#6b7060">Desired start</label><div style="height:46px;border:1.5px solid #e2dccf;border-radius:11px;background:#fbf8f0"></div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px"><label style="font:700 11px 'Nunito';color:#6b7060">Anything you'd like us to know?</label><div style="height:70px;border:1.5px solid #e2dccf;border-radius:11px;background:#fbf8f0"></div></div>
+          <div style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#6f8a5f;color:#fff;font:500 16px 'Fredoka';padding:15px 0;border-radius:999px;box-shadow:0 10px 20px rgba(60,80,50,.25)">Request a tour →</div>
+        </div>
+        <div data-anim style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+          <image-slot id="gpm-map" style="width:100%;height:120px" shape="rounded" radius="14" placeholder="Drop map / building photo"></image-slot>
+          <div style="background:#35492f;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px">
+            <div><div style="font:700 10px 'Nunito';color:#9bb78c;letter-spacing:1px;text-transform:uppercase">Visit us</div><div style="font:600 14px/1.5 'Nunito';color:#fff;margin-top:3px">Fremont, California</div></div>
+            <div><div style="font:700 10px 'Nunito';color:#9bb78c;letter-spacing:1px;text-transform:uppercase">Hours</div><div style="font:600 14px/1.5 'Nunito';color:#fff;margin-top:3px">Monday – Friday · 7:30 am – 6:00 pm</div></div>
+            <div><div style="font:700 10px 'Nunito';color:#9bb78c;letter-spacing:1px;text-transform:uppercase">Languages</div><div style="font:600 14px/1.5 'Nunito';color:#fff;margin-top:3px">English · 中文 (Mandarin)</div></div>
+          </div>
+        </div>
+        <div style="margin-top:32px;border-top:1px solid #4f6645;padding:20px 0;display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div style="background:#fff;border-radius:10px;padding:8px 12px"><img src="assets/logo.png" alt="Green Pastures" style="height:34px;width:auto;display:block"></div>
+          <div style="display:flex;gap:14px;font:700 12px 'Nunito';color:#c8d6bd;flex-wrap:wrap;justify-content:center"><span>Philosophy</span><span>Programs</span><span>Menu</span><span>Gallery</span><span>Reviews</span><span>Our Team</span></div>
+          <div style="font:600 10px 'Nunito';color:#8ba07c;text-align:center;padding-bottom:20px">© 2026 Green Pastures Montessori Daycare · 优朵幼儿园 · Fremont, CA</div>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- SUBPAGE OVERLAYS (slide in over the homepage) -->
+      <div style="position:absolute;top:40px;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none;z-index:50">
+
+        <div data-page="philosophy" data-screen-label="Subpage — Philosophy" style="position:absolute;inset:0;background:#e8efe0;transform:translateX(103%);transition:transform .5s cubic-bezier(.2,.8,.25,1);overflow-y:auto;pointer-events:auto">
+          <div style="position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(232,239,224,.94);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(60,50,40,.05)">
+            <div data-back style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#4f6b43;font:700 12px 'Nunito';padding:9px 14px;border-radius:999px;box-shadow:0 4px 10px rgba(60,50,40,.08);cursor:pointer">← Back</div>
+            <div style="font:600 16px 'Fredoka';color:#34402c">Philosophy</div>
+          </div>
+          <div style="padding:24px 22px 48px;display:flex;flex-direction:column;gap:18px">
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="font:700 11px 'Nunito';color:#6f8a5f;letter-spacing:1.5px;text-transform:uppercase">How we teach</div>
+              <div style="font:600 25px 'Fredoka';color:#34402c">Montessori, the way it's meant to be</div>
+              <div style="font:600 13px/1.6 'Nunito';color:#6b7060">Certified Montessori guides, unhurried mornings, and a prepared home — in English and 中文.</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:9px;box-shadow:0 8px 20px rgba(60,80,50,.07)">
+              <div style="width:40px;height:40px;border-radius:12px;background:#eef2e8;display:flex;align-items:center;justify-content:center;font-size:18px">🏡</div>
+              <div style="font:600 17px 'Fredoka';color:#34402c">The prepared environment</div>
+              <div style="font:600 13px/1.6 'Nunito';color:#6b7060">Child-sized, beautifully ordered spaces that invite independence and calm focus.</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:9px;box-shadow:0 8px 20px rgba(60,80,50,.07)">
+              <div style="width:40px;height:40px;border-radius:12px;background:#fff0d9;display:flex;align-items:center;justify-content:center;font-size:18px">🌟</div>
+              <div style="font:600 17px 'Fredoka';color:#34402c">Follow the child</div>
+              <div style="font:600 13px/1.6 'Nunito';color:#6b7060">We observe closely and meet every child exactly where they are, today.</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:9px;box-shadow:0 8px 20px rgba(60,80,50,.07)">
+              <div style="width:40px;height:40px;border-radius:12px;background:#f7e7df;display:flex;align-items:center;justify-content:center;font-size:18px">✋</div>
+              <div style="font:600 17px 'Fredoka';color:#34402c">Hands-on learning</div>
+              <div style="font:600 13px/1.6 'Nunito';color:#6b7060">Concrete Montessori materials turn big abstract ideas into something real.</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 20px rgba(60,80,50,.07)">
+              <div style="font:600 19px 'Fredoka';color:#34402c;margin-bottom:13px">A day at Green Pastures</div>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <div style="display:flex;gap:11px;align-items:baseline"><div style="font:600 12px 'Fredoka';color:#4f6b43;background:#e9f0e3;border-radius:999px;padding:4px 10px;flex:none">8:00</div><div style="font:600 13px/1.5 'Nunito';color:#5c6152"><b style="color:#34402c">Arrival &amp; work cycle</b> — children choose their own work.</div></div>
+                <div style="display:flex;gap:11px;align-items:baseline"><div style="font:600 12px 'Fredoka';color:#4f6b43;background:#e9f0e3;border-radius:999px;padding:4px 10px;flex:none">10:30</div><div style="font:600 13px/1.5 'Nunito';color:#5c6152"><b style="color:#34402c">Outdoor play &amp; gardening</b> — digging, climbing, wondering.</div></div>
+                <div style="display:flex;gap:11px;align-items:baseline"><div style="font:600 12px 'Fredoka';color:#4f6b43;background:#e9f0e3;border-radius:999px;padding:4px 10px;flex:none">12:00</div><div style="font:600 13px/1.5 'Nunito';color:#5c6152"><b style="color:#34402c">Family-style lunch</b> — fresh, home-cooked, together.</div></div>
+                <div style="display:flex;gap:11px;align-items:baseline"><div style="font:600 12px 'Fredoka';color:#4f6b43;background:#e9f0e3;border-radius:999px;padding:4px 10px;flex:none">1:30</div><div style="font:600 13px/1.5 'Nunito';color:#5c6152"><b style="color:#34402c">Rest &amp; quiet play</b> — books, naps, soft music.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div data-page="programs" data-screen-label="Subpage — Programs" style="position:absolute;inset:0;background:#f7ecdd;transform:translateX(103%);transition:transform .5s cubic-bezier(.2,.8,.25,1);overflow-y:auto;pointer-events:auto">
+          <div style="position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(247,236,221,.94);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(60,50,40,.05)">
+            <div data-back style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#b06a35;font:700 12px 'Nunito';padding:9px 14px;border-radius:999px;box-shadow:0 4px 10px rgba(60,50,40,.08);cursor:pointer">← Back</div>
+            <div style="font:600 16px 'Fredoka';color:#34402c">Programs</div>
+          </div>
+          <div style="padding:24px 22px 48px;display:flex;flex-direction:column;gap:16px">
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="font:700 11px 'Nunito';color:#c08552;letter-spacing:1.5px;text-transform:uppercase">Three rooms, one journey</div>
+              <div style="font:600 25px 'Fredoka';color:#34402c">From first steps to school-ready</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(90,70,40,.10)">
+              <div style="display:flex;align-items:center;gap:12px"><div style="padding:5px;border-radius:50%;background:#f7ecdd;flex:none"><image-slot id="gpm-sp-inf" style="width:72px;height:72px" shape="circle" placeholder="infant"></image-slot></div><div><div style="font:600 20px 'Fredoka';color:#34402c">Infant</div><div style="font:700 10px 'Nunito';color:#c08552;letter-spacing:.5px">6 – 18 MONTHS</div></div></div>
+              <div style="font:600 13px/1.6 'Nunito';color:#7d7468">Nurturing one-on-one care, sensory exploration, and gentle daily rhythms that follow each baby's own schedule.</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="background:#f3ece1;color:#9a7f5e;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">1:3 ratio</span><span style="background:#f3ece1;color:#9a7f5e;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">Daily photo updates</span></div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(90,70,40,.10);border:2px solid #f0d9b8">
+              <div style="display:flex;align-items:center;gap:12px"><div style="padding:5px;border-radius:50%;background:#f7ecdd;flex:none"><image-slot id="gpm-sp-tod" style="width:72px;height:72px" shape="circle" placeholder="toddler"></image-slot></div><div><div style="font:600 20px 'Fredoka';color:#34402c">Toddler</div><div style="font:700 10px 'Nunito';color:#c08552;letter-spacing:.5px">1.5 – 3 YEARS</div></div></div>
+              <div style="font:600 13px/1.6 'Nunito';color:#7d7468">Practical life, early language, and joyful movement build real independence — pouring, dressing, helping, singing in two languages.</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="background:#fff0d9;color:#a8852f;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">1:4 ratio</span><span style="background:#fff0d9;color:#a8852f;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">Potty learning</span></div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(90,70,40,.10)">
+              <div style="display:flex;align-items:center;gap:12px"><div style="padding:5px;border-radius:50%;background:#f7ecdd;flex:none"><image-slot id="gpm-sp-pre" style="width:72px;height:72px" shape="circle" placeholder="preschool"></image-slot></div><div><div style="font:600 20px 'Fredoka';color:#34402c">Preschool</div><div style="font:700 10px 'Nunito';color:#c08552;letter-spacing:.5px">3 – 4½ YEARS</div></div></div>
+              <div style="font:600 13px/1.6 'Nunito';color:#7d7468">Early reading, math, and cultural studies spark curiosity — and quietly build everything kindergarten asks for.</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="background:#eef2e8;color:#5e7a4e;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">1:6 ratio</span><span style="background:#eef2e8;color:#5e7a4e;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">Kindergarten-ready</span></div>
+            </div>
+            <div style="text-align:center;font:600 12px/1.6 'Nunito';color:#9a8a72">All programs include breakfast, lunch &amp; snack, daily outdoor time, and bilingual circle time.</div>
+          </div>
+        </div>
+
+        <div data-page="menu" data-screen-label="Subpage — Menu" style="position:absolute;inset:0;background:#fbf2db;transform:translateX(103%);transition:transform .5s cubic-bezier(.2,.8,.25,1);overflow-y:auto;pointer-events:auto">
+          <div style="position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(251,242,219,.94);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(60,50,40,.05)">
+            <div data-back style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#a8852f;font:700 12px 'Nunito';padding:9px 14px;border-radius:999px;box-shadow:0 4px 10px rgba(60,50,40,.08);cursor:pointer">← Back</div>
+            <div style="font:600 16px 'Fredoka';color:#34402c">Sample menu</div>
+          </div>
+          <div style="padding:24px 22px 48px;display:flex;flex-direction:column;gap:16px">
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="font:700 11px 'Nunito';color:#bd9326;letter-spacing:1.5px;text-transform:uppercase">This week's menu</div>
+              <div style="font:600 25px 'Fredoka';color:#34402c">Cooked fresh, every morning</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,100,40,.10)">
+              <div style="font:600 17px 'Fredoka';color:#34402c">Monday</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd9326;background:#fff0d9;border-radius:999px;padding:3px 9px;flex:none">Breakfast</span><span style="font:600 13px 'Nunito';color:#6b6450">Oatmeal &amp; banana</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#5e7a4e;background:#eef2e8;border-radius:999px;padding:3px 9px;flex:none">Lunch</span><span style="font:600 13px 'Nunito';color:#6b6450">Chicken &amp; veggie rice bowl</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd7a55;background:#f7e7df;border-radius:999px;padding:3px 9px;flex:none">Snack</span><span style="font:600 13px 'Nunito';color:#6b6450">Apple slices &amp; cheese</span></div>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,100,40,.10)">
+              <div style="font:600 17px 'Fredoka';color:#34402c">Tuesday</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd9326;background:#fff0d9;border-radius:999px;padding:3px 9px;flex:none">Breakfast</span><span style="font:600 13px 'Nunito';color:#6b6450">Congee with egg</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#5e7a4e;background:#eef2e8;border-radius:999px;padding:3px 9px;flex:none">Lunch</span><span style="font:600 13px 'Nunito';color:#6b6450">Pasta marinara &amp; peas</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd7a55;background:#f7e7df;border-radius:999px;padding:3px 9px;flex:none">Snack</span><span style="font:600 13px 'Nunito';color:#6b6450">Yogurt &amp; berries</span></div>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,100,40,.10)">
+              <div style="font:600 17px 'Fredoka';color:#34402c">Wednesday</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd9326;background:#fff0d9;border-radius:999px;padding:3px 9px;flex:none">Breakfast</span><span style="font:600 13px 'Nunito';color:#6b6450">Whole-grain pancakes</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#5e7a4e;background:#eef2e8;border-radius:999px;padding:3px 9px;flex:none">Lunch</span><span style="font:600 13px 'Nunito';color:#6b6450">Tofu &amp; veggie stir-fry, brown rice</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd7a55;background:#f7e7df;border-radius:999px;padding:3px 9px;flex:none">Snack</span><span style="font:600 13px 'Nunito';color:#6b6450">Hummus &amp; cucumber</span></div>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,100,40,.10)">
+              <div style="font:600 17px 'Fredoka';color:#34402c">Thursday</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd9326;background:#fff0d9;border-radius:999px;padding:3px 9px;flex:none">Breakfast</span><span style="font:600 13px 'Nunito';color:#6b6450">Scrambled eggs &amp; toast</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#5e7a4e;background:#eef2e8;border-radius:999px;padding:3px 9px;flex:none">Lunch</span><span style="font:600 13px 'Nunito';color:#6b6450">Turkey &amp; sweet potato</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd7a55;background:#f7e7df;border-radius:999px;padding:3px 9px;flex:none">Snack</span><span style="font:600 13px 'Nunito';color:#6b6450">Orange wedges &amp; crackers</span></div>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,100,40,.10)">
+              <div style="font:600 17px 'Fredoka';color:#34402c">Friday</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd9326;background:#fff0d9;border-radius:999px;padding:3px 9px;flex:none">Breakfast</span><span style="font:600 13px 'Nunito';color:#6b6450">Millet porridge</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#5e7a4e;background:#eef2e8;border-radius:999px;padding:3px 9px;flex:none">Lunch</span><span style="font:600 13px 'Nunito';color:#6b6450">Veggie dumplings &amp; broccoli</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font:700 10px 'Nunito';color:#bd7a55;background:#f7e7df;border-radius:999px;padding:3px 9px;flex:none">Snack</span><span style="font:600 13px 'Nunito';color:#6b6450">Banana muffin</span></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center">
+              <div style="display:inline-flex;align-items:center;gap:5px;background:#fff;color:#897a4e;font:700 10px 'Nunito';padding:6px 11px;border-radius:999px;box-shadow:0 3px 8px rgba(120,100,40,.08)">🥦 Vegetarian daily</div>
+              <div style="display:inline-flex;align-items:center;gap:5px;background:#fff;color:#897a4e;font:700 10px 'Nunito';padding:6px 11px;border-radius:999px;box-shadow:0 3px 8px rgba(120,100,40,.08)">🌾 Allergy-aware</div>
+              <div style="display:inline-flex;align-items:center;gap:5px;background:#fff;color:#897a4e;font:700 10px 'Nunito';padding:6px 11px;border-radius:999px;box-shadow:0 3px 8px rgba(120,100,40,.08)">🍚 Flavors from home</div>
+            </div>
+            <div style="text-align:center;font:600 11px 'Nunito';color:#a89a72">Sample menu — the live menu is posted each Monday.</div>
+          </div>
+        </div>
+
+        <div data-page="gallery" data-screen-label="Subpage — Gallery" style="position:absolute;inset:0;background:#eaf0f1;transform:translateX(103%);transition:transform .5s cubic-bezier(.2,.8,.25,1);overflow-y:auto;pointer-events:auto">
+          <div style="position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(234,240,241,.94);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(60,50,40,.05)">
+            <div data-back style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#56707e;font:700 12px 'Nunito';padding:9px 14px;border-radius:999px;box-shadow:0 4px 10px rgba(60,50,40,.08);cursor:pointer">← Back</div>
+            <div style="font:600 16px 'Fredoka';color:#34402c">Gallery</div>
+          </div>
+          <div style="padding:24px 22px 48px;display:flex;flex-direction:column;gap:16px">
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="font:700 11px 'Nunito';color:#6f8a9a;letter-spacing:1.5px;text-transform:uppercase">Our photo wall</div>
+              <div style="font:600 25px 'Fredoka';color:#34402c">Every day, captured</div>
+            </div>
+            <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+              <div style="font:700 11px 'Nunito';color:#fff;background:#6f8a5f;border-radius:999px;padding:7px 14px">All</div>
+              <div style="font:700 11px 'Nunito';color:#56707e;background:#fff;border-radius:999px;padding:7px 14px;box-shadow:0 3px 8px rgba(60,70,90,.07)">Classroom</div>
+              <div style="font:700 11px 'Nunito';color:#56707e;background:#fff;border-radius:999px;padding:7px 14px;box-shadow:0 3px 8px rgba(60,70,90,.07)">Outdoors</div>
+              <div style="font:700 11px 'Nunito';color:#56707e;background:#fff;border-radius:999px;padding:7px 14px;box-shadow:0 3px 8px rgba(60,70,90,.07)">Meals</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:130px;gap:10px">
+              <image-slot id="gpm-sg1" style="width:100%;height:100%;grid-row:span 2" shape="rounded" radius="14" placeholder="Drop photo"></image-slot>
+              <image-slot id="gpm-sg2" style="width:100%;height:100%" shape="rounded" radius="14" placeholder="Drop photo"></image-slot>
+              <image-slot id="gpm-sg3" style="width:100%;height:100%" shape="rounded" radius="14" placeholder="Drop photo"></image-slot>
+              <image-slot id="gpm-sg4" style="width:100%;height:100%" shape="rounded" radius="14" placeholder="Drop photo"></image-slot>
+              <image-slot id="gpm-sg5" style="width:100%;height:100%;grid-row:span 2" shape="rounded" radius="14" placeholder="Drop photo"></image-slot>
+              <image-slot id="gpm-sg6" style="width:100%;height:100%" shape="rounded" radius="14" placeholder="Drop photo"></image-slot>
+            </div>
+            <div style="text-align:center;font:600 11px 'Nunito';color:#8ba0aa">Tap any photo to enlarge — lightbox on the live site.</div>
+          </div>
+        </div>
+
+        <div data-page="reviews" data-screen-label="Subpage — Reviews" style="position:absolute;inset:0;background:#f6ece4;transform:translateX(103%);transition:transform .5s cubic-bezier(.2,.8,.25,1);overflow-y:auto;pointer-events:auto">
+          <div style="position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(246,236,228,.94);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(60,50,40,.05)">
+            <div data-back style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#c2553f;font:700 12px 'Nunito';padding:9px 14px;border-radius:999px;box-shadow:0 4px 10px rgba(60,50,40,.08);cursor:pointer">← Back</div>
+            <div style="font:600 16px 'Fredoka';color:#34402c">Reviews</div>
+          </div>
+          <div style="padding:24px 22px 48px;display:flex;flex-direction:column;gap:16px">
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="display:inline-flex;align-items:center;gap:9px"><span style="color:#f0a93a;font-size:17px;letter-spacing:1px">★★★★★</span><span style="font:600 22px 'Fredoka';color:#34402c">5.0</span><span style="background:#d3402e;color:#fff;font:800 11px 'Nunito';padding:4px 9px;border-radius:6px">Yelp</span></div>
+              <div style="font:600 25px 'Fredoka';color:#34402c">What Fremont parents say</div>
+              <div style="font:600 12px 'Nunito';color:#8a7468">47 reviews and counting</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,80,50,.08)">
+              <span style="color:#f0a93a;font-size:12px;letter-spacing:1px">★★★★★</span>
+              <div style="font:600 13px/1.6 'Nunito';color:#5c5045">“Our daughter runs to the door every morning. The teachers truly <i>see</i> her — and the calm, bilingual environment means the world to our family.”</div>
+              <div style="font:700 12px 'Nunito';color:#34402c">Mei L. <span style="font:600 11px 'Nunito';color:#9a8578">· parent of a 3-year-old</span></div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,80,50,.08)">
+              <span style="color:#f0a93a;font-size:12px;letter-spacing:1px">★★★★★</span>
+              <div style="font:600 13px/1.6 'Nunito';color:#5c5045">“Warm, thoughtful, and genuinely Montessori. The home-cooked meals and the teachers' patience sold us instantly.”</div>
+              <div style="font:700 12px 'Nunito';color:#34402c">David &amp; Priya <span style="font:600 11px 'Nunito';color:#9a8578">· toddler parents</span></div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 20px rgba(120,80,50,.08)">
+              <span style="color:#f0a93a;font-size:12px;letter-spacing:1px">★★★★★</span>
+              <div style="font:600 13px/1.6 'Nunito';color:#5c5045">“Ms. Ping knows every child by heart. Weekly photos, honest communication, and so much warmth.”</div>
+              <div style="font:700 12px 'Nunito';color:#34402c">Alan W. <span style="font:600 11px 'Nunito';color:#9a8578">· infant parent</span></div>
+            </div>
+            <div style="display:flex;justify-content:center"><div style="display:inline-flex;align-items:center;gap:7px;background:#d3402e;color:#fff;font:700 13px 'Nunito';padding:12px 22px;border-radius:999px;box-shadow:0 8px 18px rgba(211,64,46,.3)">Open our Yelp page ↗</div></div>
+          </div>
+        </div>
+
+        <div data-page="team" data-screen-label="Subpage — Team" style="position:absolute;inset:0;background:#f0edf4;transform:translateX(103%);transition:transform .5s cubic-bezier(.2,.8,.25,1);overflow-y:auto;pointer-events:auto">
+          <div style="position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(240,237,244,.94);backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(60,50,40,.05)">
+            <div data-back style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#6d5f92;font:700 12px 'Nunito';padding:9px 14px;border-radius:999px;box-shadow:0 4px 10px rgba(60,50,40,.08);cursor:pointer">← Back</div>
+            <div style="font:600 16px 'Fredoka';color:#34402c">Our team</div>
+          </div>
+          <div style="padding:24px 22px 48px;display:flex;flex-direction:column;gap:16px">
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="font:700 11px 'Nunito';color:#8677a3;letter-spacing:1.5px;text-transform:uppercase">Who we are</div>
+              <div style="font:600 25px 'Fredoka';color:#34402c">Meet your teachers</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:11px;box-shadow:0 10px 24px rgba(90,80,120,.12);text-align:center">
+              <div style="padding:6px;border-radius:50%;background:#f0edf4"><image-slot id="gpm-sp-head" style="width:120px;height:120px" shape="circle" placeholder="Ms. Ping"></image-slot></div>
+              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:center"><div style="font:600 23px 'Fredoka';color:#34402c">Ms. Ping</div><div style="background:#6f8a5f;color:#fff;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">HEAD TEACHER</div></div>
+              <div style="font:600 13px/1.65 'Nunito';color:#757080">Ms. Ping leads the classroom and is every family's main point of contact — from your first tour to daily pickup chats, in English or 中文. AMS Montessori credentials, 15 years with little learners.</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><span style="background:#f0edf4;color:#6d5f92;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">AMS certified</span><span style="background:#f0edf4;color:#6d5f92;font:700 10px 'Nunito';padding:4px 10px;border-radius:999px">English · 中文</span></div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:9px;box-shadow:0 8px 20px rgba(90,80,120,.10);text-align:center">
+              <div style="width:48px;height:48px;border-radius:50%;background:#f0edf4;display:flex;align-items:center;justify-content:center;font-size:22px">🧸</div>
+              <div style="font:600 18px 'Fredoka';color:#34402c">Ms. Reyes</div>
+              <div style="font:700 10px 'Nunito';color:#8677a3;letter-spacing:.5px">ASSISTANT TEACHER</div>
+              <div style="font:600 12px/1.55 'Nunito';color:#757080">Infant &amp; toddler care, meals, and endless patience for first steps.</div>
+            </div>
+            <div style="background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:9px;box-shadow:0 8px 20px rgba(90,80,120,.10);text-align:center">
+              <div style="width:48px;height:48px;border-radius:50%;background:#f0edf4;display:flex;align-items:center;justify-content:center;font-size:22px">🎨</div>
+              <div style="font:600 18px 'Fredoka';color:#34402c">Ms. Chen 陈老师</div>
+              <div style="font:700 10px 'Nunito';color:#8677a3;letter-spacing:.5px">ASSISTANT TEACHER</div>
+              <div style="font:600 12px/1.55 'Nunito';color:#757080">Art, songs, and outdoor play — and a warm bilingual voice all day.</div>
+            </div>
+            <div style="text-align:center;font:600 12px 'Nunito';color:#9a90ab">Three warm adults, one small class — ratios stay low all day.</div>
+          </div>
+        </div>
+
+      </div>
+      <!-- home indicator -->
+      <div style="display:flex;justify-content:center;padding:8px 0 6px;background:#fbf8f0"><div style="width:120px;height:5px;border-radius:999px;background:#2b2b28"></div></div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() { this._init(); }
+  _init() {
+    const root = document.querySelector('[data-gp-scroll]');
+    if (!root) { return; }
+    const SPRING = 'cubic-bezier(.34,1.56,.5,1)';
+    const SOFT = 'cubic-bezier(.2,.8,.25,1)';
+    // Per-section entrances: headers stay a calm rise; the featured content
+    // of each world gets an animation that matches what it is.
+    const getFX = (el, i) => {
+      const sec = el.closest('[data-screen-label]');
+      const label = sec ? sec.getAttribute('data-screen-label') : '';
+      if (el.hasAttribute('data-anim')) {
+        if (label === 'Philosophy') { return { mode: 'trans', from: { transform: 'scale(.97)', filter: 'blur(14px)' }, trans: 'opacity .95s ease, transform .95s ' + SOFT + ', filter .95s ease' }; }
+        if (label === 'Visit') { return { mode: 'trans', from: {}, trans: 'opacity 1.1s ease' }; }
+        return { mode: 'trans', from: { transform: 'translateY(26px)' }, trans: 'opacity .7s ease, transform .8s ' + SOFT };
+      }
+      if (label === 'Programs') { return { mode: 'anim', origin: '50% 100%', anim: 'gpsprout .9s ' + SPRING + ' both' }; }
+      if (label === 'Menu') { return i === 0 ? { mode: 'anim', anim: 'gproll .85s ' + SOFT + ' both' } : { mode: 'anim', anim: 'gpdrop .7s ease both' }; }
+      if (label === 'Gallery') { return { mode: 'trans', from: { transform: 'translateX(' + (i % 2 ? 150 : -150) + 'px) rotate(' + (i % 2 ? 10 : -10) + 'deg) scale(.9)' }, trans: 'opacity .5s ease, transform .8s ' + SPRING }; }
+      if (label === 'Reviews') { return { mode: 'trans', origin: (i % 2 ? '88% 100%' : '12% 100%'), from: { transform: 'scale(.3)' }, trans: 'opacity .45s ease, transform .65s ' + SPRING }; }
+      if (label === 'Teachers') { return { mode: 'anim', origin: '50% 0%', anim: 'gpswing 1s ease both' }; }
+      return { mode: 'trans', from: { transform: 'translateY(22px)' }, trans: 'opacity .7s ease, transform .8s ' + SOFT };
+    };
+    const prep = (el, i) => {
+      const fx = getFX(el, i);
+      el.style.opacity = '0';
+      if (fx.origin) { el.style.transformOrigin = fx.origin; }
+      if (fx.mode === 'trans' && fx.from) {
+        if (fx.from.transform) { el.style.transform = fx.from.transform; }
+        if (fx.from.filter) { el.style.filter = fx.from.filter; }
+      }
+      el.style.willChange = 'opacity, transform, filter';
+    };
+    const show = (el, delay, i) => {
+      const fx = getFX(el, i);
+      setTimeout(() => {
+        if (fx.mode === 'anim') {
+          el.style.opacity = '';
+          el.style.animation = fx.anim;
+        } else {
+          el.style.transition = fx.trans;
+          el.style.opacity = '1';
+          if (fx.from && fx.from.transform) { el.style.transform = 'none'; }
+          if (fx.from && fx.from.filter) { el.style.filter = 'none'; }
+        }
+      }, delay);
+    };
+    const countUp = (el) => {
+      const target = parseFloat(el.getAttribute('data-count'));
+      const dec = parseInt(el.getAttribute('data-dec') || '0', 10);
+      const dur = 1000, t0 = performance.now();
+      const tick = (now) => {
+        const p = Math.min(1, (now - t0) / dur);
+        const e = 1 - Math.pow(1 - p, 3);
+        el.textContent = (target * e).toFixed(dec);
+        if (p < 1) { requestAnimationFrame(tick); } else { el.textContent = target.toFixed(dec); }
+      };
+      requestAnimationFrame(tick);
+    };
+    const anims = Array.from(root.querySelectorAll('[data-anim]'));
+    const stags = Array.from(root.querySelectorAll('[data-stagger]'));
+    anims.forEach((el) => prep(el, 0));
+    stags.forEach((c) => Array.from(c.children).forEach((ch, i) => prep(ch, i)));
+    const done = new Set();
+    const fire = (el) => {
+      if (done.has(el)) { return; }
+      done.add(el);
+      if (el.hasAttribute('data-stagger')) {
+        Array.from(el.children).forEach((ch, i) => show(ch, i * 110, i));
+      } else {
+        show(el, 0, 0);
+        el.querySelectorAll('[data-count]').forEach(countUp);
+      }
+    };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) { return; }
+        fire(en.target);
+        io.unobserve(en.target);
+      });
+    }, { root: root, threshold: 0.16 });
+    const all = anims.concat(stags);
+    all.forEach((el) => io.observe(el));
+    const checkInView = () => {
+      const rb = root.getBoundingClientRect();
+      all.forEach((el) => {
+        if (done.has(el)) { return; }
+        const r = el.getBoundingClientRect();
+        if (r.top < rb.bottom - 40 && r.bottom > rb.top) {
+          fire(el);
+          io.unobserve(el);
+        }
+      });
+    };
+    requestAnimationFrame(checkInView);
+    root.addEventListener('scroll', checkInView, { passive: true });
+    // --- Section snap + animated in-page navigation ---
+    root.style.scrollSnapType = 'y proximity';
+    const navBar = root.firstElementChild;
+    const navH = () => (navBar ? navBar.offsetHeight : 0);
+    root.querySelectorAll('[data-screen-label]').forEach((s) => {
+      s.style.scrollSnapAlign = 'start';
+      s.style.scrollMarginTop = navH() + 'px';
+    });
+    const scrollToLabel = (label) => {
+      const t = root.querySelector('[data-screen-label="' + label + '"]');
+      if (!t) { return; }
+      const top = t.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop - navH();
+      root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    };
+    // --- Subpage overlays (slide in from the right) ---
+    const pages = {};
+    document.querySelectorAll('[data-page]').forEach((p) => { pages[p.getAttribute('data-page')] = p; });
+    const closePages = () => { Object.keys(pages).forEach((k) => { pages[k].style.transform = 'translateX(103%)'; }); };
+    const openPage = (name) => {
+      const p = pages[name];
+      if (!p) { return; }
+      closePages();
+      p.scrollTop = 0;
+      p.style.transform = 'translateX(0)';
+    };
+    document.addEventListener('click', (e) => {
+      const st = e.target.closest('[data-scrollto]');
+      if (st) { closePages(); scrollToLabel(st.getAttribute('data-scrollto')); return; }
+      const sp = e.target.closest('[data-subpage]');
+      if (sp) { openPage(sp.getAttribute('data-subpage')); return; }
+      if (e.target.closest('[data-back]')) { closePages(); }
+    });
+  }
+}
+</script>
+</body>
+</html>
