@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SiteSchema } from "@/content/schemas/site";
+import { isPendingLocalePath, SiteSchema } from "@/content/schemas/site";
 import { LOCALE_IDS, routing } from "@/i18n/routing";
 
 import siteJson from "../../../content/site.json";
@@ -346,5 +346,136 @@ describe("the provisional registry (02 D-02.20, INV-02.10)", () => {
 
   it("rejects an empty string in the registry", () => {
     expect(accepts(withProvisional(""))).toBe(false);
+  });
+});
+
+/* -------------------------------------------------------------------------- *
+ * Pending locales (08 §3 rule 6)
+ * -------------------------------------------------------------------------- */
+
+const enabledLocales: readonly string[] = routing.locales;
+
+/**
+ * The locale `routing.ts` knows and has not enabled — `zh-Hant` today
+ * (INV-02.11). The first test below asserts it exists, because every case after
+ * it is meaningless without one: the day `zh-Hant` is enabled, rule 6 has
+ * nothing to exempt and these tests need a held-back locale of their own.
+ */
+const heldBack = LOCALE_IDS.find((id) => !enabledLocales.includes(id));
+const held = String(heldBack);
+
+/** The shipped registry plus one entry — the state a Phase 3 seed edit creates. */
+function plusProvisional(...paths: string[]): Draft {
+  return draft((site) => {
+    site.provisional.push(...paths);
+  });
+}
+
+describe("isPendingLocalePath (08 §3 rule 6)", () => {
+  // Stated against a synthetic pair so the rule is pinned independently of
+  // which locales happen to be enabled, and so it reads as the rule rather than
+  // as today's configuration.
+  const locales = { known: ["en", "de", "fr"], enabled: ["en", "de"] };
+
+  it.each([
+    ["a held-back locale suffix", "brand.name.fr", true],
+    ["a bare held-back locale id", "fr", true],
+    ["an enabled locale suffix", "brand.name.de", false],
+    ["the reference locale", "brand.name.en", false],
+    ["a locale id nobody knows", "brand.name.fr-CA", false],
+    ["a path with no locale suffix", "contact.email", false],
+    ["a collections path (rule 2 gives the head the vote)", "collections.teachers.ping.fr", false],
+    ["a messages path (likewise)", "messages.home.hero.fr", false],
+    ["the empty path", "", false],
+  ])("%s → %s", (_label, path, expected) => {
+    expect(isPendingLocalePath(path, locales)).toBe(expected);
+  });
+
+  it("defaults to the project's own locales, never a literal list (INV-08.4)", () => {
+    expect(isPendingLocalePath(`brand.name.${held}`)).toBe(heldBack !== undefined);
+    expect(isPendingLocalePath(`brand.name.${String(routing.defaultLocale)}`)).toBe(false);
+  });
+});
+
+describe("pending-locale registry entries (08 §3 rule 6)", () => {
+  it("has a locale to hold back — the premise of every case below", () => {
+    expect(heldBack).toBeDefined();
+  });
+
+  // The direction that was broken: `validate:content` green, `next build` red.
+  it.each([
+    ["brand.name", `brand.name.${held}`],
+    ["brand.shortName", `brand.shortName.${held}`],
+  ])("accepts a %s entry for the held-back locale", (_label, path) => {
+    expect(complaints(withProvisional(path))).toBe("");
+  });
+
+  it("accepts 02's Phase 3 seed — the shipped registry plus both zh-Hant paths", () => {
+    const site = plusProvisional(`brand.name.${held}`, `brand.shortName.${held}`);
+    expect(complaints(site)).toBe("");
+  });
+
+  it("keeps the exempt entry in the registry, so --release still sees it under R1", () => {
+    // Rule 6 exempts the path from *resolution*. If the schema dropped it the
+    // launch gate would go green on an entry nobody had cleared.
+    const path = `brand.name.${held}`;
+    const site = SiteSchema.parse(plusProvisional(path));
+    expect(site.provisional).toContain(path);
+  });
+
+  it("is the reason the entry cannot resolve: INV-02.3 rejects the value itself", () => {
+    // The carve-out is not a convenience — `brand.name` may not carry the key
+    // the path names, so the path is unresolvable by construction.
+    const site = draft((value) => {
+      value.brand.name[held] = "優朵幼兒園";
+      value.provisional.push(`brand.name.${held}`);
+    });
+    expect(complaints(site)).toContain("unrecognized_keys");
+  });
+
+  // The direction an over-broad exemption would swallow.
+  it.each([
+    ["a field that is not there", "contact.instagram"],
+    ["a mistyped locale suffix", `brand.name.${held}x`],
+    ["a locale-shaped suffix nobody knows", "brand.name.zh"],
+    [
+      "an enabled locale on a path that resolves to nothing",
+      `brand.nmae.${String(routing.locales[1])}`,
+    ],
+    [
+      "an enabled locale walked into a scalar",
+      `contact.phoneDisplay.${String(routing.locales[1])}`,
+    ],
+  ])("still rejects %s", (_label, path) => {
+    expect(complaints(withProvisional(path))).toContain("resolves to nothing in content/site.json");
+  });
+
+  it("does not exempt a collections path whose last segment is the held locale", () => {
+    // Rule 2 gives the first segment the deciding vote, so the locale id is an
+    // ordinary key here and the collection still has to exist.
+    expect(complaints(withProvisional(`collections.recipes.soup.${held}`))).toContain(
+      "names no known collection",
+    );
+  });
+
+  it("does not exempt a messages path whose last segment is the held locale", () => {
+    expect(complaints(withProvisional(`messages.${held}`))).toContain(
+      "must be messages.<namespace>.<key>",
+    );
+  });
+
+  it("still rejects a duplicate of a pending-locale entry (rule 1 outranks rule 6)", () => {
+    const path = `brand.name.${held}`;
+    expect(complaints(withProvisional(path, path))).toContain(
+      `Duplicate provisional entry "${path}"`,
+    );
+  });
+
+  it("leaves every other cross-reference in force beside a pending-locale entry", () => {
+    // An exemption that short-circuited the rest of the refinement would hide
+    // real findings behind one held-back locale.
+    const site = plusProvisional(`brand.name.${held}`);
+    site.nav.primary[0] = { id: "philosophy", routeId: "nowhere" };
+    expect(complaints(site)).toContain('routeId "nowhere" is not an id in routes[]');
   });
 });

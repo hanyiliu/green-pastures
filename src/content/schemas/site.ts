@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { LOCALE_IDS, routing } from "@/i18n/routing";
+
 import { FaqShared } from "./faq";
 import { GalleryShared } from "./gallery";
 import { DayId, MenuShared } from "./menu";
@@ -38,6 +40,12 @@ import { TestimonialShared } from "./testimonials";
  * 3. **The provisional registry** (`D-02.20`, INV-02.10). Every path in
  *    `provisional` must resolve, "so a deleted value cannot leave a stale
  *    marker" — enforced here, in the loader, as well as by `validate:content`.
+ *    The one exception is 08 §3 rule 6's *pending locale*
+ *    ({@link isPendingLocalePath}): a path suffixed with a locale id that
+ *    `routing.ts` knows but has not enabled cannot resolve, because INV-02.3
+ *    forbids the localized value from carrying that entry at all. It is
+ *    reported by `validate:content` and blocks `--release`; it is not a parse
+ *    error, or the build would go red on 02's Phase 3 seed.
  *
  * Cross-references that need the *locale* files (a teacher with no text, a
  * photo with no `alt`) are the collections loader's and `validate:content`'s;
@@ -261,7 +269,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * "in every mode" (02 `D-02.20`).
  *
  * Locale-suffixed paths work by construction: `brand.name.zh-Hans` splits into
- * three segments, the last of which is a key of the localized value.
+ * three segments, the last of which is a key of the localized value. For a
+ * locale that is known but not enabled there is no such key — INV-02.3 forbids
+ * it — so those paths never reach this function; {@link isPendingLocalePath}
+ * takes them first.
  */
 function resolvePath(root: SiteShape, path: string): unknown {
   let current: unknown = root;
@@ -276,6 +287,60 @@ function resolvePath(root: SiteShape, path: string): unknown {
     current = current[segment];
   }
   return current;
+}
+
+/* -------------------------------------------------------------------------- *
+ * Pending locales (08 §3 rule 6)
+ * -------------------------------------------------------------------------- */
+
+/**
+ * The two locale lists rule 6 compares. Always `src/i18n/routing.ts`, never a
+ * literal list (INV-08.4); the parameter exists so a test can state the rule
+ * against a synthetic pair, and so `scripts/validate-content.ts` can call this
+ * predicate with its own `LocaleConfig` — which is structurally this type plus
+ * `reference` — instead of keeping a second copy of the rule.
+ */
+export type LocaleSets = {
+  /** Every locale id the project knows about, enabled or not (`LOCALE_IDS`). */
+  readonly known: readonly string[];
+  /** The enabled subset (`routing.locales`). */
+  readonly enabled: readonly string[];
+};
+
+const PROJECT_LOCALES: LocaleSets = { known: LOCALE_IDS, enabled: routing.locales };
+
+/**
+ * 08 §3 rule 6 — is this a **pending-locale** entry?
+ *
+ * A `site.json` provisional path whose final segment is a locale id the project
+ * knows (`LOCALE_IDS`) but has not enabled (`routing.locales`):
+ * `brand.name.zh-Hant` while Traditional Chinese is under review. Such an entry
+ * is "neither resolved nor an error" — the validator lists it as *pending
+ * locale*, and it still blocks `--release` under R1.
+ *
+ * The exemption is not a convenience: the path **cannot** resolve, because
+ * `LocalizedText` is a record over `routing.locales` and INV-02.3 therefore
+ * forbids `brand.name` from carrying an entry for a locale that is not enabled.
+ * Without this carve-out the two `zh-Hant` paths in 02's Phase 3 seed would red
+ * `next build` — through this schema, which the loader runs on every build — the
+ * moment they land in `content/site.json` (OQ-08.10, D-10.12's fallback).
+ *
+ * The `collections.` / `messages.` forms are excluded: rule 2 gives their first
+ * segment the deciding vote, so a final segment that happens to spell a locale
+ * id is an ordinary key there, not a locale suffix.
+ *
+ * Deliberately the same rule, spelled the same way, as
+ * `isPendingLocalePath()` in `scripts/validate-content.ts`: two predicates that
+ * disagreed would put `pnpm validate:content` and `next build` on opposite
+ * verdicts for one entry, which is the exact bug this closes. That file's copy
+ * exists only because this one did not; it can import this and delete its own.
+ */
+export function isPendingLocalePath(path: string, locales: LocaleSets = PROJECT_LOCALES): boolean {
+  const segments = path.split(".");
+  const head = segments[0];
+  if (head === "collections" || head === "messages") return false;
+  const last = String(segments[segments.length - 1]);
+  return locales.known.includes(last) && !locales.enabled.includes(last);
 }
 
 /**
@@ -374,8 +439,18 @@ function checkProvisional(site: SiteShape, ctx: IssueSink): void {
       return;
     }
 
-    // Anything else is a field of this very file, and it has to be there:
-    // "a deleted value cannot leave a stale marker" (02 D-02.20, INV-02.10).
+    // Anything else is a dotted path into this very file, where a final segment
+    // that is a locale id addresses one entry of a localized value (08 §3
+    // rule 2). If that locale is known but not enabled the path cannot resolve
+    // by construction, and rule 6 makes it *pending locale* rather than an
+    // error — reported by validate:content, still blocking --release under R1,
+    // and here simply left alone.
+    if (isPendingLocalePath(path)) return;
+
+    // Everything that is left has to be there: "a deleted value cannot leave a
+    // stale marker" (02 D-02.20, INV-02.10). A mistyped locale suffix
+    // (`brand.name.zh-Hanx`) is not a locale id, so it lands here and errors —
+    // rule 6 exempts a held-back locale, not a typo that resembles one.
     if (segments[0] === "provisional" || resolvePath(site, path) === undefined) {
       ctx.addIssue({
         code: "custom",
