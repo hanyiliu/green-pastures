@@ -51,7 +51,7 @@ export default defineConfig({
         "src/lib/**": { statements: 90, branches: 85 },
         "src/design/**": { statements: 90, branches: 85 },
         "src/components/motion/variants.ts": { statements: 90, branches: 85 },
-        "src/components/motion/reveal-registry.ts": { statements: 90, branches: 85 },
+        "src/components/motion/registry.ts": { statements: 90, branches: 85 },
         "scripts/validate-content.ts": { statements: 90, branches: 85 },
       },
     },
