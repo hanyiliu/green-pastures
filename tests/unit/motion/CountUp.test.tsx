@@ -214,12 +214,41 @@ describe("layout stability (INV-05.7)", () => {
     expect(element).toHaveClass("inline-block");
     expect(element.style.minWidth).toBe("2ch");
   });
+});
 
-  it("keeps caller classes", () => {
+/**
+ * 04 §3.2's `className` contract, the three cases every primitive in
+ * `components/ui` is held to. `CountUp` is not in that tree, but it takes a
+ * `className` and puts it on an element beside a recipe of its own, which is
+ * the only thing the contract is about — it concatenated the two until this
+ * suite grew the middle case below, and a caller's `inline-flex` lost to the
+ * recipe in silence because Tailwind sorts `@layer utilities` by property
+ * rather than by the order class names appear in the attribute.
+ */
+describe("caller classes", () => {
+  it("takes a class that sets a property the recipe leaves alone", () => {
     markRevealed("testimonials.header");
     render(reviewsHeader(<CountUp value={47} className="font-display" />));
 
     expect(countElement()).toHaveClass("font-display");
+  });
+
+  it("refuses a display the recipe already sets", () => {
+    markRevealed("testimonials.header");
+
+    expect(() => render(reviewsHeader(<CountUp value={47} className="inline-flex" />))).toThrow(
+      /"inline-flex"/u,
+    );
+  });
+
+  it("takes the same display marked important", () => {
+    markRevealed("testimonials.header");
+    render(reviewsHeader(<CountUp value={47} className="inline-flex!" />));
+
+    const element = countElement();
+    expect(element).toHaveClass("inline-flex!");
+    // `!important` is decided per property: the recipe's numerics stand.
+    expect(element).toHaveClass("tabular-nums");
   });
 });
 

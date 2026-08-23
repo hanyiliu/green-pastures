@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { dur, ease } from "@/design/tokens";
 
 import { useRevealed } from "@/components/motion/Reveal";
+import { withOverrides } from "@/components/ui/class-names";
 
 /**
  * The Yelp count-up — 5.0 and 47 (05 `D-05.8`, §5.5; 04 §3.3).
@@ -84,6 +85,10 @@ export type CountUpProps = {
    * and not something inferred from `value` (05 §5.5).
    */
   readonly decimals?: number;
+  /**
+   * Extra classes; an override of a property the recipe sets must be important
+   * (`inline-flex!`). 04 §3.2's contract, kept by {@link withOverrides}.
+   */
   readonly className?: string;
 };
 
@@ -143,7 +148,18 @@ export function CountUp({ value, decimals = 0, className }: CountUpProps) {
   return (
     <span
       data-countup=""
-      className={`inline-block tabular-nums ${className ?? ""}`}
+      /*
+       * 04 §3.2's `className` contract, not a concatenation: Tailwind sorts
+       * `@layer utilities` by property, so a caller's `inline-flex` written
+       * after the recipe's `inline-block` does not win by being later in the
+       * attribute — the built stylesheet decides, and it decided against the
+       * caller. `withOverrides` refuses the bare class and asks for
+       * `inline-flex!`, which wins per property and leaves `tabular-nums`
+       * standing. This file was the one holdout when the nine primitives
+       * migrated; a prop that looks like an override while quietly doing
+       * nothing is the failure that migration existed to remove.
+       */
+      className={withOverrides("CountUp", "inline-block tabular-nums", className)}
       /*
        * `ch` is the advance of "0", and `tabular-nums` makes every digit that
        * width — so the reserved box is the final string's, measured in the one
