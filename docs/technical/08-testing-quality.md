@@ -3,7 +3,7 @@
 ## Purpose
 
 This document is the *how* behind every invariant the other plan documents declare: which check enforces it,
-where that check runs (editor, `pnpm ci`, GitHub Actions, a Vercel preview, production), and what "green"
+where that check runs (editor, `pnpm verify`, GitHub Actions, a Vercel preview, production), and what "green"
 means per PR, per phase and at launch. It defines the test pyramid for this specific site — a three-locale
 (`en`, `zh-Hans`, `zh-Hant`), heavily animated content site with one form — the CI pipeline, the local quality
 loop, the flake policy, the coverage policy and the Definition of Done. It also owns the wiring of the content
@@ -13,7 +13,9 @@ named checks in §9; their meaning lives in 02/03/05/07/11.
 
 Status: draft · seat writer-testing · 2026-08-22 · revised 2026-08-22 for HD-2 (repo protection), HD-9
 (provisional-value gate) and HD-10 (three locales); revised 2026-08-23 for ADJ-24 — the sending-identity
-samples moved onto the real domain, which the release gate did not see (§3 R4, D-08.17)
+samples moved onto the real domain, which the release gate did not see (§3 R4, D-08.17); corrected
+2026-08-23 — §2's TODO gate was specified with a glibc-only `\b`, which matches nothing under Apple git and
+so failed open; it now reads `-nwE`, matching the shipped workflow
 
 ## Decisions
 
@@ -111,7 +113,7 @@ samples moved onto the real domain, which the release gate did not see (§3 R4, 
   id or the bead is closed in `.beads/issues.jsonl`. A flake is fixed by synchronisation (locators, `expect`
   polling, `waitForResponse`, `document.fonts.ready`), never by timeouts: `playwright/no-wait-for-timeout`,
   `playwright/no-networkidle` and a `no-restricted-syntax` ban on `test.setTimeout`/`test.slow()` are errors.
-- **D-08.14 Local loop, no git hooks.** `pnpm ci` runs the same scripts CI runs (INV-08.6). No Husky/lefthook:
+- **D-08.14 Local loop, no git hooks.** `pnpm verify` runs the same scripts CI runs (INV-08.6). No Husky/lefthook:
   11 decided enforcement is CI, not hooks (D-11.7, TRAP-11.5 — hooks do not work in worktrees), and a
   pre-commit hook that runs Playwright is a hook people bypass. Editor: `.editorconfig`, `.vscode/settings.json`
   (format on save, ESLint + Stylelint fix on save), `.vscode/extensions.json`.
@@ -169,8 +171,8 @@ samples moved onto the real domain, which the release gate did not see (§3 R4, 
 
 | Layer | Tool | What it proves here | Where it runs | Gate |
 |---|---|---|---|---|
-| Static | `tsc --noEmit` (strict), ESLint, Stylelint, Prettier | no literal copy in JSX (INV-02.1), no locale branching (INV-02.9), i18n navigation only (INV-02.7), token discipline (INV-03.1–3, INV-05.3/6/11) | editor · `pnpm ci` · `static` | required |
-| Content | `pnpm validate:content` | three-way parity, ICU args (subset) / tags / arrays, empty/HTML, data-in-locale, Zod, ids, images, alt (INV-02.2/3/4/8), provisional registry (INV-02.10), coverage report (INV-02.6) | `pnpm ci` · `content` · loader in `build` | required |
+| Static | `tsc --noEmit` (strict), ESLint, Stylelint, Prettier | no literal copy in JSX (INV-02.1), no locale branching (INV-02.9), i18n navigation only (INV-02.7), token discipline (INV-03.1–3, INV-05.3/6/11) | editor · `pnpm verify` · `static` | required |
+| Content | `pnpm validate:content` | three-way parity, ICU args (subset) / tags / arrays, empty/HTML, data-in-locale, Zod, ids, images, alt (INV-02.2/3/4/8), provisional registry (INV-02.10), coverage report (INV-02.6) | `pnpm verify` · `content` · loader in `build` | required |
 | Unit | Vitest + RTL + MSW | components render in every locale in `routing.locales` with no DOM literal; CSS↔TS token parity (INV-03.4); variants catalogue; schemas; inquiry handler; templates; utilities | `pnpm test` · `unit` | required |
 | E2E | Playwright (2 PR projects, 4 on `main`) | every route × locale (INV-02.5), switcher, slide, form (INV-07.4), reduced motion (INV-05.8), CLS, fonts, no-JS (INV-05.10), SEO, headers | `e2e` (shards) · `e2e-full` | required (`e2e-ok`) |
 | A11y | axe-core + keyboard scripts | 0 WCAG 2.2 AA violations per route × locale × state; focus order/trap/return | inside `e2e` (`@a11y`) | required |
@@ -263,11 +265,26 @@ samples moved onto the real domain, which the release gate did not see (§3 R4, 
   `prefers-reduced-motion` media query missing from a file that declares `@keyframes` (INV-05.8).
 - **Prettier** with `prettier-plugin-tailwindcss` (class order) over `src`, `tests`, `scripts`, `content/**/*.json`
   (02 requires stable JSON formatting so diffs show copy only). `pnpm format:check` is part of `static`.
-- **TODO grep** (TRAP-11.9): `git grep -nE '\b(TODO|FIXME|HACK)\b' -- 'src/**' 'tests/**' 'scripts/**'
-  'content/**'` must be empty (`"TODO"` as a JSON *value* is the `--release` gate's business — §3 R2,
-  D-08.17 — so `content/**` is grepped for comments-in-disguise keys only: any key named `_comment|todo`).
-  The two do not overlap and neither replaces the other: this grep is a required PR check over source text,
-  R2 runs only at release and only over parsed JSON values.
+- **TODO grep** (TRAP-11.9), two commands, each of which must produce no output:
+
+```sh
+git grep -nwE 'TODO|FIXME|HACK' -- 'src/**' 'tests/**' 'scripts/**'
+git grep -nE '"(_comment|todo)"[[:space:]]*:' -- 'content/**'
+```
+
+  **`-w`, never `\b(…)\b` — the `\b` form fails open.** `\b` is a glibc regex extension, not POSIX ERE:
+  git's regex engine honours it where glibc supplies it and silently matches nothing everywhere else.
+  Verified 2026-08-23 on Apple Git 2.50.1 — against a file holding `// TODO: x`, `FIXME` and `HACK`, the
+  `\b` form matched **zero** lines, while `-nwE` matched all three and still skipped `TODOLIST` and
+  `TODOS`. A word-boundary gate that matches nothing reports green over a tree full of TODOs, which is the
+  one failure this check exists to prevent — so `-w`, which is git's own flag, means the same thing and
+  behaves identically on every platform, is not to be "simplified" back to `\b`. (`-P` also works, but
+  needs a git built with PCRE2: no more guaranteed than glibc.)
+
+  The second command is separate because `"TODO"` as a JSON *value* is the `--release` gate's business
+  (§3 R2, D-08.17), so `content/**` is scanned for comments-in-disguise **keys** only. The two do not
+  overlap and neither replaces the other: this grep is a required PR check over source text, R2 runs only
+  at release and only over parsed JSON values.
 
 ### 3 · Content gates (`content` job, and the loader inside `build`)
 
@@ -705,10 +722,19 @@ may re-run once only for an infrastructure failure — runner lost, cache 5xx �
 | `pnpm test` / `test:watch` / `test:coverage` | Vitest | |
 | `pnpm test:e2e [--project …] [--grep @tag]` / `test:e2e:ui` | Playwright, host-native, with `--grep-invert @visual` baked in | `--grep @smoke` is the 2-minute local check. `@visual` is excluded because a macOS host cannot reproduce the container's fonts (D-08.10) — this is the one intended gap in INV-08.6, and `pnpm test:e2e:docker` closes it |
 | `pnpm test:e2e:docker` / `test:e2e:update` | the same `playwright test` inside `mcr.microsoft.com/playwright:v<version>-noble` with the repo mounted; `:update` adds `--grep @visual --update-snapshots` | D-08.10; Docker required. `:docker` is what to run before touching anything the baselines cover |
-| `pnpm ci` | `typecheck && lint && lint:css && format:check && check:tokens && check:todo && check:env && validate:content --report && test && build && check:secrets` | what `static`+`content`+`unit`+`build` run; `pnpm ci:e2e` adds `test:e2e` |
+| `pnpm verify` | `typecheck && lint && lint:css && format:check && check:tokens && check:todo && check:env && validate:content --report && test && build && check:secrets` | what `static`+`content`+`unit`+`build` run; `pnpm verify:e2e` adds `test:e2e`. Not `ci`: `pnpm ci` is a reserved pnpm command — an undocumented alias for `clean-install` (`pnpm clean` + `pnpm install --frozen-lockfile`) — so `pnpm ci` would wipe and reinstall instead of running the gate. It is absent from `pnpm help -a`, so scanning the command list does not catch the collision; do not rename this script back |
 | `pnpm lhci` | `lhci autorun --collect.url=http://localhost:3000/en` | local sanity only; numbers differ from the preview |
 
-Hooks: none (D-08.14). Habit, written in `00-README.md`/CONTRIBUTING: run `pnpm ci` before pushing; run
+**Status, 2026-08-23 — the `build` step of `pnpm verify` has never passed in this worktree.** No run of
+`pnpm verify` has yet completed end to end: `pnpm build` fails before finishing, Turbopack exiting on a
+port-binding error, so the `build` and `check:secrets` steps at the tail of the chain have been green in
+nobody's run — not passing, and not failing on their own merits either, since they have never been reached.
+A separate seat is diagnosing the port binding; it is **not** fixed. Until it reports, read everything this
+document says about `build` — §10's `build` job, D-08.11's client-output grep (which needs a build), §3's
+loader-inside-`build` gate, and INV-08.6's "same scripts as CI" — as specified intent rather than observed
+behaviour, and do not cite a local `pnpm verify` as evidence that the full gate holds.
+
+Hooks: none (D-08.14). Habit, written in `00-README.md`/CONTRIBUTING: run `pnpm verify` before pushing; run
 `pnpm test:e2e --grep @smoke` before requesting review. Editor: `.editorconfig` (LF, 2 spaces, final
 newline, UTF-8), `.vscode/settings.json` (`editor.formatOnSave`, `eslint.useFlatConfig`, ESLint/Stylelint
 `fixAll` on save, Tailwind IntelliSense pointed at `src/app/globals.css`, `files.associations` for
@@ -801,7 +827,7 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   story and no PR needs to be re-costed by hand.
 - **INV-08.5 Tests carry no copy.** Assertions compare against values loaded from `content/<locale>/**` or
   use roles/test-ids; a translator's edit never breaks a test and a test never documents English.
-- **INV-08.6 One command set.** `pnpm ci` runs the same scripts, versions and flags as CI (`--frozen-lockfile`,
+- **INV-08.6 One command set.** `pnpm verify` runs the same scripts, versions and flags as CI (`--frozen-lockfile`,
   `packageManager` pin, `.nvmrc`); a check that exists only in CI, or only locally, is a bug. One named
   exception: `@visual` is font-dependent and runs in the Playwright container both in CI and locally
   (`pnpm test:e2e:docker`), so the host-native `pnpm test:e2e` excludes it rather than fail it (§11, D-08.10).

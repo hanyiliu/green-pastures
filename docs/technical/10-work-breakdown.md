@@ -95,7 +95,7 @@ a half-answered row that keeps its whole question is how a settled fact gets ask
 | Phase 4 | OQ-03.2 AA palette; OQ-03.1 tablet; OQ-03.5 emoji; OQ-03.6 vector logo; OQ-04.1 hamburger sheet; OQ-04.4 photo placeholder; OQ-04.6 mobile footer; OQ-04.7 nav at `lg`; OQ-06.6 active-section highlight; OQ-06.10 / OQ-04.11 what the three-option switcher *looks* like (new — HD-10 made it a menu and the handoff draws none); OQ-05.2 spike verdict; OQ-05.3/05.4/05.6/05.8 motion sign-offs; OQ-05.5 (answered by 02 + 06) — all have stated defaults; doc-level: OQ-08.9 (03 §5 → `MC-08.1`) | HD-14 CJK typeface — **closed**, not merely defaulted: OQ-03.4 / OQ-01.2 / OQ-04.9 ship the system stack at launch, split per script by 03 D-03.14 (`--font-cjk-sc` / `--font-cjk-tc`). HD-11 established that the design names no face; HD-14 confirms nobody will name one, so PR-4.1 has no font decision left in it |
 | Phase 5 | OQ-02.6 testimonials in the Chinese locales; OQ-07.10 / OQ-04.10 option sets; OQ-07.1 / OQ-02.5 e-mail language; OQ-07.2 auto-ack; OQ-04.3 drop `gpdevelop`; OQ-08.1 visual-regression scope; OQ-08.6 contrast gate; OQ-10.3 photography timing | HD-7 street address and Maps link — OQ-07.8 ships as a provisional sample, so PR-5.7 and PR-6.8 render a real-looking address from day one |
 | Phase 6 | OQ-07.5 / OQ-06.4 privacy page; OQ-04.2 lightbox + filters; OQ-06.7 share image; **registrar or DNS-host access for the developer** (OQ-09.2's residue — nothing in Phase 6 builds against it, but it is opened with OPS-7.x at the Phase 5 gate so propagation overlaps Phase 7, D-10.14) | HD-13 **domain = `greenpasturesdaycare.com`** — OQ-06.2 / OQ-09.2's name half closed; `metadataBase` still reads `NEXT_PUBLIC_SITE_URL` (06 D-06.11, INV-06.10), but that variable now has a known production value, so PR-6.8's canonicals, `hreflang` and 21-URL sitemap resolve to real URLs; HD-5 — `gp-dln.6` / OQ-02.7 / OQ-04.5 / OQ-06.1 answered: six routes, FAQ and Enrollment reserved and not built; HD-7 — OQ-06.9's JSON-LD facts exist as provisional samples, so PR-6.8 emits a complete `ChildCare` object |
-| Phase 7 | OQ-07.6 the **real** sending domain and inbox — narrowed by HD-13 to the mailbox names and the DKIM/SPF publication that verifies them, since 07 D-07.10 now writes its samples on `mail.greenpasturesdaycare.com`; OQ-07.4 retention; OQ-01.1 / OQ-07.9 analytics; OQ-09.2's residue — who owns the accounts and holds the registrar login; OQ-08.4 preview bypass secret; OQ-10.7 whether the Vercel plan is upgraded here or at Phase 8 | HD-3 — the plan question for Phases 2–6 (Hobby); HD-4 — the sending identity's *shape* is now content (`email.sendingDomain`, `email.fromAddress`), not an invention at OPS-7.1; HD-13 — the domain name, so OPS-7.3 attaches it to the Vercel project without waiting on an answer (D-10.14) |
+| Phase 7 | OQ-07.6 the **real** sending domain and inbox — narrowed by HD-13 to the mailbox names and the DKIM/SPF publication that verifies them, since 07 D-07.10 now writes its samples on `mail.greenpasturesdaycare.com`; OQ-07.4 retention; OQ-01.1 / OQ-07.9 analytics; OQ-09.2's residue — who owns the accounts and holds the registrar login; OQ-08.4 preview bypass secret; OQ-10.7 whether the Vercel plan is upgraded here or at Phase 8 | HD-3 — the plan question for Phases 2–6 (Hobby): capability and default, not a disagreement — Hobby is *capable* through Phase 7 (09 `D-09.2`), and 10's *default* under OQ-10.7 is to upgrade at OPS-7.3 inside Phase 7, so the tier changes partway through that phase unless the human defers it to OPS-8.1; HD-4 — the sending identity's *shape* is now content (`email.sendingDomain`, `email.fromAddress`), not an invention at OPS-7.1; HD-13 — the domain name, so OPS-7.3 attaches it to the Vercel project without waiting on an answer (D-10.14) |
 | Phase 8 | `gp-dln.13` all facts **final** (empty the 23-entry `provisional` array); `gp-dln.12` brand name confirmed or replaced; OQ-07.7 real Yelp figures/URL; OQ-10.3 photos; OQ-10.4 translation delivered; OQ-02.8 `zh-Hant` review verdict; OQ-06.3 / OQ-09.8 legacy redirects (expected "none beyond `/`"); OQ-08.2 Lighthouse thresholds; OQ-09.6 menu cadence; OQ-09.7 error monitoring; OQ-10.2 launch window; **OQ-09.1 reopens** — upgrade to Vercel Pro or confirm Hobby eligibility before the cutover (HD-3); OQ-09.2's residue — **who holds the registrar login**, the one small item OPS-8.1 still cannot proceed without | HD-13 — the domain name. OPS-8.1's "get the name" step is gone: the cutover is now paced by registrar access and DNS propagation, which is owner lead time the roadmap already budgets, not an unanswered question (D-10.14) |
 | Post-launch | OQ-01.5 GSAP trigger; OQ-02.3 / OQ-09.9 CMS; OQ-07.3 CRM; OQ-08.7 `pnpm audit` policy; OQ-11.2 tracker's future (§9) | HD-10 — `zh-Hant` moves out of the post-launch backlog into Phases 3 and 8 (§9) |
 
@@ -191,22 +191,25 @@ Phase 8 gate alone (D-10.11).
   drops to 14 URLs, the switcher menu shows two options, and launch proceeds on `en` + `zh-Hans` (INV-02.11).
   That fallback is a one-line config change with a test matrix that re-derives itself, which is the whole
   reason the locale can be developed before its reviewer is named.
-- **D-10.13 Vercel Hobby now, plan resolved before the cutover (HD-3).** Phases 2–6 run on the Hobby tier: it
-  costs nothing, previews per PR and production from `main` both work, and no gate before Phase 7 depends on a
-  paid feature. Two things reopen the plan question later, and both are scheduled rather than assumed. (a)
-  OPS-7.3's WAF rate-limit rule consumes Hobby's single custom rule — Hobby gets 1, Pro 40
-  [verified: Vercel WAF docs, 2026-08-22; 07 `D-07.12`, 09 `D-09.2`] — so Phase 7 must publish it knowing
-  that. (b) Hobby "restricts users to non-commercial, personal use only" [verified: Vercel Hobby plan docs,
-  2026-08-22; 09 `D-09.2`] and a daycare's marketing site is commercial, so OPS-8.1 cannot cut DNS over until
-  the human has upgraded to Pro or confirmed eligibility in writing — that item is in the Phase 8 launch row,
-  not a footnote. And (c) the Deployment Protection that OQ-08.4 and OQ-09.3 rely on *does* exist on Hobby —
-  Standard Protection with Vercel Authentication is available on every plan [verified: Vercel Deployment
-  Protection docs, 2026-08-22; 09 `D-09.4`] — but Hobby has no team and therefore no Viewer seat, so the
-  owner's and the translator's preview review waits for the upgrade (OQ-09.3) [verified: Vercel plan limits,
-  2026-08-22; 09 `D-09.2`]; OPS-2.1's bead still records what the tier's settings screens actually offer,
-  because a bead records a configuration and this row records its source. Both hedges ADJ-19 asked for are
-  discharged: the owning documents sourced these facts on 2026-08-22, and 09's `D-09.2` now reads Hobby-first
-  (HD-3) rather than assuming Pro, so 10 cites it instead of re-deciding it.
+- **D-10.13 Vercel Hobby now, plan resolved before the cutover (HD-3).** Phases 2–6 run on the Hobby tier —
+  capability and default, not a disagreement: Hobby is *capable* through Phase 7 (09 `D-09.2`), and 10's
+  *default* under OQ-10.7 is to upgrade at OPS-7.3 inside Phase 7, so the tier changes partway through that
+  phase unless the human defers it to OPS-8.1. Hobby costs nothing, previews per PR and production from
+  `main` both work, and no gate before Phase 8 depends on a paid feature. Two things reopen the plan
+  question later, and both are scheduled rather than assumed. (a) OPS-7.3's WAF rate-limit rule consumes
+  Hobby's single custom rule — Hobby gets 1, Pro 40 [verified: Vercel WAF docs, 2026-08-22; 07 `D-07.12`, 09
+  `D-09.2`] — so Phase 7 must publish it knowing that. (b) Hobby "restricts users to non-commercial,
+  personal use only" [verified: Vercel Hobby plan docs, 2026-08-22; 09 `D-09.2`] and a daycare's marketing
+  site is commercial, so OPS-8.1 cannot cut DNS over until the human has upgraded to Pro or confirmed
+  eligibility in writing — that item is in the Phase 8 launch row, not a footnote. And (c) the Deployment
+  Protection that OQ-08.4 and OQ-09.3 rely on *does* exist on Hobby — Standard Protection with Vercel
+  Authentication is available on every plan [verified: Vercel Deployment Protection docs, 2026-08-22; 09
+  `D-09.4`] — but Hobby has no team and therefore no Viewer seat, so the owner's and the translator's
+  preview review waits for the upgrade (OQ-09.3) [verified: Vercel plan limits, 2026-08-22; 09 `D-09.2`];
+  OPS-2.1's bead still records what the tier's settings screens actually offer, because a bead records a
+  configuration and this row records its source. Both hedges ADJ-19 asked for are discharged: the owning
+  documents sourced these facts on 2026-08-22, and 09's `D-09.2` now reads Hobby-first (HD-3) rather than
+  assuming Pro, so 10 cites it instead of re-deciding it.
 - **D-10.14 The domain is named, so DNS becomes lead time instead of a blocker (HD-13).** The production host
   is `greenpasturesdaycare.com`; the host form was never the open half and stands as decided — apex canonical,
   `www` → apex 308 (09 D-09.5, 06 D-06.11). Nothing in the build changes: `metadataBase` still reads
@@ -260,14 +263,15 @@ criteria for the same reason, and OQ-11.3 stays open in fact even though it is a
 **Scope.** D-01.1, D-01.4 (scaffold), D-01.7 (Vercel); 08's tooling and gate
 inventory by id — D-08.1 (pyramid), D-08.2 (literal-text config), D-08.3 (ESLint run directly), D-08.4
 (Stylelint), D-08.6 (Vitest/RTL), D-08.7 (Playwright projects), D-08.11 (bundle-secret + trailer scripts),
-D-08.12 (CI, required checks), D-08.13 (flake policy), D-08.14 (`pnpm ci`, no git hooks), D-08.15 (DoD, §12),
-D-08.16 (coverage policy); 09's platform and governance decisions — D-09.1 (three environments), D-09.2 (Pro),
-D-09.3 (project settings: Node 24, pnpm, region `sfo1`, Fluid, Ignored Build Step), D-09.4 (Deployment
-Protection), D-09.6 (secrets in Vercel only), D-09.7 (Actions runs gates, Vercel builds), D-09.8 (branch
-protection), D-09.9 (release = squash merge; rollback), D-09.11 (trailer for content and bot PRs), D-09.16
-(backups), D-09.17 (Renovate), D-09.19 (access control); 11 §5–6 (tracker snapshot, `bead-trailer`); chores
-`gp-dln.5/7/8/10/11`; INV-02.1/02.7/02.9 and INV-03.1–3 lint rules switched on before any component exists.
-Two amendments from the Phase 1 gate. (a) **D-09.2 (Pro) does not apply yet:** OPS-2.1 links the project on the
+D-08.12 (CI, required checks), D-08.13 (flake policy), D-08.14 (`pnpm verify`, no git hooks), D-08.15 (DoD, §12),
+D-08.16 (coverage policy); 09's platform and governance decisions — D-09.1 (three environments),
+D-09.2 (plan: Hobby at start, Pro before the cutover), D-09.3 (project settings: Node 24, pnpm, region
+`sfo1`, Fluid, Ignored Build Step), D-09.4 (Deployment Protection), D-09.6 (secrets in Vercel only),
+D-09.7 (Actions runs gates, Vercel builds), D-09.8 (branch protection), D-09.9 (release = squash merge;
+rollback), D-09.11 (trailer for content and bot PRs), D-09.16 (backups), D-09.17 (Renovate), D-09.19
+(access control); 11 §5–6 (tracker snapshot, `bead-trailer`); chores `gp-dln.5/7/8/10/11`; INV-02.1/02.7/02.9
+and INV-03.1–3 lint rules switched on before any component exists.
+Two amendments from the Phase 1 gate. (a) **D-09.2's Pro half does not apply yet:** OPS-2.1 links the project on the
 **Hobby** tier per HD-3 and D-10.13; nothing in Phase 2 needs a paid feature, and the plan decision returns at
 Phase 7/8. (b) **The root README is replaced in the plan round, not here.** `gp-dln.8`'s bead note calls itself
 "a phase-0 task", and it is now literally that: a separate seat replaces the Create-React-App boilerplate
@@ -793,12 +797,15 @@ in place rather than a default.
 that nothing is silently dropped, and record the answer instead of a default. A block closed at once:
 OQ-02.1 / OQ-03.3 (HD-10, three locales), OQ-02.4 / `gp-dln.12` (HD-6, provisionally), OQ-02.7 / OQ-04.5 /
 OQ-06.1 / `gp-dln.6` (HD-5), OQ-06.9 / OQ-07.8 / `gp-dln.13`'s blocking half (HD-7 + HD-9, as provisional
-samples), OQ-03.4 / OQ-01.2 / OQ-04.9 (HD-11, the design names no CJK face), OQ-09.1 / OQ-01.4's plan half for
-Phases 2–6 (HD-3, Hobby) and OQ-10.4's policy half (HD-12, warn mode). One is answered in intent but **not in
-fact** — OQ-11.3, whose ruleset targets no branch (HD-2). Two are new: OQ-02.8 (02's, the `zh-Hant`
-reviewer) and OQ-10.7 (this document's, when the Vercel plan changes). The general restatement HD-9
-forces: every row that used to say "the value stays `TODO` and `--release` rejects it" now reads "the value
-ships as a registered sample default and `--release` rejects it while its `provisional` entry remains".
+samples), OQ-03.4 / OQ-01.2 / OQ-04.9 (HD-11, the design names no CJK face), OQ-09.1 / OQ-01.4's plan half
+for Phases 2–6 (HD-3, Hobby — capability and default, not a disagreement: Hobby is *capable* through Phase 7
+(09 `D-09.2`), and 10's *default* under OQ-10.7 is to upgrade at OPS-7.3 inside Phase 7, so the tier changes
+partway through that phase unless the human defers it to OPS-8.1) and OQ-10.4's policy half (HD-12, warn
+mode). One is answered in intent but **not in fact** — OQ-11.3, whose ruleset targets no branch (HD-2). Two
+are new: OQ-02.8 (02's, the `zh-Hant` reviewer) and OQ-10.7 (this document's, when the Vercel plan changes).
+The general restatement HD-9 forces: every row that used to say "the value stays `TODO` and `--release`
+rejects it" now reads "the value ships as a registered sample default and `--release` rejects it while its
+`provisional` entry remains".
 
 **The second round (HD-13…HD-15) closes two more and narrows a third.** OQ-03.4 / OQ-01.2 / OQ-04.9 go from
 *defaulted* to **closed** (HD-14): the system stack is the launch decision, not the fallback under an open
@@ -814,7 +821,7 @@ mailbox names plus DKIM/SPF publication are still owed. HD-15 changes no row her
 | 2 | OQ-11.3 | human | Phase 2 gate | **answered in intent, open in fact (HD-2)** — the "Main Protection" ruleset exists but its `conditions.ref_name.include` list is empty, so it protects no branch; no default, the gate cannot close until the include list names the default branch and CI + `bead-trailer` are required checks (§2) |
 | 2 | OQ-11.4 | orchestrator → 00-README owner (`gp-dln.3`) | PR-2.2 | no `CLAUDE.md`; `00-README.md` stays the conventions of record |
 | 2 | OQ-11.1 | human | PR-2.1 | export-only (D-11.6); no `bd dolt push` |
-| 2 → 8 | OQ-09.1 | human (owner) | OPS-2.1, then **reopens** at OPS-7.3 / OPS-8.1 | **answered for Phases 2–6 (HD-3): Hobby**, no budget concern. Reopens twice: OPS-7.3's WAF rule consumes Hobby's single custom rule, and Hobby's non-commercial terms must be resolved before the cutover — default if still unanswered at OPS-8.1: **the cutover does not happen** (D-10.13) |
+| 2 → 8 | OQ-09.1 | human (owner) | OPS-2.1, then **reopens** at OPS-7.3 / OPS-8.1 | **answered for Phases 2–6 (HD-3): Hobby** — capability and default, not a disagreement: Hobby is *capable* through Phase 7 (09 `D-09.2`), and 10's *default* under OQ-10.7 is to upgrade at OPS-7.3 inside Phase 7, so the tier changes partway through that phase unless the human defers it to OPS-8.1. No budget concern. Reopens twice: OPS-7.3's WAF rule consumes Hobby's single custom rule, and Hobby's non-commercial terms must be resolved before the cutover — default if still unanswered at OPS-8.1: **the cutover does not happen** (D-10.13) |
 | 2 | OQ-01.4 | human | OPS-2.1, OPS-7.3 | plan answered by HD-3 (Hobby now, revisit before launch); the budget half stays with the owner |
 | 2 | OQ-09.3 | human (owner) | OPS-2.1 | D-09.4 ships: previews private, reviewers get a free Viewer seat |
 | 2 | OQ-09.5 | orchestrator (11) | PR-2.3, PR-2.9 | the two standing beads are created at kickoff; editors paste the trailer into every commit |
@@ -912,17 +919,20 @@ mailbox names plus DKIM/SPF publication are still owed. HD-15 changes no row her
   revive it** (2026-08-22): naming the domain answered OQ-09.2's larger half and left the registrar login as
   its remainder, which is still OQ-09.2's to carry — this document schedules the ask (Phase 5 gate, D-10.14)
   and does not restate the question.
-- **OQ-10.6** · **retired** — the legacy-URL list is OQ-06.3 and OQ-09.8, and both already carry the expected
-  answer: 06 §6.9 derives the previous site's paths from git `647da4c` and 09 §5.1 item 14 records "the former
-  site was a single-page CRA build, so the expected answer is 'none beyond `/`'". PR-8.7 cites those two ids.
-- **OQ-10.7** · answerer: human (Hanyi / owner); raised by HD-3 — **When does the Vercel plan change?** Hobby
-  is right for Phases 2–6 and wrong for launch (its terms are non-commercial and this is a commercial site),
-  and the awkward row is OPS-7.3 in between: the WAF rate-limit rule consumes Hobby's single custom rule
-  [verified: Vercel WAF docs, 2026-08-22; 07 `D-07.12`, 09 `D-09.2`], and a rule published on one plan should
-  be re-verified after an upgrade. Upgrade at OPS-7.3, or publish on Hobby and upgrade at OPS-8.1? Default if
-  unanswered: upgrade at OPS-7.3, because it is the cheaper of the two mistakes — an unnecessary month of Pro
-  against a rate-limit rule nobody re-checked. Either way OPS-8.1 cannot cut DNS over until the plan is
-  settled (D-10.13).
+- **OQ-10.6** · **retired** — the legacy-URL list is OQ-06.3 and OQ-09.8, and both already carry the
+  expected answer: 06 §6.9 derives the previous site's paths from git `647da4c` and 09 §5.1 item 14 records
+  "the former site was a single-page CRA build, so the expected answer is 'none beyond `/`'". PR-8.7 cites
+  those two ids.
+- **OQ-10.7** · answerer: human (Hanyi / owner); raised by HD-3 — **When does the Vercel plan change?**
+  Hobby is right for Phases 2–6 and wrong for launch (its terms are non-commercial and this is a commercial
+  site) — capability and default, not a disagreement: Hobby is *capable* through Phase 7 (09 `D-09.2`), and
+  10's *default* under OQ-10.7 is to upgrade at OPS-7.3 inside Phase 7, so the tier changes partway through
+  that phase unless the human defers it to OPS-8.1 — and the awkward row is OPS-7.3 in between: the WAF
+  rate-limit rule consumes Hobby's single custom rule [verified: Vercel WAF docs, 2026-08-22; 07 `D-07.12`,
+  09 `D-09.2`], and a rule published on one plan should be re-verified after an upgrade. Upgrade at OPS-7.3,
+  or publish on Hobby and upgrade at OPS-8.1? Default if unanswered: upgrade at OPS-7.3, because it is the
+  cheaper of the two mistakes — an unnecessary month of Pro against a rate-limit rule nobody re-checked.
+  Either way OPS-8.1 cannot cut DNS over until the plan is settled (D-10.13).
 
 Assumptions carried (local id family, rolled up by 12): **A-10.1** two implementers and ≤ 2-business-day gate
 reviews; **A-10.2** the `.dc.html` references remain the acceptance baseline for visual checks until photography
