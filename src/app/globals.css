@@ -1,0 +1,19 @@
+/*
+ * Global stylesheet — Tailwind CSS v4 entry point (01 ADR-004).
+ *
+ * Tailwind v4 has no `tailwind.config.*`: the theme is declared in CSS and the
+ * `@theme` namespaces generate the utilities (03 §1). The block below is
+ * intentionally EMPTY. PR-4.1 owns the token values: it creates
+ * `src/styles/tokens.css` with 03's `--color-*`, `--font-*`, `--text-*`,
+ * `--tracking-*`, `--radius-*`, `--shadow-*`, `--container-*`, `--breakpoint-*`
+ * and `--ease-*` entries under `@theme static`, adds the plain `:root`
+ * `--dur-*` / `--stagger-*` / `--section-*` / `--tap-*` / `--nav-h` custom
+ * properties (Tailwind v4 has no `--duration-*` namespace — ADJ-5), and imports
+ * that file from here. Nothing in this scaffold pre-empts those values.
+ */
+
+@import "tailwindcss";
+
+@theme {
+  /* PR-4.1 fills this from 03 §2–§7. See the note above. */
+}
