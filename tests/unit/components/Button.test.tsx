@@ -91,13 +91,35 @@ describe("Button", () => {
     expect(buttonRecipe("nav", "sage")).not.toContain("w-full");
   });
 
-  it("keeps caller classes", () => {
-    renderIn(
-      <Button href="/#visit" className="self-start">
-        Book a tour
-      </Button>,
-    );
+  describe("caller classes", () => {
+    it("takes a class that sets a property the recipe leaves alone", () => {
+      renderIn(
+        <Button href="/#visit" className="self-start">
+          Book a tour
+        </Button>,
+      );
 
-    expect(screen.getByRole("link")).toHaveClass("self-start");
+      expect(screen.getByRole("link")).toHaveClass("self-start");
+    });
+
+    it("refuses the width the stacked placements already set", () => {
+      expect(() =>
+        renderIn(
+          <Button href="/#visit" size="hero" className="w-auto">
+            Book a tour
+          </Button>,
+        ),
+      ).toThrow(/"w-auto"/u);
+    });
+
+    it("takes the same width marked important", () => {
+      renderIn(
+        <Button href="/#visit" size="hero" className="w-auto!">
+          Book a tour
+        </Button>,
+      );
+
+      expect(screen.getByRole("link")).toHaveClass("w-auto!");
+    });
   });
 });

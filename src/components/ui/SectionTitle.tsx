@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { withOverrides } from "./class-names";
+
 /**
  * The heading recipe (04 §3.2): display face, `text-wrap: balance` on every
  * locale (03 §3.3), and the type token that goes with the heading's rank.
@@ -43,6 +45,7 @@ export type SectionTitleProps = {
    * hero's own `md:` toggle, not a prop here.
    */
   readonly preserveLineBreaks?: boolean;
+  /** Extra classes; an override of a property the recipe sets must be important (`text-white!`). */
   readonly className?: string;
 };
 
@@ -57,7 +60,11 @@ export function SectionTitle({
   return (
     <Tag
       id={id}
-      className={`text-balance text-ink ${SIZE[size]} ${preserveLineBreaks ? "whitespace-pre-line" : ""} ${className ?? ""}`}
+      className={withOverrides(
+        "SectionTitle",
+        `text-balance text-ink ${SIZE[size]} ${preserveLineBreaks ? "whitespace-pre-line" : ""}`,
+        className,
+      )}
     >
       {children}
     </Tag>

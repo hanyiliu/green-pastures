@@ -70,4 +70,24 @@ describe("SectionTitle", () => {
     expect(screen.getByText("plain")).not.toHaveClass("whitespace-pre-line");
     expect(screen.getByText("broken")).toHaveClass("whitespace-pre-line");
   });
+
+  describe("caller classes", () => {
+    it("takes a class that sets a property the recipe leaves alone", () => {
+      render(<SectionTitle className="mt-2">Who we are</SectionTitle>);
+
+      expect(screen.getByText("Who we are")).toHaveClass("mt-2");
+    });
+
+    it("refuses a colour the recipe already sets", () => {
+      expect(() => render(<SectionTitle className="text-white">Who we are</SectionTitle>)).toThrow(
+        /"text-white"/u,
+      );
+    });
+
+    it("takes the same colour marked important", () => {
+      render(<SectionTitle className="text-white!">Who we are</SectionTitle>);
+
+      expect(screen.getByText("Who we are")).toHaveClass("text-white!");
+    });
+  });
 });

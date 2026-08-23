@@ -130,15 +130,45 @@ describe("Section", () => {
       expect(section?.firstElementChild).toHaveAttribute("data-deco", "deco-hero-sun");
     });
 
-    it("appends caller classes so a section can bleed or re-pad itself", () => {
+    /**
+     * The gallery's `px` bleed and the hero's own padding both *replace* the
+     * shared `--section-px`, and appending a plain `px-2.5` never did that:
+     * Tailwind emits `.px-2.5` before `.px-(--section-px)`, so the shell kept
+     * its own padding. The bleed is written important, and the plain spelling
+     * is refused rather than silently ignored.
+     */
+    it("takes an important override of the padding it sets, for the gallery bleed", () => {
       const { container } = render(
-        <Section id="gallery" labelledBy="gallery-title" className="px-2.5" contentClassName="grid">
+        <Section
+          id="gallery"
+          labelledBy="gallery-title"
+          className="px-2.5!"
+          contentClassName="grid"
+        >
           <span>content</span>
         </Section>,
       );
 
-      expect(container.querySelector("section")).toHaveClass("px-2.5");
+      expect(container.querySelector("section")).toHaveClass("px-2.5!");
       expect(container.querySelector("section > div")).toHaveClass("grid");
+    });
+
+    it("refuses the same padding unmarked, on the shell and on the container", () => {
+      expect(() =>
+        render(
+          <Section id="gallery" labelledBy="gallery-title" className="px-2.5">
+            <span>content</span>
+          </Section>,
+        ),
+      ).toThrow(/"px-2.5"/u);
+
+      expect(() =>
+        render(
+          <Section id="gallery" labelledBy="gallery-title" contentClassName="max-w-none">
+            <span>content</span>
+          </Section>,
+        ),
+      ).toThrow(/"max-w-none"/u);
     });
   });
 });

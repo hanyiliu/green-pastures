@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { withOverrides } from "./class-names";
 import { Emoji } from "./Emoji";
 
 /**
@@ -52,13 +53,18 @@ export type ChipProps = {
   readonly tone?: ChipTone;
   /** An emoji from a `site.json` `icon` field; rendered decoratively. */
   readonly icon?: string;
+  /** Extra classes; an override of a property the recipe sets must be important (`bg-white!`). */
   readonly className?: string;
 };
 
 export function Chip({ children, tone = "sage-soft", icon, className }: ChipProps) {
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-pill px-3.25 py-1.5 font-body text-chip font-bold md:px-3.75 md:py-1.75 ${TONE[tone]} ${className ?? ""}`}
+      className={withOverrides(
+        "Chip",
+        `inline-flex items-center gap-2 rounded-pill px-3.25 py-1.5 font-body text-chip font-bold md:px-3.75 md:py-1.75 ${TONE[tone]}`,
+        className,
+      )}
     >
       {icon === undefined ? null : <Emoji symbol={icon} size="inline" />}
       {children}

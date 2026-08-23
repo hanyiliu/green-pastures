@@ -77,4 +77,40 @@ describe("Chip", () => {
 
     expect(screen.getByText("Meals").className).not.toContain("--tap-min");
   });
+
+  /**
+   * The `className` contract. `bg-white` is the canary: the built stylesheet
+   * emits `.bg-white` before `.bg-yelp-pill-bg`, so appending it left the chip
+   * gold with `bg-white` sitting in the attribute. It is now refused, and the
+   * important form is what turns the pill white — proved against the compiled
+   * CSS in `class-names.test.tsx`.
+   */
+  describe("caller classes", () => {
+    it("refuses a background the recipe already sets", () => {
+      expect(() => render(<Chip tone="gold">5.0 on Yelp</Chip>)).not.toThrow();
+      expect(() =>
+        render(
+          <Chip tone="gold" className="bg-white">
+            5.0 on Yelp
+          </Chip>,
+        ),
+      ).toThrow(/"bg-white"/u);
+    });
+
+    it("takes the same background marked important", () => {
+      render(
+        <Chip tone="gold" className="bg-white!">
+          5.0 on Yelp
+        </Chip>,
+      );
+
+      expect(screen.getByText("5.0 on Yelp")).toHaveClass("bg-white!");
+    });
+
+    it("takes a class that sets a property the recipe leaves alone", () => {
+      render(<Chip className="mt-2">Vegetarian options daily</Chip>);
+
+      expect(screen.getByText("Vegetarian options daily")).toHaveClass("mt-2");
+    });
+  });
 });

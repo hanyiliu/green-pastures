@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { withOverrides } from "./class-names";
+
 /**
  * The photo placeholder (03 §9, 04 §3.2, `D-04.12`).
  *
@@ -64,6 +66,7 @@ export type PhotoSlotProps = {
   readonly radius?: RadiusToken;
   /** `circle` overrides `radius`: programme stones and teacher photos are round. */
   readonly shape?: "rect" | "circle";
+  /** Extra classes; an override of a property the recipe sets must be important (`w-auto!`). */
   readonly className?: string;
   /** A floating badge or frame the caller draws over the slot. */
   readonly children?: ReactNode;
@@ -86,7 +89,7 @@ export function PhotoSlot({
       role={labelled ? "img" : undefined}
       aria-label={labelled ? alt : undefined}
       aria-hidden={labelled ? undefined : true}
-      className={`block w-full ${FILL} ${shapeClasses} ${className ?? ""}`}
+      className={withOverrides("PhotoSlot", `block w-full ${FILL} ${shapeClasses}`, className)}
     >
       {children}
     </div>

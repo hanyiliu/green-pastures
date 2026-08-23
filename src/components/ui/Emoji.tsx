@@ -1,3 +1,5 @@
+import { withOverrides } from "./class-names";
+
 /**
  * The emoji icon (03 `D-03.8`, §9; 04 §3.2).
  *
@@ -31,6 +33,7 @@ export type EmojiProps = {
   /** An accessible name from the message tree. Omit when the icon is decorative. */
   readonly label?: string;
   readonly size?: EmojiSize;
+  /** Extra classes; an override of a property the recipe sets must be important (`size-8!`). */
   readonly className?: string;
 };
 
@@ -42,7 +45,11 @@ export function Emoji({ symbol, label, size = "inline", className }: EmojiProps)
       role={labelled ? "img" : undefined}
       aria-label={labelled ? label : undefined}
       aria-hidden={labelled ? undefined : true}
-      className={`inline-flex items-center justify-center font-emoji leading-none ${SIZE[size]} ${className ?? ""}`}
+      className={withOverrides(
+        "Emoji",
+        `inline-flex items-center justify-center font-emoji leading-none ${SIZE[size]}`,
+        className,
+      )}
     >
       {symbol}
     </span>

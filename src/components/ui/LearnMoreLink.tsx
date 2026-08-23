@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { getSite } from "@/content/site";
 import { Link } from "@/i18n/navigation";
 
+import { withOverrides } from "./class-names";
+
 /**
  * The "learn more →" link that closes most home sections (04 §3.2).
  *
@@ -29,6 +31,7 @@ export type LearnMoreLinkProps = {
   readonly routeId: string;
   /** The whole label, arrow included, from `home.<section>.link`. */
   readonly children: ReactNode;
+  /** Extra classes; an override of a property the recipe sets must be important (`font-normal!`). */
   readonly className?: string;
 };
 
@@ -46,7 +49,11 @@ export function LearnMoreLink({ routeId, children, className }: LearnMoreLinkPro
     <Link
       href={route.path}
       transitionTypes={["subpage-enter"]}
-      className={`inline-flex min-h-(--tap-min) items-center font-body text-blurb font-bold text-(color:--section-link) ${className ?? ""}`}
+      className={withOverrides(
+        "LearnMoreLink",
+        `inline-flex min-h-(--tap-min) items-center font-body text-blurb font-bold text-(color:--section-link)`,
+        className,
+      )}
     >
       <span className="border-b-2 border-(color:--section-link-underline) pb-0.5">{children}</span>
     </Link>
