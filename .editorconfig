@@ -1,0 +1,64 @@
+# EditorConfig — https://editorconfig.org
+# These values describe the conventions the tree already follows rather than imposing new
+# ones. Verified at PR-2.2 (2026-08-23) over every tracked text file: all are valid UTF-8,
+# all are LF-terminated, none contains a hard tab, and none carries trailing whitespace. All
+# end with a final newline except .beads/metadata.json, which the tracker writes without one
+# and which the [.beads/**] section below leaves alone.
+#
+# Cross-checked with `npx editorconfig-checker`. At that commit it reported exactly two
+# things, both understood: the tracked .DS_Store this same PR untracks (gp-dln.7), and ~97
+# continuation lines in the two .claude/skills/**/*.py scripts that are aligned under an
+# opening delimiter — PEP 8's other legal form, explained at [*.py] below. Nothing else.
+# The checker is an instrument here, not a gate: 08's inventory and PR-2.6's ci.yml run
+# ESLint, Stylelint and Prettier, and none of them reads this file. Where a section below
+# lifts a constraint, the comment says why — each is a case where a fixed width would mark
+# correct, existing lines as wrong.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Python tooling (board.py / ledger.py under .claude/skills/) is 4-space per PEP 8.
+# Both files also use PEP 8's other legal form — continuation lines *aligned* under an open
+# bracket, and help text aligned inside triple-quoted strings — which lands on columns that
+# are not multiples of 4. That is alignment, not indentation; `indent_size` governs what the
+# Tab key inserts, and no editor reflows an already-aligned line. A checker that cannot tell
+# the two apart will report those lines, and it is the checker that is wrong.
+[*.py]
+indent_size = 4
+
+# The design handoff is a vendored bundle, not source: support.js says "GENERATED from
+# dc-runtime/src/*.ts — do not edit" and is byte-identical in all three directories, the
+# .dc.html files are prototypes the README marks "not production code to copy directly", and
+# image-slot.js is a prototype-only helper it says not to port. Nobody hand-edits this tree,
+# so its width is not an editor's business — the same reasoning as [.beads/**] below.
+# Encoding, line endings and final newline still apply; only the indent grid is lifted.
+[docs/design/**]
+indent_size = unset
+
+[*.md]
+# The plan documents wrap prose near 110 columns but carry table rows well past 2000
+# characters; no editor should reflow them, so no limit is set.
+max_line_length = off
+# No indent_size either. Markdown indentation is contextual, not a grid: a `- ` bullet
+# continues at 2 columns but a `1. ` ordered item continues at 3, and the docs contain 304
+# such 3-space continuation lines that are correct exactly as they are. Any fixed size
+# declares them errors — `indent_size = 2` makes editorconfig-checker report 216 failures
+# across 00–12. `indent_style = space` still applies from [*], so tabs stay out; only the
+# width is left to the writer.
+indent_size = unset
+# Trailing whitespace stays trimmed here too: the docs use no two-space hard breaks.
+
+# Tracker state is written by bd, not by hand, so neither of these is an editor's business.
+# `unset` — not `false` — is deliberate: `false` means "ensure there is NO final newline",
+# which would strip the one that config.yaml, interactions.jsonl, README.md, .gitignore and
+# the five hooks all legitimately have. Only metadata.json ships without one, and `unset`
+# is what leaves both cases exactly as the tool wrote them.
+[.beads/**]
+insert_final_newline = unset
+trim_trailing_whitespace = unset
