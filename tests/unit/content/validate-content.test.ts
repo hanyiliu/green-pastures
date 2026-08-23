@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
@@ -67,6 +67,35 @@ function readJson(file: string): Record<string, never> {
 
 function writeJson(file: string, value: unknown): void {
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+/**
+ * Every asset path `site.json` references, walked here rather than imported so
+ * that a reference the validator learns to read and this file does not is a
+ * loud fixture failure rather than a photograph nobody checks.
+ */
+function assetPaths(site: Record<string, never>): readonly string[] {
+  const json = site as unknown as {
+    images: Record<string, { src: string }>;
+    programs: { photo: { src: string } }[];
+    teachers: { photo?: { src: string } }[];
+    gallery: { photos: { src: string }[] };
+  };
+  return [
+    ...Object.values(json.images).map((image) => image.src),
+    ...json.programs.map((program) => program.photo.src),
+    ...json.teachers.flatMap((teacher) => (teacher.photo ? [teacher.photo.src] : [])),
+    ...json.gallery.photos.map((photo) => photo.src),
+  ];
+}
+
+/** PR-8.3's photography as a fixture: every referenced file, one byte each. */
+function deliverAssets(ctx: Ctx): void {
+  for (const src of assetPaths(readJson(ctx.site))) {
+    const file = join(ctx.root, "public", src);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, "x");
+  }
 }
 
 /** A copy of the clean tree with one mutation applied. */
@@ -533,10 +562,58 @@ describe("schemas and cross-references", () => {
     expect(outcome.code).toBe(1);
   });
 
-  it("says out loud that the asset check is asleep while public/ does not exist", () => {
+  it("wakes only the directory the delivery has started in", () => {
+    const root = fixture(({ root: base, site }) => {
+      const json = readJson(site) as unknown as { gallery: { photos: { src: string }[] } };
+      mkdirSync(join(base, "public/images/gallery"), { recursive: true });
+      // Every gallery photo but the last. The directory exists, so the absent
+      // one is a defect — a broken path, a renamed file — and not a delivery
+      // that has simply not happened yet.
+      for (const photo of json.gallery.photos.slice(0, -1)) {
+        writeFileSync(join(base, `public${photo.src}`), "x");
+      }
+    });
+    const outcome = gate(root, ...PHASE_3);
+    expect(fired(outcome, RULES.ASSET_MISSING)).toBe(true);
+    expect(outcome.out).toContain("/images/gallery/g08.jpg");
+    // …and the directories nobody has delivered into are still asleep, so the
+    // photographs PR-8.3 owes are not errors in the same breath.
+    expect(outcome.out).not.toContain("/images/programs/infant.jpg");
+    // public/images itself now exists — `mkdir -p` made it on the way to the
+    // gallery — and an existing-but-unfilled parent is not a delivery either.
+    expect(outcome.out).not.toContain("/images/hero.jpg");
+    expect(outcome.code).toBe(1);
+  });
+
+  it("says out loud that the asset check is asleep, and names the directories", () => {
     const outcome = gate(fixture(), ...PHASE_3);
     expect(fired(outcome, RULES.ASSET_DORMANT)).toBe(true);
+    expect(outcome.out).toContain("public/images/gallery");
     expect(outcome.code).toBe(0);
+  });
+
+  it("is not woken by an asset nothing in site.json references", () => {
+    // PR-4.5's public/brand/logo.png did exactly this: one file in a directory
+    // no reference lives in, which under the old "does public/ exist" trigger
+    // red the content job over sixteen photographs four phases early.
+    const root = fixture(({ root: base }) => {
+      mkdirSync(join(base, "public/brand"), { recursive: true });
+      writeFileSync(join(base, "public/brand/logo.png"), "x");
+    });
+    const outcome = gate(root, ...PHASE_3);
+    expect(fired(outcome, RULES.ASSET_MISSING)).toBe(false);
+    expect(fired(outcome, RULES.ASSET_DORMANT)).toBe(true);
+    expect(outcome.code).toBe(0);
+  });
+
+  it("never sleeps under --release, whatever public/ looks like", () => {
+    // The launch gate refuses the demotion the way INV-02.11 refuses
+    // --warn-locale's: no public/ at all is sixteen errors, not a warning, so
+    // launch cannot go green over photography that never arrived.
+    const outcome = gate(fixture(), "--release");
+    expect(fired(outcome, RULES.ASSET_MISSING)).toBe(true);
+    expect(fired(outcome, RULES.ASSET_DORMANT)).toBe(false);
+    expect(outcome.code).toBe(1);
   });
 
   it("refuses a top-level site.json key that would make the registry grammar ambiguous", () => {
@@ -677,6 +754,9 @@ describe("--release", () => {
     json.license = "412803711";
     json.yelp.url = "https://www.yelp.com/biz/green-pastures-fremont";
     writeJson(ctx.site, json);
+    // A stand-in for PR-8.3's photography. The asset check does not sleep at
+    // the launch gate, so a release-ready tree is one whose photographs exist.
+    deliverAssets(ctx);
     // A stand-in for PR-8.1's and PR-8.8's finished translations. Derived from
     // `LOCALES.enabled`, so a release-ready tree stays release-ready whichever
     // way D-10.12 goes with `zh-Hant`.
@@ -782,6 +862,21 @@ describe("--release", () => {
   it("ignores --warn-locale entirely (INV-02.11)", () => {
     const outcome = gate(fixture(), "--release", "--warn-locale", "zh-Hans");
     expect(fired(outcome, RULES.PARITY_MISSING)).toBe(true);
+    expect(outcome.code).toBe(1);
+  });
+
+  it("fails on one photograph that never arrived, with everything else ready", () => {
+    // The launch gate's half of INV-02.3, on the tree that is otherwise green:
+    // delete a single delivered file and --release is the check that notices.
+    const outcome = gate(
+      fixture((ctx) => {
+        releaseReady(ctx);
+        rmSync(join(ctx.root, "public/images/gallery/g01.jpg"));
+      }),
+      "--release",
+    );
+    expect(fired(outcome, RULES.ASSET_MISSING)).toBe(true);
+    expect(outcome.out).toContain("/images/gallery/g01.jpg");
     expect(outcome.code).toBe(1);
   });
 
@@ -960,6 +1055,7 @@ describe("path and tree helpers", () => {
     const tree = readContentTree(root);
     expect(tree.unreadable.map((entry) => entry.file)).toContain("content/site.json");
     expect(tree.assets).toBeUndefined();
+    expect(tree.assetDirs).toBeUndefined();
     expect(gate(root).code).toBe(1);
   });
 });
