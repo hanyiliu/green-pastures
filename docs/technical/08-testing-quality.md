@@ -21,7 +21,10 @@ so failed open; it now reads `-nwE`, matching the shipped workflow; **reconciled
 `package.json`, and four jobs are not in `.github/workflows/**`), and gave `pnpm verify` a formula that was
 neither what the script runs nor honest about the `--warn-locale` flags it carries. Both tables now carry a
 build-status column, the future rows keep their place with the PR that brings them, `pnpm verify` is quoted
-verbatim from `package.json`, and the stale "the build has never passed" note is retired
+verbatim from `package.json`, and the stale "the build has never passed" note is retired; **ruleset ground
+truth re-verified against the GitHub API 2026-08-23** — the include list *does* name the default branch, so
+push, force-push and non-squash-merge protection on `main` is live; what is missing is any
+`required_status_checks` rule, so none of the six checks is required (D-08.19, INV-08.2, §12.3)
 
 ## Decisions
 
@@ -30,7 +33,7 @@ verbatim from `package.json`, and the stale "the build has never passed" note is
   CI) → visual regression (Playwright screenshots). Plus security and process gates. Every invariant declared
   by the contract documents 02, 03, 05, 07 and 11 maps to one named check and one CI job (§9, INV-08.1);
   04/06/09/10's invariants are mapped as their phases land (§9 closing note). Six required checks protect
-  `main` (D-08.12) — once the repository ruleset actually targets it (D-08.19).
+  `main` (D-08.12) — once the ruleset lists them as required status checks, which it does not (D-08.19).
 - **D-08.2 Literal-text rule, corrected configuration.** INV-02.1 is enforced with `react/jsx-no-literals`
   (eslint-plugin-react ≥ 7.37.0) configured `noStrings: true`, `ignoreProps: true`,
   `restrictedAttributes: ['alt','aria-label','aria-description','aria-roledescription','aria-valuetext','title',
@@ -163,11 +166,15 @@ verbatim from `package.json`, and the stale "the build has never passed" note is
   INV-02.11 lets an unreviewed locale sit in the tree outside `routing.locales`, and while it does, every
   matrix here is still two wide. That commit is also the named reason INV-08.8 requires for regenerating the
   34 new `zh-Hant` baselines — it is a locale launch, not a flake.
-- **D-08.19 Required-check names are fixed; enforcement waits on the ruleset (HD-2, 2026-08-22).** The six
-  names in D-08.12 do not change. Ground truth checked 2026-08-22: the repository's "Main Protection" ruleset
-  is active but its ref-name include list is **empty**, so it targets no branch and *nothing* is required on
-  `main` today. The names take effect when the human adds the default branch (`~DEFAULT_BRANCH`) to that
-  include list and lists the six as required status checks; repo settings are the human's (HD-2, OQ-11.3, 09).
+- **D-08.19 Required-check names are fixed; enforcement waits on a required-checks rule (HD-2, 2026-08-22;
+  ground truth re-verified 2026-08-23).** The six names in D-08.12 do not change. Ground truth, read from the
+  GitHub API on 2026-08-23 rather than inferred: the repository's "Main Protection" ruleset (id 21223922) is
+  active and its `conditions.ref_name.include` list **does** name the default branch (`~DEFAULT_BRANCH`), so
+  its `deletion`, `non_fast_forward` and `pull_request` (squash-only) rules are live — `main` rejects a direct
+  push, a force-push and a non-squash merge today. What the ruleset does **not** carry is a
+  `required_status_checks` rule: **zero** required checks, so *none* of the six blocks a merge and a red
+  `content` stops nothing. The names take effect when the human adds that rule and lists the six in it; repo
+  settings are the human's (HD-2, OQ-11.3, 09).
   Ordering matters for one of them: `bead-trailer` can only be listed once its workflow has reported that
   check name at least once on the default branch, because GitHub's required-checks picker searches names it
   has already seen [assumed — confirm at setup]. That is Phase 2's scaffold PR, which is why the Phase 2 gate
@@ -860,7 +867,7 @@ it here as shipped in the same PR.
 ### 12 · Definition of Done
 
 **12.1 Per PR** (all mechanical unless marked ☐ = PR-template checkbox, verified by the verifier seat, W-11.11):
-the six required checks green — green *and required*, which as of 2026-08-22 they are not yet (D-08.19);
+the six required checks green — green *and required*, which as of 2026-08-23 they are not yet (D-08.19);
 no new `@flaky-known` without an open bead; coverage report shows no missing
 key in any enabled locale (or the PR names the `--warn-locale` it is running under); a PR that adds a
 provisional sample default adds its path to `site.json.provisional` in the same PR, and a PR that replaces a
@@ -927,8 +934,9 @@ real-key Turnstile submission in production** reaches the inbox (07 §5 — prev
 not evidence, only "the mail arrived" is; **`MC-08.1` re-run against the production domain** (§8 —
 the glyph fallback is the one rendering question no runner answers); WAF rule live (09); **the ruleset
 targets the default branch** and shows exactly the six required checks, squash-only, "PR title and
-description" (D-08.19, OQ-11.3 — checked 2026-08-22, the ruleset's include list is still empty, so this is a
-real line item and not a formality); `e2e-full` green on the release SHA;
+description" (D-08.19, OQ-11.3 — verified against the GitHub API 2026-08-23: the include list already names
+the default branch and squash-only is live, but the ruleset carries no `required_status_checks` rule at all,
+so the required-checks half is a real line item and not a formality); `e2e-full` green on the release SHA;
 Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the first week).
 
 ### 13 · Invariants
@@ -942,10 +950,11 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   unrestricted wording was false on the day it was written, and an invariant nobody can satisfy gates nothing.
 - **INV-08.2 Exactly six required checks** on `main` — `static`, `content`, `unit`, `build`, `e2e-ok`,
   `bead-trailer`; nothing merges with one red; admins are not exempt; only the human may change the set
-  (09, INV-11.5). **Not yet enforced, and knowingly so:** as checked on 2026-08-22 the repository's ruleset
-  includes no ref pattern, so it protects no branch and none of the six is required (HD-2, D-08.19). The
-  names are unaffected — the workflows are written to them and this document does not restate them
-  conditionally — but until the human adds the default branch to the ruleset's include list, this invariant
+  (09, INV-11.5). **Not yet enforced, and knowingly so:** verified against the GitHub API on 2026-08-23, the
+  repository's ruleset *does* target the default branch — `main` rejects a direct push, a force-push and a
+  non-squash merge — but it carries no `required_status_checks` rule, so none of the six is required
+  (HD-2, D-08.19). The names are unaffected — the workflows are written to them and this document does not
+  restate them conditionally — but until the human adds that rule and lists the six in it, this invariant
   describes an intent rather than a setting. The Phase 2 gate (§12.2) is where it becomes true.
 - **INV-08.3 No retries by default.** `retries: 0`; the only retried tests carry `@flaky-known(gp-<id>)` with
   an open bead; raising timeouts, `waitForTimeout`, `networkidle` and `force` are lint errors.

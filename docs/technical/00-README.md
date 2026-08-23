@@ -8,14 +8,19 @@ before anyone writes code. The site will be served from **`greenpasturesdaycare.
 `www` redirecting to it (HD-13, `D-09.5`, `D-06.11`). The set is **merged and signed off**: the human read it
 and answered at the Phase 1 gate on **2026-08-22**, signing off bead `gp-dln.4`, then answered three more
 questions the same day; the fifteen answers are cited across the plan as `HD-1`…`HD-15` (`D-12.7`), with four
-orchestrator adjudications (`ADJ-20`…`ADJ-22` and `ADJ-24`), and are rolled up in `12` §5. It is still a
-plan, not an implementation — the repository holds documentation and tracker state only, there is no `src/`
-and no `content/` tree yet, and Phase 2 is where the first line of application code is written (`D-10.1`,
-`INV-10.1`). This page asserts nothing of its own — every stack line, phase, gate, milestone and number is
-lifted from one of the twelve documents beside it and cited by identifier, so when the two disagree the owning
-document is right.
+orchestrator adjudications (`ADJ-20`…`ADJ-22` and `ADJ-24`), and are rolled up in `12` §5. It is no longer
+plan-only: building started after the sign-off, and `main` now carries the Phase 2 and Phase 3 PR stacks plus
+the first two rows of Phase 4, so `src/`, `content/` and the CI workflows all exist — `D-00.3` is the list of
+what has landed and what has not. What has *not* happened is enforcement of the checks: the six of `INV-08.2`
+run on every pull request and not one of them is required, because the repository ruleset — which *does*
+protect `main` from direct pushes, force-pushes and non-squash merges — carries no `required_status_checks`
+rule (`D-08.19`, `OQ-11.3`). This page asserts nothing of its own — every stack line, phase, gate, milestone
+and number is lifted from one of the twelve documents beside it and cited by identifier, so when the two
+disagree the owning document is right.
 
-Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…HD-15, ADJ-20…ADJ-22, ADJ-24)
+Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-23 (what has shipped, through PR-4.2; and
+the ruleset's ground truth, re-read from the GitHub API — it *does* target the default branch, and it requires
+no check)
 
 ## Decisions
 
@@ -23,11 +28,25 @@ Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…H
   decision about the stack, the schedule, the content model or the scope. A claim without an id is a defect.
 - **D-00.2 The plan of record is these thirteen files** — `00-README.md` through `12-open-questions.md`, with
   `docs/design/**` as the input. Nothing else is binding and the file names are frozen.
-- **D-00.3 Signed off, and still plan-only.** The human accepted these documents as the plan of record at the
-  Phase 1 gate on 2026-08-22 and answered twelve questions with it, then three more the same day. No
-  application code exists (the previous Create-React-App site was reset at `90bf6ba`), no `src/` or `content/`
-  tree exists, and none is written before Phase 2 opens (`D-10.1`, `INV-10.1`). Recording a gate answer in
-  these documents is not implementation — and neither is knowing the domain: no absolute origin is written
+- **D-00.3 Signed off, and under construction.** The human accepted these documents as the plan of record at
+  the Phase 1 gate on 2026-08-22 and answered twelve questions with it, then three more the same day. Building
+  started from there, and as of 2026-08-23 `main` carries the Phase 2 and Phase 3 stacks — `audit.yml`
+  (PR-2.10) and the tracker relocation (OPS-2.2) excepted — plus the first two rows of Phase 4 (`10` §3): the
+  Next 16 / TypeScript-strict / Tailwind v4 scaffold (PR-2.4), the lint and test tooling, `ci.yml`,
+  `bead-trailer.yml` and the Vercel project (PR-2.5, PR-2.6, PR-2.9, OPS-2.1), the next-intl runtime and
+  `src/proxy.ts` (PR-3.1), the `en` content tree and `content/site.json` with its 23-entry `provisional` array
+  (PR-3.2), the Zod schemas and typed loaders (PR-3.3), `pnpm validate:content` (PR-3.4), the `zh-Hans`
+  prototype seed, the smoke matrix, the error routes and `content/README.md` (PR-3.5…PR-3.8), `zh-Hant` seeded
+  and enabled in `routing.locales` (PR-3.9), the design tokens (PR-4.1) and the layout shell with its nine
+  primitives (PR-4.2). Still to come: the rest of Phase 4 — motion core, text and decoration components, the
+  View Transitions spike, nav and hero (PR-4.3a…PR-4.6) — which is why no page yet renders a designed section;
+  and two files `03` declares that the row owning them closed without: `src/design/tokens.ts` and
+  `src/design/fonts.ts` (`gp-dln.60`, `gp-dln.61`). **No check gates any of it yet:** the Phase 2, 3 and 4
+  gate beads are open (`gp-dln.21`, `gp-dln.25`, `gp-dln.37`), and while the ruleset *does* target the default
+  branch — so `main` rejects a direct push, a force-push and a non-squash merge — it carries no
+  `required_status_checks` rule, so the six checks of `INV-08.2` run on every PR and none is required
+  (verified against the GitHub API 2026-08-23; `D-08.19`, `OQ-11.3`, `12` §6). Recording a gate answer in
+  these documents was never implementation — and neither is knowing the domain: no absolute origin is written
   into `src/` at any point (`INV-06.10`).
 - **D-00.4 A thin `CLAUDE.md` lands in PR-2.2; this file stays the conventions of record.** This answers
   `OQ-11.4`, which `11` routes to this document's owner. If PR-2.2 ships without it, `11`'s default holds and
@@ -108,7 +127,7 @@ dates (`OQ-10.2` would fix one), and assume **two implementers** with gate revie
 | # | Weeks | Phase · goal | Exit gate · milestone | Human inputs it needs |
 |---|---|---|---|---|
 | 1 | — | **Technical plan** — `docs/technical/00`–`12` accepted as the plan of record | `gp-dln.4` · Phase 1 gate · **human sign-off, 2026-08-22** | done; the fifteen answers of 2026-08-22 are `12` §5, and what they did **not** clear is `12` §6 |
-| 2 | 1 | **Foundation** — repo scaffolded (Next 16 / TS / pnpm / Tailwind v4 / next-intl / Motion), tooling and CI gates, tracker snapshot and `bead-trailer`, governance files, the root README if this plan round has not already replaced it (`10` §2 scope (b)), first Vercel preview | Phase 2 gate · CI + trailer gate required on `main` — which needs the HD-2 ruleset pointed at a branch first — and preview deploys | `OQ-11.3` repo settings — answered in intent, but the ruleset targets no branch (`12` §6) · `OQ-09.3` preview protection · `OQ-08.3` CI minutes · `OQ-11.1` Dolt push |
+| 2 | 1 | **Foundation** — repo scaffolded (Next 16 / TS / pnpm / Tailwind v4 / next-intl / Motion), tooling and CI gates, tracker snapshot and `bead-trailer`, governance files, the root README if this plan round has not already replaced it (`10` §2 scope (b)), first Vercel preview | Phase 2 gate · CI + trailer gate required on `main` — which needs a required-status-checks rule on the HD-2 ruleset first — and preview deploys | `OQ-11.3` repo settings — answered in intent; the ruleset protects `main` but requires no check (`12` §6) · `OQ-09.3` preview protection · `OQ-08.3` CI minutes · `OQ-11.1` Dolt push |
 | 3 | 2–3 | **Content & i18n infrastructure** — `content/` tree (all `en` keys, `site.json` incl. the 23-entry `provisional` array, schemas), i18n runtime, proxy, `validate:content` + coverage report, the 33 prototype `zh-Hans` strings and `zh-Hant` seeded from them (`D-02.21`) | Phase 3 gate · content contract live: `/en`, `/zh-Hans` and `/zh-Hant` render on preview, `INV-02.1`–`INV-02.11` on | `OQ-06.5` cookie · `OQ-09.4` approver · `OQ-10.4` translation (now two Chinese locales) · `OQ-02.2` fallback (decided — override only) |
 | 4 | 4–5 | **Design system & motion primitives** — tokens, fonts and the CJK stack (split SC/TC, `D-03.14`), layout shell, sticky nav + hamburger + the three-option locale switcher, footer, `Reveal`/variants/`WordSwap`/`CountUp`, the View Transitions spike, hero as the vertical slice | Phase 4 gate · **M1** skeleton on preview: every locale, nav + hero + footer, cascade, reveals | `OQ-03.2` AA palette · `OQ-06.10`/`OQ-04.11` what the three-option switcher looks like (its chevron is settled — none, ADJ-20) · `OQ-03.1` tablet · `OQ-03.5` icons · `OQ-03.6` vector logo · `OQ-04.1/04.6/04.7` · `OQ-05.3/05.4/05.6/05.8` · `OQ-06.6`. The CJK typeface is **closed** (HD-14): the system stack ships, split per script by `D-03.14`, and PR-4.1 carries no font decision |
 | 5 | 6–8 | **Homepage** — the remaining seven sections in both views, plus the inquiry-form lane (schema, handler, `InquiryForm`) | Phase 5 gate · **M2** homepage hi-fi complete; the form submits on preview | `OQ-07.10` option sets (decided — override only) · `OQ-07.1`/`OQ-02.5` e-mail language · `OQ-02.6` testimonials in the Chinese locales · `OQ-04.3` · `OQ-08.1`/`OQ-08.6` · `OQ-10.3` photography |
@@ -164,7 +183,7 @@ separate.
 | # | Needed | When it bites | Ids |
 |---|---|---|---|
 | 1 | **Who holds the registrar login** (and the DNS host, if that is a separate account). The name is answered — HD-13 — and written through `06` §6.5–6.6 and `09` §5.1; what is left is access: the apex `A` record, the `www` `CNAME`, Search Console verification, the Turnstile hostnames and the Resend records all need someone who can sign in and edit the zone. Per `D-09.19` the answer is an invitation to the daycare's own account, never a shared password | the DNS cutover (Phase 8); the ask is opened at the Phase 5 gate so propagation overlaps Phase 7 | `OQ-06.2` · `OQ-09.2` · `D-10.14` |
-| 2 | The protection ruleset **pointed at a branch**. "Main Protection" exists, but its `ref_name.include` list is empty, so it applies to nothing and `main` is unprotected in fact; `bead-trailer` also has to become a required check once that workflow exists | the Phase 2 gate | `OQ-11.3` |
+| 2 | The six checks of `INV-08.2` **listed as required**. The "Main Protection" ruleset targets the default branch, so `main` already rejects direct pushes, force-pushes and non-squash merges (verified against the GitHub API 2026-08-23) — but it carries no `required_status_checks` rule, so nothing has to be green to merge, `bead-trailer` included | the Phase 2 gate | `OQ-11.3` |
 | 3 | The **Vercel plan for production**, and when it changes. Hobby is licensed for non-commercial use and this is a commercial site; it also allows one custom WAF rule, which the rate limit already spends, keeps runtime logs one hour rather than a day, and has no free Viewer seat for a reviewer. Launch item 3a needs an upgrade to Pro or a written eligibility confirmation | the launch gate; the timing question bites at OPS-7.3 | `OQ-09.1` · `OQ-10.7` · `D-07.7` |
 | 4 | **23 real values** in place of the sample defaults: the brand name, the site origin, the sending domain and inquiry inbox, phone, address, licence number, the Yelp figures, and three teachers' names and credentials. HD-13 supplies the origin's value and empties no entry — clearing one is still an edit somebody makes | the launch gate — `validate:content --release` fails while any entry remains | `D-02.20` · `OQ-02.4` · `OQ-06.9` · `OQ-07.6` · `OQ-07.7` · `OQ-07.8` |
 | 5 | **Deliveries with lead time**: photography; a translator for the ≈ 165 remaining copy keys plus the production-only keys, now in two Chinese locales; and a named reviewer for the Traditional tree before that locale is enabled | Phase 5 for LCP tuning, Phase 8 for the rest | `OQ-10.3` · `OQ-10.4` · `OQ-02.8` |
