@@ -16,7 +16,8 @@ import { SiteSchema, type Site, type SiteConfig } from "./schemas/site";
  * client where it is needed, so {@link getSite} returns the file *without*
  * `provisional` (02 `D-02.12`). The registry is development bookkeeping for
  * `pnpm validate:content` and the launch gate; it is available here through
- * {@link getProvisionalPaths}, which the validator calls and no component does.
+ * {@link getProvisionalPaths}, which no component calls — nor does the validator, which reads
+ * `content/site.json` off disk itself rather than importing this module.
  *
  * Unlike `src/content/collections.ts` this module is **not** server-only: the
  * config carries no secrets (07 keeps API keys in environment variables) and
