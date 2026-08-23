@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { routing } from "@/i18n/routing";
-import { INQUIRY_FIELD_CODES, type InquiryFieldErrors } from "@/lib/inquiry/codes";
+import {
+  INQUIRY_FIELD_CODES,
+  type InquiryFieldCode,
+  type InquiryFieldErrors,
+} from "@/lib/inquiry/codes";
 import {
   CHILD_AGE_IDS,
   EMAIL_MAX_LENGTH,
@@ -12,6 +16,7 @@ import {
   MIN_SUBMIT_MS,
   NAME_MAX_LENGTH,
   TURNSTILE_TOKEN_FIELD,
+  inquirySchema,
   isBotSignal,
   parseInquiry,
   type Inquiry,
@@ -243,6 +248,106 @@ describe("the technical fields", () => {
     const inquiry = parsed(without("desiredStart", "message"));
     expect(inquiry.desiredStart).toBeUndefined();
     expect(inquiry.message).toBeUndefined();
+  });
+});
+
+/* -------------------------------------------------------------------------- *
+ * The field codes are `./codes`'s, not this file's
+ * -------------------------------------------------------------------------- */
+
+/**
+ * One payload per field code, as a mapped type over `InquiryFieldCode`.
+ *
+ * The `Record` is the point: it is exhaustive by construction, so an eighth
+ * code added to `@/lib/inquiry/codes` stops this file compiling until someone
+ * writes the payload that produces it — and the row then proves the code
+ * reaches the parent verbatim instead of being flattened on the way out.
+ */
+const FIELD_CODE_CASES: Readonly<
+  Record<InquiryFieldCode, { readonly overrides: Partial<RawSubmission>; readonly field: string }>
+> = {
+  required: { overrides: { parentName: "" }, field: "parentName" },
+  too_short: { overrides: { parentName: "W" }, field: "parentName" },
+  too_long: { overrides: { parentName: "x".repeat(NAME_MAX_LENGTH + 1) }, field: "parentName" },
+  invalid: { overrides: { submissionId: "not-a-uuid" }, field: "submissionId" },
+  invalid_email: { overrides: { email: "wei.chen" }, field: "email" },
+  invalid_option: { overrides: { childAge: "teenager" }, field: "childAge" },
+  out_of_range: { overrides: { desiredStart: "2026-06" }, field: "desiredStart" },
+};
+
+/** The message Zod itself writes for a field, with no code of ours attached. */
+function rawIssueMessage(payload: unknown, field: string): string {
+  const result = inquirySchema.safeParse(payload);
+  if (result.success) throw new Error("expected the payload to fail the schema");
+  const issue = result.error.issues.find((candidate) => candidate.path[0] === field);
+  if (issue === undefined) throw new Error(`no issue on ${field}`);
+  return issue.message;
+}
+
+/**
+ * Run `parseInquiry` against a `./codes` whose predicate has been moved.
+ *
+ * `asFieldCode` is private, so the seam is stated from outside: replace the
+ * module's `isInquiryFieldCode` and watch the parser follow it. A parser
+ * holding its own copy of the seven cannot follow, which is the whole point.
+ */
+async function parseWith(
+  isFieldCode: (value: string) => boolean,
+  payload: unknown,
+): Promise<InquiryFieldErrors> {
+  vi.resetModules();
+  vi.doMock("@/lib/inquiry/codes", async () => {
+    const actual =
+      await vi.importActual<typeof import("@/lib/inquiry/codes")>("@/lib/inquiry/codes");
+    return { ...actual, isInquiryFieldCode: isFieldCode };
+  });
+  try {
+    const { parseInquiry: parse } = await import("@/lib/inquiry/schema");
+    const result = parse(payload);
+    if (result.ok) throw new Error("expected the submission to be rejected");
+    return result.fields;
+  } finally {
+    vi.doUnmock("@/lib/inquiry/codes");
+    vi.resetModules();
+  }
+}
+
+describe("the recognised field codes are the ones ./codes publishes (INV-07.1)", () => {
+  it.each(Object.entries(FIELD_CODE_CASES))("reports %s verbatim", (code, { overrides, field }) => {
+    expect(codeFor(overrides, field)).toBe(code);
+  });
+
+  it("flattens an issue that carries no code of ours to the generic invalid", () => {
+    // A non-string `parentName` never reaches a refinement, so the issue
+    // carries Zod's own prose rather than one of the seven.
+    const payload = { ...rawSubmission(), parentName: 42 };
+    expect(rawIssueMessage(payload, "parentName")).not.toBe("invalid");
+    expect(rejected(payload).parentName).toBe("invalid");
+  });
+
+  /*
+   * `parseInquiry` used to hold a private second copy of the seven codes. It
+   * behaved identically to `./codes` right up until the two disagreed, and the
+   * disagreement had one shape: a code added to `./codes` and forgotten there
+   * was silently downgraded to `invalid`, so a parent read "please check this
+   * value" where the specific reason existed and was translated. Nothing
+   * failed. The two cases below move the module's predicate in either
+   * direction; against a copy they both fail.
+   */
+  it("stops recognising a code the module stops publishing", async () => {
+    const fields = await parseWith(
+      (value) =>
+        value !== "invalid_email" && (INQUIRY_FIELD_CODES as readonly string[]).includes(value),
+      rawSubmission({ email: "wei.chen" }),
+    );
+    expect(fields.email).toBe("invalid");
+  });
+
+  it("starts recognising a message the module starts publishing", async () => {
+    const payload = { ...rawSubmission(), parentName: 42 };
+    const zodPhrase = rawIssueMessage(payload, "parentName");
+    const fields = await parseWith((value) => value === zodPhrase, payload);
+    expect(fields.parentName).toBe(zodPhrase);
   });
 });
 

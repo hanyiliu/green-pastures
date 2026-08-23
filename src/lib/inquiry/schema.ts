@@ -2,7 +2,12 @@ import { z } from "zod";
 
 import { routing } from "@/i18n/routing";
 
-import type { InquiryFieldCode, InquiryFieldErrors, InquiryFormFieldName } from "./codes";
+import {
+  isInquiryFieldCode,
+  type InquiryFieldCode,
+  type InquiryFieldErrors,
+  type InquiryFormFieldName,
+} from "./codes";
 import { isDesiredStartKeyword, isMonthId, isMonthIdInWindow, MONTH_ID_PATTERN } from "./months";
 import { normaliseEmail, normaliseMessage, normaliseName } from "./normalise";
 
@@ -233,18 +238,17 @@ export function parseInquiry(payload: unknown): InquiryParseResult {
   return { ok: false, fields };
 }
 
-const FIELD_CODE_VALUES: readonly string[] = [
-  "required",
-  "too_short",
-  "too_long",
-  "invalid",
-  "invalid_email",
-  "invalid_option",
-  "out_of_range",
-];
-
+/**
+ * A Zod issue message as a field code, or the generic `invalid`.
+ *
+ * The recognised set is `./codes`'s and is asked for, never restated: this file
+ * used to carry its own copy of the seven, and a copy that fell behind would
+ * have downgraded every occurrence of a newly added code to `invalid` without
+ * failing anything. {@link isInquiryFieldCode} also narrows, so the fallback is
+ * the only place a code is asserted rather than proved.
+ */
 function asFieldCode(message: string): InquiryFieldCode {
-  return FIELD_CODE_VALUES.includes(message) ? (message as InquiryFieldCode) : "invalid";
+  return isInquiryFieldCode(message) ? message : "invalid";
 }
 
 /* -------------------------------------------------------------------------- *
