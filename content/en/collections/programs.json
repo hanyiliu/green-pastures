@@ -1,0 +1,27 @@
+{
+  "infant": {
+    "name": "Infant",
+    "ageLabel": "6 – 18 months",
+    "summary": "Nurturing care, sensory play & gentle daily rhythms.",
+    "summaryShort": "Nurturing care, sensory play & gentle rhythms.",
+    "description": "Nurturing one-on-one care, sensory exploration, and gentle daily rhythms that follow each baby's own schedule.",
+    "highlights": ["Daily photo updates", "Gentle rhythms"],
+    "photoAlt": "A baby exploring a treasure basket on a soft mat"
+  },
+  "toddler": {
+    "name": "Toddler",
+    "ageLabel": "1.5 – 3 years",
+    "summary": "Practical life, early language & joyful movement.",
+    "description": "Practical life, early language, and joyful movement build real independence — pouring, dressing, helping, singing in two languages.",
+    "highlights": ["Potty learning", "Practical life"],
+    "photoAlt": "A toddler carefully pouring water between two small jugs"
+  },
+  "preschool": {
+    "name": "Preschool",
+    "ageLabel": "3 – 4½ years",
+    "summary": "Reading, math & cultural studies.",
+    "description": "Early reading, math, and cultural studies spark curiosity — and quietly build everything kindergarten asks for.",
+    "highlights": ["Kindergarten-ready", "Early reading & math"],
+    "photoAlt": "A preschooler laying out the golden bead material on a floor mat"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "reyes": {
+    "name": "Ms. Reyes",
+    "credentials": "Infant & toddler care · 8 years with families",
+    "summary": "Infant & toddler care, meals, and endless patience for first steps.",
+    "summaryShort": "Infant & toddler care and endless patience.",
+    "bio": "Infant & toddler care, meals, and endless patience for first steps.",
+    "tags": []
+  },
+  "ping": {
+    "name": "Ms. Ping",
+    "credentials": "AMS certified · 15 years with little ones",
+    "summary": "Your main point of contact — she leads the classroom, guides every child's plan, and chats with parents at pickup (in English or 中文).",
+    "summaryShort": "Your main point of contact — she leads the classroom and chats with parents at pickup (English or 中文).",
+    "bio": "Ms. Ping leads the classroom and is every family's main point of contact — from your first tour to daily pickup chats, in English or 中文. She holds AMS Montessori credentials and has guided little learners for 15 years.",
+    "bioShort": "Ms. Ping leads the classroom and is every family's main point of contact — from your first tour to daily pickup chats, in English or 中文. AMS Montessori credentials, 15 years with little learners.",
+    "tags": ["AMS certified", "English · 中文", "Parent partnership"],
+    "photoAlt": "Our head teacher smiling in the classroom doorway"
+  },
+  "chen": {
+    "name": "Ms. Chen 陈老师",
+    "credentials": "Early childhood education · 6 years in bilingual classrooms",
+    "summary": "Art, songs, and outdoor play — and a warm bilingual voice all day.",
+    "summaryShort": "Art, songs & a warm bilingual voice.",
+    "bio": "Art, songs, and outdoor play — and a warm bilingual voice all day.",
+    "tags": []
+  }
+}

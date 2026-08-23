@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "title": "{brandName} · Montessori daycare in Fremont, CA",
+    "description": "A warm, bilingual Montessori home in Fremont for children 6 months to 4½ years — certified teachers, small groups, and fresh meals cooked on-site every morning."
+  },
+  "hero": {
+    "badge": "🌿 Montessori daycare · Fremont, CA",
+    "title": "Where small hands\nlearn <em>big things</em>",
+    "subtitle": "A warm, bilingual home where children ages 6 months to 4½ grow at their own pace — guided by certified Montessori teachers and nourished by fresh, home-cooked meals.",
+    "subtitleShort": "A warm, bilingual home where children ages 6 months to 4½ grow at their own pace — guided by certified Montessori teachers.",
+    "ctaPrimary": "Book a tour →",
+    "ctaSecondary": "See our philosophy",
+    "trust": {
+      "yelp": "{rating, number, rating} on Yelp",
+      "ages": "Ages 6 months – 4½ years",
+      "agesShort": "6 mo – 4½ yrs"
+    },
+    "mealsCard": {
+      "title": "Breakfast, lunch & snack",
+      "subtitle": "cooked fresh, on-site daily",
+      "subtitleShort": "cooked fresh daily"
+    },
+    "scrollCue": "scroll to come inside ⌄",
+    "photo": {
+      "alt": "Children playing together on a sunlit rug in the classroom"
+    }
+  },
+  "philosophy": {
+    "eyebrow": "Our philosophy",
+    "quote": "We follow each child's pace — <em>guiding, not pushing</em> — so curiosity leads the way.",
+    "attribution": "— the Montessori promise at {brandShortName}",
+    "badgeCertified": "🌱 Certified Montessori credentials",
+    "badgeBilingual": "English · 中文 bilingual welcome",
+    "link": "Read our approach →",
+    "photo": {
+      "alt": "A calm, prepared classroom with low wooden shelves and open floor space"
+    }
+  },
+  "programs": {
+    "eyebrow": "Programs & ages",
+    "title": "Growing with us, step by step",
+    "intro": "Three little stepping-stones, from first steps to kindergarten-ready — each with its own prepared environment.",
+    "link": "See all programs →"
+  },
+  "menu": {
+    "eyebrow": "A week of meals",
+    "title": "Fresh breakfast, lunch & snack 🍎",
+    "intro": "Cooked on-site every morning. Balanced, allergy-friendly, and full of family favorites — including dishes that feel like home.",
+    "sampleLine": "<day>{weekday}</day> — {breakfast} · {lunch} · {snack}",
+    "link": "See the full menu →"
+  },
+  "gallery": {
+    "eyebrow": "Our photo wall",
+    "title": "Life at {brandShortName}",
+    "intro": "Snapshots of ordinary, wonderful days — work chosen freely, meals shared, gardens explored.",
+    "link": "Browse the gallery →"
+  },
+  "testimonials": {
+    "title": "Kind words from our families",
+    "countLine": "<count>{count, number}</count> {count, plural, one {review} other {reviews}} · Fremont parents",
+    "link": "Read all reviews on Yelp →"
+  },
+  "teachers": {
+    "eyebrow": "Who we are",
+    "title": "The faces your child will love",
+    "intro": "A small, devoted team — one certified head teacher who partners closely with every family, and two assistant teachers by her side all day.",
+    "introShort": "One certified head teacher who partners with every family, and two assistant teachers by her side.",
+    "link": "Meet the whole team →"
+  },
+  "visit": {
+    "title": "Come meet your little one's\nnext home 🌱",
+    "subtitle": "Tell us a little about your family and we'll reach out to schedule a warm, no-pressure tour.",
+    "subtitleShort": "Tell us about your family and we'll schedule a warm, no-pressure tour.",
+    "info": {
+      "visitLabel": "Visit us",
+      "city": "Fremont, California",
+      "hoursLabel": "Hours",
+      "languagesLabel": "Languages",
+      "languages": "English · 中文 (Mandarin)",
+      "mapsLink": "Open in Maps"
+    },
+    "map": {
+      "alt": "Map showing our Fremont neighborhood"
+    }
+  }
+}

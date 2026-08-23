@@ -1,0 +1,23 @@
+{
+  "inquiry": {
+    "subject": "Tour request from {parentName}",
+    "heading": "New tour request",
+    "intro": "A family just asked for a tour through the website.",
+    "fields": {
+      "parentName": "Parent name",
+      "email": "Email",
+      "childAge": "Child's age",
+      "desiredStart": "Desired start",
+      "message": "Message",
+      "preferredLanguage": "Preferred language",
+      "submittedAt": "Submitted"
+    },
+    "footer": "Reply straight to this message to reach the family."
+  },
+  "autoReply": {
+    "subject": "Thank you for reaching out",
+    "greeting": "Hello {parentName},",
+    "body": "Thank you for asking about a tour. We have your request and will be in touch within one business day to find a time that suits your family.\n\nIf anything comes up in the meantime, just reply to this message.",
+    "signature": "Warmly,\nthe team at {brandName}"
+  }
+}

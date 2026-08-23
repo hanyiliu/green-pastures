@@ -29,6 +29,12 @@ export default defineConfig({
     // `e2e/` is Playwright's; Vitest must never try to run a `.spec.ts` there.
     exclude: ["node_modules/**", ".next/**", "e2e/**"],
     restoreMocks: true,
+    // next-intl's published ESM imports Next with extension-less specifiers
+    // (`from "next/server"`) that only Next's own bundler rewrites, so Node's
+    // resolver rejects them when the package is externalised. Inlining it lets
+    // Vite resolve those imports, which is what makes 06 §6.10's proxy-matcher
+    // and navigation tests runnable without a server.
+    server: { deps: { inline: ["next-intl"] } },
     coverage: {
       provider: "v8",
       reporter: ["text-summary", "html", "lcov"],

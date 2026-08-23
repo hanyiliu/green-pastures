@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "title": "Sample menu",
+    "description": "A sample week of breakfast, lunch and snack — cooked on-site every morning, balanced, allergy-aware, and full of family favorites."
+  },
+  "kicker": "Sample menu",
+  "eyebrow": "This week's menu",
+  "heading": "Cooked fresh, every morning",
+  "intro": "Balanced, allergy-aware, and full of family favorites — including dishes that feel like home.",
+  "dayChips": {
+    "label": "Choose a day"
+  },
+  "meals": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "snack": "Snack"
+  },
+  "note": "Sample menu — the live menu is posted each Monday."
+}
