@@ -1,0 +1,18 @@
+# pnpm settings for the single-package repo (PR-2.4).
+#
+# Not a workspace definition — there is no `packages:` list and no monorepo.
+# pnpm 10+ reads its own settings from this file, and pnpm writes an `allowBuilds`
+# entry here for every dependency that ships a lifecycle build script, refusing to
+# run them until each is answered. Both entries below are transitive optional
+# native accelerators that ship prebuilt binaries; neither is needed to install,
+# typecheck or build, so both stay `false` and `pnpm install --frozen-lockfile`
+# is deterministic in CI (09 §3) instead of pausing on a prompt.
+#
+#   @parcel/watcher — Next's fallback file watcher for `next dev`
+#   @swc/core       — pulled in beside `@swc/helpers`; Next bundles its own SWC
+#
+# Flip one to `true` only with a reason: a build script is arbitrary code from a
+# transitive dependency running on every developer's machine and in CI.
+allowBuilds:
+  '@parcel/watcher': false
+  '@swc/core': false
