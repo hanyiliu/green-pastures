@@ -1,0 +1,467 @@
+/*
+ * Design tokens — the ONE token source (03 D-03.1).
+ *
+ * Every value below is quoted from `docs/technical/03-design-system-tokens.md`
+ * with its section in the comment; nothing here is invented (INV-03.5). The
+ * file is imported by `src/app/globals.css` after `@import "tailwindcss"`.
+ *
+ * Layout of the file, per D-03.1 / D-03.2:
+ *   1. `@theme static` — the Tailwind v4 namespaces (`--color-*`, `--font-*`,
+ *      `--text-*` + `--text-*--line-height`, `--tracking-*`, `--radius-*`,
+ *      `--shadow-*`, `--container-*`, `--breakpoint-*`, `--ease-*`), which
+ *      become utilities automatically. `static` keeps every token in the
+ *      emitted CSS so `getComputedStyle` and the parity test read the same
+ *      values (03 §1).
+ *   2. `:root` — the tokens Tailwind v4 has no namespace for: `--dur-*`,
+ *      `--stagger-*`, `--section-*`, `--tap-*`, `--nav-h` (memo ADJ-5: there
+ *      is no `--duration-*` namespace, so these are plain custom properties
+ *      consumed as `duration-(--dur-rise)` / `var(--dur-rise)` / the TS mirror).
+ *   3. `@media (width >= 48rem)` — the per-view flip at `--breakpoint-md`.
+ *      Per-view tokens are declared mobile-first and re-declared here (03 §1).
+ *   4. The three `:lang()` rules — and only these three, INV-03.6.
+ *   5. The global focus ring (D-03.11).
+ *
+ * Two conventions this file had to adopt, because 03 states them nowhere:
+ *   - Where a 03 §3.2 row quotes several values under ONE token name (e.g.
+ *     `--text-subhead` = "19px/1.6 hero; 17px/1.6 sections"), the token holds
+ *     the FIRST-LISTED value and the others are recorded in the comment. 03
+ *     names no sub-tokens and D-03.1 forbids inventing a second spelling, so a
+ *     sub-token must be added to 03 first.
+ *   - Values 03 quotes without giving a token name at all (§4 geometry, the
+ *     §2.3 secondary colours) are comments, not tokens, for the same reason.
+ */
+
+@theme static {
+  /* ---------------------------------------------------------------------- *
+   * 2 · Colour — 2.1 brand and neutrals (03 §2.1; design README L30–34)
+   * ---------------------------------------------------------------------- */
+  --color-sage: #6f8a5f;
+  --color-forest: #3f5538;
+  --color-forest-panel: #35492f;
+  --color-sun: #f4c64e;
+  --color-amber: #f0a93a;
+  --color-daychip-selected: #e0a93a;
+  --color-peach: #e8a87c;
+  --color-cream: #fbf8f0;
+  --color-ink: #34402c;
+  --color-body: #6b7060;
+  --color-muted: #8a8170;
+  --color-muted-2: #a89e8a;
+  --color-chip-bg: #eef2e8;
+  --color-chip-text: #4f6b43;
+  --color-yelp: #d3402e;
+  --color-nav-link: #4a5040;
+  --color-divider: #e2dccf;
+  --color-footer-rule: #4f6645;
+  --color-white: #fff;
+
+  /*
+   * `--color-accent-teachers` / `--color-link-teachers` are 03 §2.1 rows too;
+   * they are declared once, in the §2.3 block below, because §2.3 is where the
+   * canonical `--color-accent-*` / `--color-link-*` family lives.
+   */
+
+  /* 2.2 · Section backgrounds, scroll order (03 §2.2; README L33) */
+  --color-bg-hero: #fbf8f0;
+  --color-bg-philosophy: #e8efe0;
+  --color-bg-programs: #f7ecdd;
+  --color-bg-menu: #fbf2db;
+  --color-bg-gallery: #eaf0f1;
+  --color-bg-testimonials: #f6ece4;
+  --color-bg-teachers: #f0edf4;
+  --color-bg-visit: #3f5538;
+
+  /*
+   * 2.3 · Per-section accents (03 §2.3) — eyebrow / link / link underline /
+   * subhead. These four families are the canonical names for every
+   * section-scoped colour; no hue-named alias exists (D-03.1, D-03.2).
+   * hero and testimonials have no `--color-accent-*`: 03 prints "—" for them
+   * (the hero badge uses the chip tokens; the testimonial stars use
+   * `--color-amber`). visit has no `--color-link-underline-*`.
+   */
+  --color-accent-philosophy: #6f8a5f;
+  --color-accent-programs: #c08552;
+  --color-accent-menu: #bd9326;
+  --color-accent-gallery: #6f8a9a;
+  --color-accent-teachers: #8677a3;
+  --color-accent-visit: #9bb78c;
+
+  /* Link text */
+  --color-link-hero: #4f6b43;
+  --color-link-philosophy: #4f6b43;
+  --color-link-programs: #b06a35;
+  --color-link-menu: #a8852f;
+  --color-link-gallery: #56707e;
+  --color-link-testimonials: #c2553f;
+  --color-link-teachers: #6d5f92;
+  --color-link-visit: #c8d6bd;
+
+  /* Link underline (2px bottom border) */
+  --color-link-underline-hero: #c3d2b6;
+  --color-link-underline-philosophy: #b6c9a6;
+  --color-link-underline-programs: #e6bf95;
+  --color-link-underline-menu: #e6cf86;
+  --color-link-underline-gallery: #b4c8d0;
+  --color-link-underline-testimonials: #e3b3a8;
+  --color-link-underline-teachers: #c3b7d6;
+
+  /* Subhead / blurb */
+  --color-sub-hero: #6b7060;
+  --color-sub-philosophy: #7e8a72; /* 03 §2.3 "attribution"; the quote mark is --color-quote-mark */
+  --color-sub-programs: #7d7468;
+  --color-sub-menu: #897a4e;
+  --color-sub-gallery: #6f7a80;
+  --color-sub-testimonials: #5c5045; /* 03 §2.3 "quote"; attribution #9a8578 and count #8a7468 are unnamed */
+  --color-sub-teachers: #757080;
+  --color-sub-visit: #c8d6bd; /* 03 §2.3 "subhead"; copyright #8ba07c is unnamed */
+
+  /* 2.4 · Chips, badges, menu graphics, decorations (03 §2.4) */
+  --color-daychip-text: #a89a72;
+  --color-benefitchip-text: #897a4e;
+  --color-yelp-pill-bg: #fff5db;
+  --color-yelp-pill-text: #a8852f;
+  --color-plate-ring: #fdf3da;
+  --color-dot-breakfast: #f6d98f;
+  --color-dot-lunch: #a9c39a;
+  --color-dot-snack: #e8b79e;
+  --color-dot-label-breakfast: #bd9326;
+  --color-dot-label-lunch: #5e7a4e;
+  --color-dot-label-snack: #bd7a55;
+  --color-leaf-hero-1: #a9c39a;
+  --color-leaf-hero-2: #e8c79a;
+  --color-leaf-hero-3: #cdb38a;
+  --color-leaf-philosophy: #9fbb8f;
+  --color-leaf-teachers: #c3b7d6;
+  --color-leaf-visit: #7e9a6e;
+  --color-quote-mark: #c2d4b6;
+  --color-nav-bg: rgb(
+    251 248 240 / 92%
+  ); /* 03 §2.4 rgba(251,248,240,.92); the blur(6px) beside it is a component style, 04 */
+
+  /*
+   * Focus ring (D-03.11, §2.4). Forest on light sections; the Visit section
+   * re-points this same token at `--color-sun` on its own wrapper (04 owns
+   * that scope). Both are >= 5:1 against their ground (§10).
+   */
+  --color-focus: var(--color-forest);
+
+  /* ---------------------------------------------------------------------- *
+   * 3.1 · Families (03 §3.1, D-03.5, D-03.14)
+   * ---------------------------------------------------------------------- */
+
+  /*
+   * Fredoka/Nunito first so Latin letters and digits inside Chinese copy stay
+   * in brand type; CJK glyphs (and `←` `→` `↗` `★`, which the Google `latin`
+   * subset lacks) fall through to `--font-cjk`.
+   * `--font-fredoka` / `--font-nunito` come from `src/design/fonts.ts`
+   * (next/font/google) on the <html> element.
+   */
+  --font-display: var(--font-fredoka), var(--font-cjk);
+  --font-body: var(--font-nunito), var(--font-cjk);
+
+  /* Simplified system stack: macOS · macOS legacy · Windows · Linux/Android · webfont names if one is ever added */
+  --font-cjk-sc:
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC",
+    "Source Han Sans SC", sans-serif;
+
+  /* Traditional system stack, same shape, TC faces (D-03.14) */
+  --font-cjk-tc:
+    "PingFang TC", "Hiragino Sans CNS", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC",
+    "Source Han Sans TC", sans-serif;
+
+  /*
+   * The selector `--font-display` / `--font-body` fall through to. Base value
+   * is the SC stack; the two `:lang()` rules at the bottom of this file are the
+   * only places it is switched. Components never use `font-cjk-sc` /
+   * `font-cjk-tc` utilities (INV-03.6).
+   */
+  --font-cjk: var(--font-cjk-sc);
+
+  /* Emoji icons (D-03.8); 04 renders them in fixed-size containers */
+  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+
+  /* Tracking (03 §3.1; README L39, desktop L169/L238) */
+  --tracking-eyebrow: 1.5px;
+  --tracking-label: 0.5px;
+  --tracking-stars: 1px; /* count-up stars use 2px — no token name in 03 */
+
+  /* ---------------------------------------------------------------------- *
+   * 3.2 · Type scale (03 §3.2) — MOBILE values here, desktop (>= md) below.
+   * Font/weight per token is 03 §3.2's "Family/weight" column and is applied
+   * by 04's recipes, not by these tokens.
+   * ---------------------------------------------------------------------- */
+  --text-headline: 36px;
+  --text-headline--line-height: 1.08;
+
+  /*
+   * Reviews 26px; Visit 28px/1.2. 03 §3.2 quotes no general line-height for
+   * this token, so there is no `--text-section-title--line-height` to declare
+   * here — which also means Tailwind emits no `line-height` for the
+   * `text-section-title` utility and the `:lang(zh)` override of that name at
+   * the foot of this file cannot bind. Reported as a gap in 03, not guessed.
+   */
+  --text-section-title: 28px;
+  --text-subhead: 15px; /* hero; sections 13–14px */
+  --text-subhead--line-height: 1.6;
+  --text-quote: 26px;
+  --text-quote--line-height: 1.35;
+  --text-quote-mark: 58px;
+  --text-program-title: 20px; /* Toddler 22px */
+  --text-name-lg: 22px;
+  --text-name: 17px;
+  --text-blurb: 13px; /* head + programs; assistants 12px */
+  --text-blurb--line-height: 1.6; /* 03 §3.3 "vs the design's 1.6" */
+  --text-testimonial: 14px; /* name 13px; attribution 11px */
+  --text-testimonial--line-height: 1.6;
+  --text-eyebrow: 11px;
+  --text-eyebrow-sm: 10px;
+  --text-nav: 15px; /* 03 §3.2 marks mobile n/a (hamburger not designed); desktop value stands */
+  --text-lang-toggle: 14px; /* trigger EN/简/繁 and the three menu options (02 D-02.10) */
+  --text-button: 13px; /* nav; hero 17px, submit 16px */
+  --text-chip: 11px; /* hero badge; trust row 12px, benefit 12px, pills 11px, day chips 13px */
+  --text-sample-line: 13px;
+  --text-sample-line--line-height: 1.6; /* 03 §3.3 "vs the design's 1.6" */
+  --text-panel-label: 10px;
+  --text-panel-value: 14px;
+  --text-panel-value--line-height: 1.5;
+  --text-form-label: 11px;
+  --text-input: 14px; /* same on both views */
+  --text-footer-link: 12px;
+  --text-copyright: 10px;
+  --text-scroll-cue: 12px;
+  --text-countup: 22px;
+
+  /* ---------------------------------------------------------------------- *
+   * 4 · Layout containers (03 §4, §8)
+   * ---------------------------------------------------------------------- */
+  --container-page: 80rem; /* 1280px desktop design width */
+  --container-content: 1080px; /* range 980–1080; the per-block widths in §4 are 04's component config */
+
+  /* ---------------------------------------------------------------------- *
+   * 5 · Radii (03 §5) — MOBILE values here where the two views differ.
+   * ---------------------------------------------------------------------- */
+  --radius-pill: 999px;
+  --radius-card-lg: 22px; /* bubbles, philosophy photo; = mobile hero photo radius */
+  --radius-card: 20px; /* form card; mobile bubbles */
+  --radius-card-md: 18px; /* panel, subpage cards; mobile form card; = mobile philosophy photo */
+  --radius-card-sm: 13px; /* mobile; 16px at >= md (meals card, desktop map photo) */
+  --radius-tile: 14px; /* icon tiles, mobile map photo */
+  --radius-logo-card: 10px; /* mobile; 12px at >= md */
+  --radius-input: 11px;
+  --radius-badge: 6px; /* mobile; 7px at >= md (Yelp) */
+  --radius-tail: 5px; /* mobile; 6px at >= md (bubble corner) */
+  --radius-polaroid: 5px;
+  --radius-full: 50%;
+
+  /* Speech-bubble tails — one squared corner; `-r` is the mirrored middle card */
+  --radius-bubble-l: 20px 20px 20px 5px;
+  --radius-bubble-r: 20px 20px 5px 20px;
+
+  /* ---------------------------------------------------------------------- *
+   * 5 · Shadows (03 §5). ONE set, desktop values on both views (D-03.7).
+   * Line numbers are `docs/design/desktop/Green Pastures - Homepage.dc.html`.
+   * ---------------------------------------------------------------------- */
+  --shadow-primary: 0 10px 24px rgb(111 138 95 / 32%); /* hero CTA (README L43) */
+  --shadow-primary-sm: 0 8px 18px rgb(111 138 95 / 30%); /* nav "Book a tour" (L105) */
+  --shadow-badge: 0 6px 14px rgb(111 138 95 / 35%); /* HEAD TEACHER badge (L292) */
+  --shadow-submit: 0 10px 22px rgb(60 80 50 / 25%); /* "Request a tour" on forest (L325) */
+  --shadow-nav: 0 4px 16px rgb(60 50 40 / 6%); /* sticky nav (L97) */
+  --shadow-float: 0 12px 30px rgb(60 50 40 / 16%); /* floating meals card (L130) */
+  --shadow-stone: 0 14px 30px rgb(90 70 40 / 13%); /* program rings (L168) */
+  --shadow-stone-lg: 0 20px 42px rgb(90 70 40 / 18%); /* Toddler (L173) */
+
+  /* Menu plate (L194); the inset colour is --color-plate-ring */
+  --shadow-plate: 0 18px 40px rgb(120 100 40 / 16%), inset 0 0 0 10px #fdf3da;
+  --shadow-chip-gold: 0 3px 10px rgb(120 100 40 / 6%); /* day chips (L200) */
+  --shadow-chip-gold-md: 0 4px 12px rgb(120 100 40 / 8%); /* benefit chips (L209) */
+  --shadow-chip-amber: 0 6px 14px rgb(224 169 58 / 35%); /* selected day chip (L202) */
+  --shadow-polaroid: 0 12px 26px rgb(60 70 90 / 16%); /* gallery frames (L223) */
+  --shadow-chip-cool: 0 3px 10px rgb(60 70 90 / 7%); /* gallery filter chips (L492) */
+  --shadow-card-warm: 0 12px 30px rgb(120 80 50 / 8%); /* review cards (L523) */
+  --shadow-card-warm-lg: 0 14px 32px rgb(120 80 50 / 10%); /* homepage bubbles (L246) */
+  --shadow-card-lavender: 0 12px 30px rgb(90 80 120 / 10%); /* teacher cards (L567) */
+  --shadow-dot-lavender: 0 10px 24px rgb(90 80 120 / 13%); /* icon dots (L285) */
+  --shadow-ring-lavender: 0 20px 42px rgb(90 80 120 / 18%); /* Ms. Ping ring (L291) */
+  --shadow-card-sage: 0 10px 26px rgb(60 80 50 / 7%); /* philosophy principle cards (L361) */
+  --shadow-yelp: 0 10px 22px rgb(211 64 46 / 30%); /* Yelp button (L544) */
+  --shadow-subnav: 0 3px 12px rgb(60 50 40 / 5%); /* subpage sticky bar (L350) */
+  --shadow-back: 0 4px 12px rgb(60 50 40 / 8%); /* back pill (L351) */
+
+  /* ---------------------------------------------------------------------- *
+   * 7 · Easings (03 §7). The only motion tokens with a Tailwind namespace.
+   * ---------------------------------------------------------------------- */
+  --ease-soft: cubic-bezier(0.2, 0.8, 0.25, 1); /* SOFT */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.5, 1); /* SPRING */
+  --ease-std: cubic-bezier(0.25, 0.1, 0.25, 1); /* the CSS `ease` keyword, spelled out */
+  --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1); /* count-up easing */
+
+  /* ---------------------------------------------------------------------- *
+   * 8 · Breakpoints (03 §8, D-03.6). `sm`/`2xl` are Tailwind's and are not
+   * overridden; components use only `md:`, `lg:` and `xl:` (INV-03.3).
+   * ---------------------------------------------------------------------- */
+  --breakpoint-md: 48rem; /* 768px — flips every per-view token below */
+  --breakpoint-lg: 64rem; /* 1024px — 04 enables desktop multi-column layouts */
+  --breakpoint-xl: 80rem; /* 1280px — only caps --container-page */
+}
+
+/*
+ * Tailwind v4 has no `--duration-*` namespace (memo ADJ-5), so every `--dur-*`
+ * and `--stagger-*` is a plain custom property, consumed as
+ * `duration-(--dur-rise)`, `[transition-duration:var(--dur-rise)]`,
+ * `var(--dur-rise)` in a CSS Module, or from the TS mirror in Motion.
+ * `--section-*`, `--tap-*`, `--input-h` and `--nav-h` have no namespace either.
+ */
+:root {
+  /* 7 · Motion — the fixed names and values, used verbatim by 05 (03 §7 table 1) */
+  --dur-rise: 750ms; /* section header rise-in, ".7–.8s SOFT" midpoint */
+  --dur-ink: 950ms; /* philosophy quote inks in */
+  --dur-polaroid: 800ms; /* gallery fly-in, .8s SPRING */
+  --dur-visit-fade: 1100ms; /* Visit slow fade */
+  --dur-subpage: 500ms; /* subpage slide .5s SOFT (OQ-03.7) */
+  --dur-word-swap: 200ms; /* locale-switch cascade */
+  --stagger-child: 110ms; /* per-section content stagger */
+  --dur-leaf: 8s; /* "7–9s" midpoint */
+  --dur-sun: 9s; /* sun rotates ±22° */
+  --dur-cue: 2s; /* scroll cue bounce */
+  --dur-countup: 1000ms; /* count-up, 1s cubic ease-out */
+
+  /*
+   * `--reveal-threshold: 0.16` is deliberately NOT here: it is a JS constant
+   * (`REVEAL_THRESHOLD` in `src/design/tokens.ts`) and the one motion value
+   * with no CSS twin (03 §7, INV-03.4).
+   */
+
+  /* 7 · Motion — requested by 05 §5.13, adopted by 03 (§7 table 2) */
+  --dur-sprout: 900ms; /* gpsprout .9s SPRING — desktop L608 */
+  --dur-roll: 850ms; /* gproll .85s SOFT — desktop L609 */
+  --dur-drop: 700ms; /* gpdrop .7s ease — desktop L609 */
+  --dur-swing: 1000ms; /* gpswing 1s ease — desktop L612 */
+  --dur-bubble: 650ms; /* transform .65s SPRING — desktop L611 */
+  --dur-bubble-fade: 450ms; /* opacity .45s ease — desktop L611 */
+  --dur-polaroid-fade: 500ms; /* opacity .5s ease — desktop L610 */
+  --dur-leaf-fast: 7s; /* desktop L111 */
+  --dur-leaf-slow: 9s; /* desktop L113 */
+  --stagger-word: 14ms; /* locale cascade 210 + min(i*14, 300) ms — desktop L765 */
+  --stagger-word-cap: 300ms; /* the cap in that expression */
+  --reveal-rise: 26px; /* header rise-in translateY(26px) — desktop L606 */
+  --reveal-rise-child: 22px; /* non-header default — desktop L613 */
+  --reveal-rise-sm: 18px; /* 05's pick inside the mobile 16–20px */
+  --swap-rise: 6px; /* locale swap 6px rise — README L73, desktop L760 */
+
+  /* 4 · Section padding (03 §4) — mobile; gallery overrides px to 10px in 04 */
+  --section-py: 48px;
+  --section-px: 24px;
+
+  /* 4 · Sticky-nav height = logo height + 2 × nav vertical padding; 05's scroll-margin-top */
+  --nav-h: 58px;
+
+  /* 6 · Touch targets (03 §6; mobile/README L8) */
+  --tap-min: 44px;
+  --input-h: 46px; /* mobile; 44px at >= md */
+}
+
+/*
+ * The per-view flip at `--breakpoint-md` (03 §1, §8). Everything here is the
+ * desktop spec; 768–1023px renders desktop type and padding in the mobile
+ * column structure (D-03.6) — there is no third scale for tablets.
+ */
+@media (width >= 48rem) {
+  :root {
+    /* 3.2 · Type scale — desktop */
+    --text-headline: 64px;
+    --text-headline--line-height: 1.04;
+    --text-section-title: 40px; /* Reviews 36px; Visit 42px/1.15 */
+    --text-subhead: 19px; /* hero; sections 17px */
+    --text-quote: 44px;
+    --text-quote--line-height: 1.32;
+    --text-quote-mark: 84px;
+    --text-program-title: 23px; /* Toddler 28px */
+    --text-name-lg: 26px;
+    --text-name: 21px;
+    --text-blurb: 15px; /* head; assistants 14px/1.55, programs 14px/1.5 */
+    --text-testimonial: 16px; /* name 14px; attribution 12px */
+    --text-eyebrow: 13px;
+    --text-eyebrow-sm: 12px; /* programs ages, roles; assistant roles 11px */
+    --text-button: 16px; /* nav; hero 18px, submit 17px */
+    --text-chip: 13px; /* hero badge; trust row 14px, benefit 12px, pills 11px, day chips 14px */
+    --text-sample-line: 15px;
+    --text-panel-label: 12px;
+    --text-panel-value: 16px;
+    --text-form-label: 12px;
+    --text-footer-link: 14px;
+    --text-copyright: 12px;
+    --text-scroll-cue: 13px;
+    --text-countup: 30px;
+
+    /* 5 · Radii — desktop */
+    --radius-card-sm: 16px;
+    --radius-logo-card: 12px;
+    --radius-badge: 7px;
+    --radius-tail: 6px;
+    --radius-bubble-l: 22px 22px 22px 6px;
+    --radius-bubble-r: 22px 22px 6px 22px;
+
+    /* 4 · Section padding and nav height — desktop */
+    --section-py: 70px;
+    --section-px: 44px;
+    --nav-h: 86px; /* 50px logo + 2 × 18px */
+
+    /* 6 · Inputs — desktop */
+    --input-h: 44px;
+  }
+}
+
+/*
+ * 3.3 · Chinese typography — ONE rule set for both scripts. CSS
+ * language-range matching makes `:lang(zh)` match `zh-Hans`, `zh-Hant` and any
+ * later `zh-*`, so neither locale is special-cased (03 §3.3, D-03.14).
+ * Every value here is 03's choice — the design specifies nothing for CJK.
+ * Sizes are deliberately unchanged: CJK glyphs read larger at the same px.
+ */
+:root:lang(zh) {
+  /* Line-height, at or above 02 D-02.15's floor: >= 1.3 display, >= 1.6 body */
+  --text-headline--line-height: 1.3;
+
+  /* Inert until 03 §3.2 gives `--text-section-title--line-height` an `en` value — see §3.2 above */
+  --text-section-title--line-height: 1.3;
+  --text-quote--line-height: 1.5;
+
+  /* body / blurb / testimonial 1.75, i.e. every token the design set at 1.6 */
+  --text-subhead--line-height: 1.75;
+  --text-blurb--line-height: 1.75;
+  --text-testimonial--line-height: 1.75;
+  --text-sample-line--line-height: 1.75;
+
+  /* Tracking (choice). `uppercase` is a no-op on CJK and stays on 04's eyebrow recipe. */
+  --tracking-eyebrow: 0.08em;
+
+  /*
+   * Wrapping for CJK/Latin mixing — never `word-break: break-all`, no
+   * hyphenation. `text-wrap: balance` on headings is 04's heading recipe for
+   * EVERY locale, not scoped here (03 §3.3).
+   */
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * The ONE thing that differs by script (D-03.14): setting Traditional copy in
+ * a Simplified face renders Simplified glyph forms for shared code points,
+ * which is a wrong-language rendering, not a style preference.
+ */
+:root:lang(zh-Hans) {
+  --font-cjk: var(--font-cjk-sc);
+}
+
+:root:lang(zh-Hant) {
+  --font-cjk: var(--font-cjk-tc);
+}
+
+/*
+ * D-03.11 — the references define no focus styles, so this is ours: one global
+ * rule, following the element's own border-radius (03 §6).
+ */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}

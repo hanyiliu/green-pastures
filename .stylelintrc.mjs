@@ -67,6 +67,15 @@ export default {
         "color-named": null,
         "function-disallowed-list": null,
         "declaration-property-value-disallowed-list": null,
+
+        /*
+         * Tailwind v4 pairs a `--text-*` size with its leading under the
+         * literal name `--text-<name>--line-height` (03 D-03.2, §3.2), and
+         * stylelint-config-standard's kebab-case pattern rejects the doubled
+         * hyphen. The spelling is the framework's, not ours, so the pattern is
+         * off in this one file — same reasoning as the bans above (D-08.4).
+         */
+        "custom-property-pattern": null,
       },
     },
     {
