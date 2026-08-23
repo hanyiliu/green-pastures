@@ -3,7 +3,8 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Button, buttonRecipe } from "@/components/ui/Button";
+import { Button, buttonRecipe, type ButtonSize } from "@/components/ui/Button";
+import { classList } from "@/components/ui/class-names";
 import { routing } from "@/i18n/routing";
 
 /**
@@ -64,6 +65,29 @@ describe("Button", () => {
     expect(buttonRecipe("nav", "sage")).toContain("shadow-primary-sm");
     expect(buttonRecipe("hero", "sage")).toContain("shadow-primary");
     expect(buttonRecipe("submit", "sage")).toContain("shadow-submit");
+  });
+
+  /**
+   * The one part of the recipe no two placements share. `--text-button` is the
+   * nav pill's own value, and the hero CTA (17/18px) and the submit pill
+   * (16/17px) each bind the 03 §3.2 sub-token minted for them — a hero CTA
+   * wearing `text-button` renders four points small on both views, which is
+   * what this pins against.
+   */
+  it("sizes each placement from its own 03 §3.2 token", () => {
+    const sizeToken = {
+      nav: "text-button",
+      hero: "text-button-hero",
+      submit: "text-button-submit",
+    } as const;
+
+    for (const [size, token] of Object.entries(sizeToken)) {
+      const classes = classList(buttonRecipe(size as ButtonSize, "sage"));
+
+      expect(classes).toContain(token);
+      // Exactly one `text-*` size class, so the nav value cannot ride along.
+      expect(classes.filter((entry) => entry.startsWith("text-button"))).toEqual([token]);
+    }
   });
 
   it("gives the Yelp tone its own fill, face and shadow", () => {

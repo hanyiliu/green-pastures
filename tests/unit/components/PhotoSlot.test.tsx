@@ -33,24 +33,38 @@ describe("PhotoSlot", () => {
     expect(container.firstElementChild).toHaveClass("rounded-card");
   });
 
+  /**
+   * `satisfies Record<RadiusToken, true>` is what keeps this list honest: a step
+   * added to `RADIUS` without being named here is a `tsc --noEmit` failure, not
+   * a silently unasserted utility. `hero` is the step 03 §5 minted late —
+   * `--radius-hero`, 22px `< md` and 26px `≥ md` — and the reason the list once
+   * fell short of the map.
+   */
   it("maps every 03 §5 radius step to its token utility, and mints none", () => {
-    const steps: readonly RadiusToken[] = [
-      "pill",
-      "card-lg",
-      "card",
-      "card-md",
-      "card-sm",
-      "tile",
-      "logo-card",
-      "input",
-      "badge",
-      "polaroid",
-      "full",
-    ];
+    const steps = {
+      pill: true,
+      hero: true,
+      "card-lg": true,
+      card: true,
+      "card-md": true,
+      "card-sm": true,
+      tile: true,
+      "logo-card": true,
+      input: true,
+      badge: true,
+      polaroid: true,
+      full: true,
+    } satisfies Record<RadiusToken, true>;
 
-    for (const step of steps) {
+    for (const step of Object.keys(steps) as readonly RadiusToken[]) {
       expect(radiusClass(step)).toBe(`rounded-${step}`);
     }
+  });
+
+  it("gives the hero photo its own step rather than an override", () => {
+    const { container } = render(<PhotoSlot slotId="hero" radius="hero" />);
+
+    expect(container.firstElementChild).toHaveClass("rounded-hero");
   });
 
   it("lets the circle shape win over the radius, for stones and teacher photos", () => {

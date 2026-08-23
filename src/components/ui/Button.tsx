@@ -16,13 +16,12 @@ import { withOverrides } from "./class-names";
  * `BookTourButton` puts the pill styling on a `TrackedLink` without a second
  * copy of the recipe.
  *
- * **Known token gap (03 §3.2).** `--text-button` carries the *nav* pill's value
- * (13px `< md`, 16px `≥ md`); the row's other two values — hero 17/18px and
- * submit 16/17px — are written in 03 §3.2 as prose beside it and were never
- * minted as tokens, so `src/styles/tokens.css` has nothing else to name. Every
- * size below therefore renders at `--text-button` until 03 mints
- * `--text-button-hero` / `--text-button-submit`; inventing a px here would
- * break INV-03.2 and INV-03.5.
+ * **The label size is per placement** (03 §3.2, "Sub-tokens of `--text-subhead`,
+ * `--text-button` and `--text-chip`"). `--text-button` holds the *nav* pill's
+ * value alone; the hero CTA and the form submit each bind a sub-token of the
+ * same family. {@link SIZE_TEXT} is where that binding lives, and it is the one
+ * part of the recipe a placement cannot share: the three sizes drew the nav
+ * value for as long as the recipe set `text-button` once for all of them.
  */
 
 /**
@@ -38,6 +37,19 @@ const SIZE = {
   hero: "w-full px-8 py-3.75 md:w-auto",
   /** Form submit — full width mobile with 15px vertical, `14×30` desktop. */
   submit: "w-full px-8 py-3.75 md:w-auto md:px-7.5 md:py-3.5",
+} as const;
+
+/**
+ * The label's type size per placement (03 §3.2). Mobile value first, as the
+ * tokens are declared; the line numbers are the two reference files.
+ */
+const SIZE_TEXT = {
+  /** Nav pill — `--text-button`, 13px mobile (L45) / 16px desktop (L105). */
+  nav: "text-button",
+  /** Hero CTA — `--text-button-hero`, 17px mobile (L58) / 18px desktop (L119). */
+  hero: "text-button-hero",
+  /** Form submit — `--text-button-submit`, 16px mobile (L235) / 17px desktop (L325). */
+  submit: "text-button-submit",
 } as const;
 
 /** The resting shadow of the sage pill, which is per placement (03 §5). */
@@ -70,9 +82,10 @@ export type ButtonTone = keyof typeof TONE;
 export function buttonRecipe(size: ButtonSize, tone: ButtonTone): string {
   return [
     "inline-flex items-center justify-center gap-2 rounded-pill",
-    "min-h-(--tap-min) min-w-(--tap-min) text-center text-button",
+    "min-h-(--tap-min) min-w-(--tap-min) text-center",
     "transition duration-(--dur-word-swap) ease-soft",
     "hover:-translate-y-px motion-reduce:hover:translate-y-0",
+    SIZE_TEXT[size],
     SIZE[size],
     tone === "sage" ? SIZE_SHADOW[size] : "",
     TONE[tone],
