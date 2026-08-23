@@ -1,3 +1,44 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Dependencies (pnpm — pnpm-lock.yaml is committed and must never be ignored)
+node_modules/
+.pnpm-store/
+
+# Next.js build output
+.next/
+out/
+*.tsbuildinfo
+
+# Test, coverage and Playwright output.
+# Deliberately not anchored with a leading slash: the Playwright config lives under
+# tests/e2e/, so its output lands beside it rather than at the repo root.
+# tests/e2e/__screenshots__/ holds committed visual baselines and is not matched here.
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# NOTE: reports/ is deliberately NOT ignored — reports/content-coverage.md and
+# reports/section-heights.json are tracked artifacts (08-testing-quality.md §12).
+
+# Environment. Secrets live in Vercel only (09-deployment-operations.md D-09.6);
+# .env.example is committed and matches none of these patterns.
+.env
+.env*.local
+!.env.example
+
+# Vercel
+.vercel
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*
+.pnpm-debug.log*
 
 # Beads / Dolt files (added by bd init)
 .dolt/
