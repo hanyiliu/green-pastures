@@ -221,10 +221,10 @@ slash 308); 1 catch-all. Nothing multiplies by hand: the number falls out of `ro
 src/app/
 ├── [locale]/
 │   ├── layout.tsx          ROOT layout: <html lang dir>, fonts (03), MotionProvider (05), NextIntlClientProvider
-│   │                       (client namespaces per 04 + `errors`), sticky Nav, Footer, skip link → #main,
+│   │                       (client namespaces per 04 + `errors`), SiteHeader, SiteFooter, SkipLink → #main,
 │   │                       generateStaticParams, metadataBase/title template/OG defaults
 │   ├── page.tsx            home — PageTransition (05) → 8 sections, <JsonLd>
-│   ├── philosophy/ programs/ menu/ gallery/ reviews/ team/   (each: page.tsx — PageTransition → SubpageShell)
+│   ├── philosophy/ programs/ menu/ gallery/ reviews/ team/   (each: page.tsx — PageTransition → SubpageBar → main → SubpageHeader)
 │   ├── enroll/ faq/ privacy/                                  (reserved / conditional, D-06.1)
 │   ├── [...rest]/page.tsx  notFound()
 │   ├── not-found.tsx       localised 404 (server component)
@@ -240,8 +240,9 @@ and Next allows exactly one `<html>` — the next-intl layout `[verified]`. Ther
 metadata routes and icons need none. There is no `template.tsx` (05 uses React `ViewTransition`, not per-
 navigation remounts), no route groups (the "← Back" pill belongs to the sliding page, so a `(detail)` group
 layout would wrongly pin it), no `loading.tsx` and no `Suspense` above `not-found` (a streamed 404 is served
-with status 200 `[verified: not-found docs]`). `PageTransition` wraps each page's content (`D-05.10`); the Nav and
-Footer live in the layout so they do not slide (OQ-05.4).
+with status 200 `[verified: not-found docs]`). `PageTransition` wraps each page's content (`D-05.10`); `SiteHeader` and
+`SiteFooter` (04 §3.1's names for the sticky nav and the footer) live in the layout so they do not slide
+(OQ-05.4).
 
 Rendering: with `generateStaticParams` returning `routing.locales.map((locale) => ({ locale }))` —
 `[{locale:'en'},{locale:'zh-Hans'},{locale:'zh-Hant'}]` at launch — and no request-time API in any
@@ -371,27 +372,38 @@ The sheet's own motion is OQ-05.3; 04 owns the component.
 
 **Language switcher — three options** (`D-06.9`; copy `common.localeSwitcher.ariaLabel|optionAriaLabel`, the
 `label` key retired). One trigger, one option per locale in `routing.locales`; nothing about the control knows
-how many locales there are. Implementation sketch (04 owns `Menu`: trigger semantics, focus, dismissal):
+how many locales there are. Implementation sketch. **There is no `Menu` component**: the sketch below used to
+wrap the option list in one and assign the primitive to 04, and 04 `D-04.16` answered that a generic `Menu`
+with a single consumer is speculation — the trigger semantics, focus handling and dismissal are a native
+`<details>`/`<summary>` disclosure inlined in `LangSwitcher` itself, which is also what gives the control its
+no-JavaScript open/close. `LangSwitcher` is 04's name for this component and the only one either document uses.
+The sketch is the `variant="nav"` half of 04's two-variant prop contract; `variant="sheet"` renders the same
+`<ul>` of `Link`s as flat rows inside `MobileMenu`, with no `<details>` around them (04 `D-04.16`):
 
 ```tsx
 'use client';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
-export function LangSwitcher({ current }: { current: Locale }) {
+export function LangSwitcher({ current }: { current: Locale }) {   // variant="nav"; sheet drops the disclosure
   const pathname = usePathname(); const router = useRouter(); const t = useTranslations('common');
   return (
-    <Menu triggerLabel={LOCALE_META[current].shortLabel} ariaLabel={t('localeSwitcher.ariaLabel')}>
-      {routing.locales.map((l) => (                                  // never a literal locale (INV-06.2)
-        <Link key={l} href={pathname} locale={l} hrefLang={LOCALE_META[l].hreflang}
-          aria-current={l === current ? 'true' : undefined}
-          aria-label={t('localeSwitcher.optionAriaLabel', { locale: LOCALE_META[l].nativeName })}
-          onClick={(e) => { e.preventDefault(); markLocaleSwap();     // 05 registry
-            const { search, hash } = window.location;
-            router.replace(`${pathname}${search}${hash}`, { locale: l, scroll: false,
-              transitionTypes: ['locale-swap'] }); }}>
-          {LOCALE_META[l].nativeName}
-        </Link>
-      ))}
-    </Menu>
+    <details>                                        {/* D-04.16: inlined — there is no Menu component */}
+      <summary aria-label={t('localeSwitcher.ariaLabel')}>
+        {LOCALE_META[current].shortLabel}            {/* and nothing else — no chevron, ADJ-20 */}
+      </summary>
+      <ul>
+        {routing.locales.map((l) => (                                // never a literal locale (INV-06.2)
+          <li key={l}><Link href={pathname} locale={l} hrefLang={LOCALE_META[l].hreflang}
+            aria-current={l === current ? 'true' : undefined}
+            aria-label={t('localeSwitcher.optionAriaLabel', { locale: LOCALE_META[l].nativeName })}
+            onClick={(e) => { e.preventDefault(); markLocaleSwap();   // 05 registry
+              const { search, hash } = window.location;
+              router.replace(`${pathname}${search}${hash}`, { locale: l, scroll: false,
+                transitionTypes: ['locale-swap'] }); }}>
+            {LOCALE_META[l].nativeName}
+          </Link></li>
+        ))}
+      </ul>
+    </details>
   );
 }
 ```
@@ -405,9 +417,9 @@ query and hash can only come from the live URL, and preserving them is INV-06.8.
 current URL goes through `src/i18n/navigation` (INV-06.5 / INV-02.7), and 08 lints for stray `window.location`
 outside this file.
 
-Without JavaScript each option is a plain link to `/{l}{pathname}` (hash lost — acceptable) and the menu is
-whatever 04's `Menu` degrades to (a `<details>`-style disclosure or an always-visible list; it must not be a
-button-only control). `usePathname`
+Without JavaScript each option is a plain link to `/{l}{pathname}` (hash lost — acceptable) and the panel still
+opens and closes, because the disclosure is the browser's own `<details>` (04 `D-04.16`) rather than a
+`useState` dropdown — it is never a button-only control. `usePathname`
 returns the internal pathname without prefix `[verified]`; `useRouter().replace` accepts the `locale` option
 and passes the remaining options to `next/navigation` `[assumed — spike: `scroll`/`transitionTypes`
 passthrough in next-intl's `useRouter`]`. On the 404 page the same component works (pathname = the unknown path).
@@ -519,7 +531,9 @@ the real site; the code still reads the variable, never the string (INV-06.10).
 
 ### 6.6 Structured data
 
-`<JsonLd>` (server component, 04) serialises one object on the home page per locale into
+`<JsonLd>` is a server component **06 owns, not 04**: it is absent from 04's inventory by design — the same
+carve-out 04 §2 makes for `src/app/sitemap.ts` and `src/app/robots.ts` — and it ships with the rest of the SEO
+plumbing (10 PR-6.8, `src/lib/seo/`), not under `src/components/`. It serialises one object on the home page per locale into
 `<script type="application/ld+json">`. `JSON.stringify` does **not** escape `<`, so the component does it
 itself: every `<` in the serialised string is replaced with the `\u003c` escape before injection, which is
 valid JSON, renders identically to consumers, and makes a `</script>` sequence in any content value
@@ -701,18 +715,22 @@ target has no slash before the `#`, per `D-06.6`. (b) nothing for `www` — hand
   shared `:root:lang(zh)` typography stays unsplit and matches both. That is precisely what 06 and 02 asked
   for, so `zh-Hant` no longer renders Simplified glyph forms and this ask is closed (HD-14 confirms the system
   stack; no webfont at launch).
-  **04** — `SubpageShell` (kicker, heading, back pill), `JsonLd`, `Nav`,
-  `Hamburger`, `SkipLink`; section `id`s from data; and flip `PrimaryNav` / `FooterLinks` /
-  the sheet's link list from `S` to `C` — they need `usePathname()` to choose `#id` vs `homeHref(id)`
-  (`D-06.7`), while `SiteHeader` / `SiteFooter` stay server components. Plus the switcher, which is now
-  `LangSwitcher` (04's name; 06 used `LocaleSwitcher` before — one name, 04's): a **three-option menu**
-  (`D-06.9`) needing a `Menu` primitive with trigger, `aria-current`, focus handling and a no-JavaScript
-  fallback, iterating `routing.locales`; 04 must drop `common.localeSwitcher.label` wherever it is listed and
-  stop describing the control as differing per locale by content. **And drop the `⌄` from the trigger:**
-  `D-04.16` currently ships it, following 02's unverified reading, and flags the conflict rather than burying
-  it — correctly, but ADJ-20 has since resolved it in 06's favour, so `EN ⌄` becomes `EN`, the ≈ 46 px trigger
-  measurement in 04 §2 loses the glyph's width, and the `⌄` stays on 08's `allowedStrings` list for the hero
-  scroll cue alone. Not a re-litigation: the adjudication is the decision. **05** — none beyond `D-05.10`; `OQ-05.5`
+  **04** — **naming satisfied and no longer asked:** 04 owns the component inventory and 06 now uses its names
+  throughout. The subpage shell 06 asked for as `SubpageShell` is **two** components in 04 §3.1, not one, and
+  the split is a scope decision 06 accepts: `SubpageBar` carries the kicker and the sticky bar with `BackLink`'s
+  back pill, `SubpageHeader` carries the eyebrow/heading/intro. `Nav` is `PrimaryNav` inside `SiteHeader`, and
+  `Menu` is not a component at all — `D-04.16` inlines the disclosure in `LangSwitcher` (§6.4). `JsonLd` is
+  06's own (§6.6), not an ask of 04. The switcher 06 called `LocaleSwitcher` is `LangSwitcher`, 04's name and
+  the only one used here now. **Nothing else is outstanding either**, and 04 §10 says so item by item:
+  `Hamburger` and `SkipLink` exist (04 §2, §3.1); section `id`s come from `site.routes[].homeAnchor`
+  (`D-04.3`); `PrimaryNav`, `FooterLinks` and the sheet's link list are client because they need
+  `usePathname()` to choose `#id` vs `homeHref(id)` (`D-06.7`, 04 `D-04.1`), while `SiteHeader` / `SiteFooter`
+  stay server components; the three-option menu is `D-04.16`, with trigger, `aria-current`, focus handling, a
+  no-JavaScript fallback and a `routing.locales` iteration; `common.localeSwitcher.label` is gone from 04's
+  lists, and so is the "differs per locale by content" description. **The chevron is settled and closed:**
+  `D-04.16` now ships the trigger as a bare `EN` with no chevron and no disclosure glyph (ADJ-20), so `⌄` stays
+  on 08's `allowedStrings` list for the hero scroll cue alone. Not a re-litigation: the adjudication is the
+  decision. **05** — none beyond `D-05.10`; `OQ-05.5`
   is answered in `D-06.8` (the `transitionTypes` passthrough is confirmed at source level; spike keeps
   OQ-05.2 f). **07 · 09** — `NEXT_PUBLIC_SITE_URL` stays 06's variable (`D-06.11`): 09 sets it in the
   **Production scope only**, which 09 §2 already does; Development and Preview need no value because
@@ -821,8 +839,12 @@ target has no slash before the `#`, per `D-06.6`. (b) nothing for `www` — hand
 - `docs/technical/03-design-system-tokens.md` — `--nav-h`, fonts, `:root:lang(zh)` (matches both Chinese
   locales), `D-03.14` (`--font-cjk-sc` / `--font-cjk-tc` switched by `:root:lang(zh-Hans|zh-Hant)` — 06's
   Traditional-face ask, satisfied), icons/logo, INV-03.1 (manifest colours, still asked).
-- `docs/technical/04-components-sections.md` — Nav, Hamburger, `LangSwitcher` (+ its `Menu`), SubpageShell,
-  JsonLd, section ids.
+- `docs/technical/04-components-sections.md` — the component inventory of record, and the source of every
+  component name used here: `SiteHeader` / `PrimaryNav`, `Hamburger`, `LangSwitcher` (`D-04.16`, whose
+  disclosure is inlined — there is no `Menu` component), `SubpageBar` (with `BackLink`) + `SubpageHeader` —
+  the two components that replace what 06 once called `SubpageShell` — `SiteFooter`, section ids from
+  `D-04.3`. `JsonLd` is 06's own
+  (§6.6) and is deliberately not in 04's inventory.
 - `docs/technical/05-animation-system.md` — `D-05.10`/§5.7 (View Transitions, Back), `D-05.11`/§5.8 (scroll),
   §5.6 (switch cascade), OQ-05.2, OQ-05.4, OQ-05.5 (answered in `D-06.8`).
 - `docs/technical/07-forms-integrations.md` — `/api/inquiry`, `#visit`, 303 fallback, `NEXT_PUBLIC_SITE_URL`,
