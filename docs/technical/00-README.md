@@ -8,14 +8,16 @@ before anyone writes code. The site will be served from **`greenpasturesdaycare.
 `www` redirecting to it (HD-13, `D-09.5`, `D-06.11`). The set is **merged and signed off**: the human read it
 and answered at the Phase 1 gate on **2026-08-22**, signing off bead `gp-dln.4`, then answered three more
 questions the same day; the fifteen answers are cited across the plan as `HD-1`…`HD-15` (`D-12.7`), with four
-orchestrator adjudications (`ADJ-20`…`ADJ-22` and `ADJ-24`), and are rolled up in `12` §5. It is still a
-plan, not an implementation — the repository holds documentation and tracker state only, there is no `src/`
-and no `content/` tree yet, and Phase 2 is where the first line of application code is written (`D-10.1`,
-`INV-10.1`). This page asserts nothing of its own — every stack line, phase, gate, milestone and number is
-lifted from one of the twelve documents beside it and cited by identifier, so when the two disagree the owning
-document is right.
+orchestrator adjudications (`ADJ-20`…`ADJ-22` and `ADJ-24`), and are rolled up in `12` §5. It is no longer
+plan-only: building started after the sign-off, and `main` now carries the Phase 2 and Phase 3 PR stacks plus
+the first two rows of Phase 4, so `src/`, `content/` and the CI workflows all exist — `D-00.3` is the list of
+what has landed and what has not. What has *not* happened is enforcement: the six checks of `INV-08.2` run on
+every pull request and not one of them is required, because the repository ruleset still names no branch
+(`D-08.19`, `OQ-11.3`). This page asserts nothing of its own — every stack line, phase, gate, milestone and
+number is lifted from one of the twelve documents beside it and cited by identifier, so when the two disagree
+the owning document is right.
 
-Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…HD-15, ADJ-20…ADJ-22, ADJ-24)
+Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-23 (what has shipped, through PR-4.2)
 
 ## Decisions
 
@@ -23,12 +25,24 @@ Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…H
   decision about the stack, the schedule, the content model or the scope. A claim without an id is a defect.
 - **D-00.2 The plan of record is these thirteen files** — `00-README.md` through `12-open-questions.md`, with
   `docs/design/**` as the input. Nothing else is binding and the file names are frozen.
-- **D-00.3 Signed off, and still plan-only.** The human accepted these documents as the plan of record at the
-  Phase 1 gate on 2026-08-22 and answered twelve questions with it, then three more the same day. No
-  application code exists (the previous Create-React-App site was reset at `90bf6ba`), no `src/` or `content/`
-  tree exists, and none is written before Phase 2 opens (`D-10.1`, `INV-10.1`). Recording a gate answer in
-  these documents is not implementation — and neither is knowing the domain: no absolute origin is written
-  into `src/` at any point (`INV-06.10`).
+- **D-00.3 Signed off, and under construction.** The human accepted these documents as the plan of record at
+  the Phase 1 gate on 2026-08-22 and answered twelve questions with it, then three more the same day. Building
+  started from there, and as of 2026-08-23 `main` carries the Phase 2 and Phase 3 stacks — `audit.yml`
+  (PR-2.10) and the tracker relocation (OPS-2.2) excepted — plus the first two rows of Phase 4 (`10` §3): the
+  Next 16 / TypeScript-strict / Tailwind v4 scaffold (PR-2.4), the lint and test tooling, `ci.yml`,
+  `bead-trailer.yml` and the Vercel project (PR-2.5, PR-2.6, PR-2.9, OPS-2.1), the next-intl runtime and
+  `src/proxy.ts` (PR-3.1), the `en` content tree and `content/site.json` with its 23-entry `provisional` array
+  (PR-3.2), the Zod schemas and typed loaders (PR-3.3), `pnpm validate:content` (PR-3.4), the `zh-Hans`
+  prototype seed, the smoke matrix, the error routes and `content/README.md` (PR-3.5…PR-3.8), `zh-Hant` seeded
+  and enabled in `routing.locales` (PR-3.9), the design tokens (PR-4.1) and the layout shell with its nine
+  primitives (PR-4.2). Still to come: the rest of Phase 4 — motion core, text and decoration components, the
+  View Transitions spike, nav and hero (PR-4.3a…PR-4.6) — which is why no page yet renders a designed section;
+  and two files `03` declares that the row owning them closed without: `src/design/tokens.ts` and
+  `src/design/fonts.ts` (`gp-dln.60`, `gp-dln.61`). **None of it is gate-enforced yet:** the Phase 2, 3 and 4
+  gate beads are open (`gp-dln.21`, `gp-dln.25`, `gp-dln.37`), and the ruleset's ref-name include list is
+  still empty, so the six checks of `INV-08.2` run on every PR and none is required (`D-08.19`, `OQ-11.3`,
+  `12` §6). Recording a gate answer in these documents was never implementation — and neither is knowing the
+  domain: no absolute origin is written into `src/` at any point (`INV-06.10`).
 - **D-00.4 A thin `CLAUDE.md` lands in PR-2.2; this file stays the conventions of record.** This answers
   `OQ-11.4`, which `11` routes to this document's owner. If PR-2.2 ships without it, `11`'s default holds and
   `00` plus `11-work-tracking.md` remain binding.
