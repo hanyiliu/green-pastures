@@ -15,12 +15,14 @@ import { defineRouting } from "next-intl/routing";
 /**
  * Every locale id the project knows about, **enabled or not**.
  *
- * `routing.locales` below is the enabled subset. `zh-Hant` is listed here but
- * is not enabled yet: INV-02.11 keeps a locale out of `routing.locales` until
- * it is complete, and PR-3.9 seeds `content/zh-Hant/` and turns it on. The
- * catalogue exists so `ACCEPT_LANGUAGE` can name `zh-Hant` as a *preference*
- * while it is held back (`D-06.15`(a)) — which is what sends a `zh-TW` reader
- * to `zh-Hans` (the same language in the other script) instead of English.
+ * `routing.locales` below is the enabled subset. Since PR-3.9 seeded
+ * `content/zh-Hant/` and turned the id on, the two lists are equal — but they
+ * are still two lists, because INV-02.11 keeps a locale out of
+ * `routing.locales` until it is complete and D-10.12 may take `zh-Hant` back
+ * out at the Phase 8 gate. The catalogue is what lets `ACCEPT_LANGUAGE` name a
+ * held-back id as a *preference* (`D-06.15`(a)) — which is what would send a
+ * `zh-TW` reader to `zh-Hans` (the same language in the other script) rather
+ * than to English on the day that happens.
  */
 export const LOCALE_IDS = ["en", "zh-Hans", "zh-Hant"] as const;
 
@@ -38,13 +40,15 @@ export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export const routing = defineRouting({
   /**
    * The **enabled** locales, in menu order (02 `D-02.10`). A locale that is not
-   * yet reviewed is absent (INV-02.11); adding `zh-Hant` here plus its
-   * `LOCALE_META` row is the whole config half of PR-3.9, and removing it again
-   * is the D-10.12 fallback.
+   * yet reviewed is absent (INV-02.11); this line plus the `LOCALE_META` row
+   * below was the whole config half of PR-3.9, and removing `zh-Hant` from both
+   * again is the D-10.12 fallback — together with its two `brand` values in
+   * `content/site.json`, which INV-02.3 makes part of the same edit in both
+   * directions (a localized value may carry an entry only for an enabled id).
    */
-  locales: ["en", "zh-Hans"] as const satisfies ReadonlyArray<LocaleId>,
+  locales: ["en", "zh-Hans", "zh-Hant"] as const satisfies ReadonlyArray<LocaleId>,
   defaultLocale: "en",
-  /** 02 `D-02.9` / ADR-008: every page is `/en/…` or `/zh-Hans/…`. */
+  /** 02 `D-02.9` / ADR-008: every page is `/en/…`, `/zh-Hans/…` or `/zh-Hant/…`. */
   localePrefix: "always",
   /**
    * Off on purpose: `hreflang` comes from route metadata only (02 `D-02.9`,
@@ -84,16 +88,11 @@ export type LocaleMeta = {
 };
 
 /**
- * One row per **enabled** locale. PR-3.9 adds the `zh-Hant` row:
- *
- * ```ts
- * "zh-Hant": { htmlLang: "zh-Hant", hreflang: "zh-Hant", ogLocale: "zh_TW",
- *              nativeName: "繁體中文", shortLabel: "繁", brandPairLocale: "en" },
- * ```
+ * One row per **enabled** locale; PR-3.9 added the `zh-Hant` row.
  *
  * The endonyms distinguish the two Chinese locales — "中文" alone is ambiguous
- * once both ship — and each is written in its own script. These names are data,
- * never message keys, so adding a locale writes them once (02 rule 11).
+ * now that both ship — and each is written in its own script. These names are
+ * data, never message keys, so adding a locale writes them once (02 rule 11).
  */
 export const LOCALE_META = {
   en: {
@@ -112,6 +111,14 @@ export const LOCALE_META = {
     shortLabel: "简",
     brandPairLocale: "en",
   },
+  "zh-Hant": {
+    htmlLang: "zh-Hant",
+    hreflang: "zh-Hant",
+    ogLocale: "zh_TW",
+    nativeName: "繁體中文",
+    shortLabel: "繁",
+    brandPairLocale: "en",
+  },
 } as const satisfies Record<Locale, LocaleMeta>;
 
 /**
@@ -122,9 +129,11 @@ export const LOCALE_META = {
  * `zh-Hant`, so unaided negotiation would send every Chinese reader to English.
  *
  * Each row is an **ordered preference chain filtered by `routing.locales`,
- * first survivor wins**. While `zh-Hant` is held back, row 2 therefore resolves
- * to `zh-Hans` — never to `en`. A tag no row matches is skipped; a header no
- * row matches at all is left alone for next-intl's own best fit.
+ * first survivor wins**. Now that PR-3.9 has enabled `zh-Hant`, row 2 resolves
+ * to it; while it was held back the same row resolved to `zh-Hans`, and it will
+ * again if D-10.12's fallback fires — never to `en`, in either state. A tag no
+ * row matches is skipped; a header no row matches at all is left alone for
+ * next-intl's own best fit.
  *
  * Row 3 is 02's third table row (`en-*` → `en`) written out rather than left
  * implicit, and it is load-bearing: the resolver walks the header **in q-order**

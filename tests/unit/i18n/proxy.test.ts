@@ -60,9 +60,11 @@ describe("proxy behaviour", () => {
     const response = proxy(get("/", { language: "zh-TW,zh;q=0.9" }));
 
     expect(response.status).toBe(307);
-    // zh-Hant is held back, so a Traditional reader gets Simplified, not English.
+    // PR-3.9 enabled zh-Hant, so a Traditional reader now lands on their own
+    // script rather than on Simplified — the one behaviour change the seed
+    // makes for a reader who was already being served (D-06.15(a)).
     expect(new URL(response.headers.get("location") ?? "", "https://example.test").pathname).toBe(
-      "/zh-Hans",
+      "/zh-Hant",
     );
   });
 

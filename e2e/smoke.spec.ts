@@ -21,8 +21,9 @@ import { LOCALE_META, routing, type Locale } from "../src/i18n/routing";
  *   being the one page that is not a `routes[]` entry because it has no path of
  *   its own.
  *
- * The count therefore falls out rather than being asserted: 7 × 2 = 14 pairs
- * today, 21 the day `zh-Hant` is enabled (06 §6.1). The *route × locale matrix*
+ * The count therefore falls out rather than being asserted: 7 × 3 = 21 pairs
+ * since PR-3.9 enabled `zh-Hant`, 14 again if `D-10.12` withdraws it (06 §6.1).
+ * The *route × locale matrix*
  * describe below fails if either source ever arrives empty, because a matrix of
  * zero tests is a green run that measured nothing.
  *

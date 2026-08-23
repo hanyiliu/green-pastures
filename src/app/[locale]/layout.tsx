@@ -22,7 +22,7 @@ import { LOCALE_META, routing } from "@/i18n/routing";
 
 /**
  * Prerender one tree per **enabled** locale (06 `D-06.4`). Derived from
- * `routing.locales`, so PR-3.9's `zh-Hant` needs no edit here — and neither
+ * `routing.locales`, so PR-3.9's `zh-Hant` needed no edit here — and neither
  * would removing it again.
  */
 export function generateStaticParams(): Array<{ locale: string }> {

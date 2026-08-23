@@ -1,0 +1,43 @@
+{
+  "hero": {
+    "badge": "🌿 蒙特梭利日托 · 加州弗裏蒙特",
+    "title": "小小的手\n學<em>大大的本領</em>",
+    "subtitle": "一個溫暖的雙語之家：6個月到4歲半的孩子在認證蒙特梭利老師的引導下，按自己的節奏成長，每天享用新鮮的家常餐點。",
+    "ctaPrimary": "預約參觀 →",
+    "ctaSecondary": "瞭解我們的理念"
+  },
+  "philosophy": {
+    "eyebrow": "我們的理念",
+    "quote": "我們跟隨每個孩子的節奏 — <em>引導，而非催促</em> — 讓好奇心帶路。",
+    "link": "閱讀我們的理念 →"
+  },
+  "programs": {
+    "eyebrow": "課程與年齡",
+    "title": "一步一步，與我們一起成長",
+    "link": "查看全部課程 →"
+  },
+  "menu": {
+    "eyebrow": "一週餐點",
+    "title": "新鮮早餐、午餐與點心 🍎",
+    "link": "查看完整菜單 →"
+  },
+  "gallery": {
+    "eyebrow": "我們的照片牆",
+    "title": "{brandShortName}的日常",
+    "link": "瀏覽相冊 →"
+  },
+  "testimonials": {
+    "title": "來自家庭的暖心話",
+    "countLine": "<count>{count, number}</count> 條評價 · 弗裏蒙特家長",
+    "link": "在 Yelp 閱讀全部評價 →"
+  },
+  "teachers": {
+    "eyebrow": "我們是誰",
+    "title": "孩子會愛上的面孔",
+    "link": "認識整個團隊 →"
+  },
+  "visit": {
+    "title": "來看看寶貝的\n下一個家 🌱",
+    "subtitle": "告訴我們您的家庭情況，我們會盡快聯繫您，安排一次輕鬆愉快的參觀。"
+  }
+}

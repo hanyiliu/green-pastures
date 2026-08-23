@@ -2,11 +2,13 @@
   "brand": {
     "name": {
       "en": "Green Pastures Montessori Daycare",
-      "zh-Hans": "优朵幼儿园"
+      "zh-Hans": "优朵幼儿园",
+      "zh-Hant": "優朵幼兒園"
     },
     "shortName": {
       "en": "Green Pastures",
-      "zh-Hans": "优朵"
+      "zh-Hans": "优朵",
+      "zh-Hant": "優朵"
     },
     "url": "https://greenpastures.example"
   },
@@ -239,7 +241,9 @@
   "provisional": [
     "brand.url",
     "brand.name.zh-Hans",
+    "brand.name.zh-Hant",
     "brand.shortName.zh-Hans",
+    "brand.shortName.zh-Hant",
     "contact.email",
     "contact.phone",
     "contact.phoneDisplay",

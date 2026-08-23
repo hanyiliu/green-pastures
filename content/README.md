@@ -26,6 +26,7 @@ content/
 ├── README.md                     this guide
 ├── GLOSSARY.md                   the words we keep the same, in all three languages
 ├── zh-Hans/                      the Simplified Chinese words — same file names, still being filled in
+├── zh-Hant/                      the Traditional Chinese words — the Simplified ones converted, awaiting a read-through
 └── en/                           the English words
     ├── messages/                 one file per page or area  (12 files)
     │   ├── common.json           top bar, footer, buttons, language switch
@@ -57,7 +58,9 @@ the navigation, mostly; several files are still empty and none of the collection
 is expected and it blocks nothing: a page with no Chinese yet shows the English. Filling it in is §7, and the
 coverage report is the to-do list.
 
-Traditional Chinese will live in `content/zh-Hant/` and **is not switched on yet** (§7).
+**Traditional Chinese** lives in `content/zh-Hant/` and **is on the site**. Every file there was made once,
+by converting the Simplified file at the same path character by character, so it is *readable* but not yet
+*read* — §7 says what that means for you.
 
 ---
 
@@ -154,8 +157,8 @@ every page follows.
 5. Now do the same sentence in Chinese. Use the branch selector at the top left of the file view to switch to
    your new branch, open the same file under `content/zh-Hans/messages/`, and edit the same key — or add it,
    if that file does not have it yet. This time choose **Commit directly to the branch**, pasting the `Bead:`
-   line again, because *every* commit is checked, not only the first. It joins the same pull request. If
-   Traditional Chinese has been switched on by then, repeat under `content/zh-Hant/messages/`. If you cannot
+   line again, because *every* commit is checked, not only the first. It joins the same pull request. Then
+   repeat under `content/zh-Hant/messages/` — Traditional Chinese is on the site too. If you cannot
    translate it, leave it and say so in the pull request; the translator picks it up from the coverage report.
    And if the key has a `Short` twin, edit that too, in every language.
 6. Within a few minutes the pull request shows its **checks** and a comment with a **preview link**. Open it
@@ -206,12 +209,13 @@ Because a convincing fake is exactly what a machine cannot spot, every one of th
 `content/site.json`, in a block called `provisional` at the very bottom. **The site cannot be launched while
 that list has anything in it.** This is the owner's launch homework.
 
-### What is on the list today — 21 entries
+### What is on the list today — 23 entries
 
 | Path in `site.json` | What it is now |
 |---|---|
 | `brand.url` | `https://greenpastures.example` |
 | `brand.name.zh-Hans` · `brand.shortName.zh-Hans` | 优朵幼儿园 · 优朵 — the Chinese name, not confirmed |
+| `brand.name.zh-Hant` · `brand.shortName.zh-Hant` | 優朵幼兒園 · 優朵 — the same name in Traditional, not confirmed either |
 | `contact.email` | `hello@greenpasturesdaycare.com` |
 | `contact.phone` · `contact.phoneDisplay` | `+15105550142` · `(510) 555-0142` |
 | `contact.address.street` · `contact.address.postalCode` | `1234 Sample Way` · `94538` |
@@ -224,8 +228,8 @@ that list has anything in it.** This is the owner's launch homework.
 
 ### What the list looks like
 
-Open `content/site.json` and scroll to the bottom. The last block in the file is this — twenty-one lines, each
-one the address of a value somewhere above it:
+Open `content/site.json` and scroll to the bottom. The last block in the file is this — twenty-three lines,
+each one the address of a value somewhere above it:
 
 ```
   "provisional": [
@@ -257,7 +261,7 @@ Worked through with the licence number. Every provisional value goes the same wa
 
    Nothing else on that line changes: the key stays, the quotes stay, the comma at the end stays. The licence
    number is written as text even though it reads as digits — that is what keeps its leading zeros — and
-   nineteen of the twenty-one entries work exactly like this.
+   twenty-one of the twenty-three entries work exactly like this.
 
    **2a. The two exceptions are numbers, and numbers have no quotes.** `yelp.rating` and `yelp.reviewCount`
    are the only entries on the list written as bare digits:
@@ -276,8 +280,8 @@ Worked through with the licence number. Every provisional value goes the same wa
    **2b. If the line begins `collections.teachers.`** the value is not in this file.
    `collections.teachers.ping.name` is the `name` field of the `ping` entry in **each language's**
    `collections/teachers.json` — today that is
-   `content/en/collections/teachers.json` and `content/zh-Hans/collections/teachers.json`, and
-   `content/zh-Hant/…` too once Traditional is switched on. Change the name in every one of them, in the same
+   `content/en/collections/teachers.json`, `content/zh-Hans/collections/teachers.json` and
+   `content/zh-Hant/collections/teachers.json`. Change the name in every one of them, in the same
    pull request, then come back to `site.json` for step 3.
 
 3. **Delete that line from the `provisional` list.** Scroll back down to the list and remove the whole line,
@@ -350,12 +354,12 @@ Style: full-width punctuation （，。：）; the agreed rendering for every re
 stop and decide about belongs there in the same pull request; and **never commit machine translation nobody
 has read.**
 
-**Traditional Chinese (`zh-Hant`) is not switched on yet.** When it arrives it will be created once, by the
-developer, by converting the Simplified files character-by-character. That produces files that are *readable*,
-not *finished*: the conversion cannot know that a word natural in the mainland reads oddly in Taiwan, and it
-does not touch punctuation like 「 」. So the job on those files is a **read-through**, not a re-translation.
-Nothing ever re-converts them, so an edit is never overwritten. Until a person has read every file, the
-language stays off the site — which blocks nothing else.
+**Traditional Chinese (`zh-Hant`) is on the site, and every file in it is waiting to be read.** It was
+created once, by the developer, by converting the Simplified files character-by-character. That produced files
+that are *readable*, not *finished*: the conversion cannot know that a word natural in the mainland reads
+oddly in Taiwan, and it does not touch punctuation like 「 」. So the job on those files is a **read-through**,
+not a re-translation. Nothing ever re-converts them, so an edit is never overwritten. Steps 2 and 3 above
+apply to `content/zh-Hant/` exactly as they do to `content/zh-Hans/`: same paths, same keys.
 
 ---
 

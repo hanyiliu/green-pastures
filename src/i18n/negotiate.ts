@@ -66,9 +66,9 @@ function parseAcceptLanguage(header: string): WeightedTag[] {
  * Walks the header's tags in q-order; the first tag that matches an
  * `ACCEPT_LANGUAGE` row resolves to that row's **first surviving locale** —
  * the first entry of its ordered preference chain that is still in
- * `routing.locales`. So `zh-TW` prefers `zh-Hant` and, while that locale is
- * held back (INV-02.11), falls back to `zh-Hans` — the same language in the
- * other script — and never to `en`.
+ * `routing.locales`. So `zh-TW` prefers `zh-Hant` — enabled since PR-3.9 — and
+ * would fall back to `zh-Hans` if INV-02.11 ever held that locale back again:
+ * the same language in the other script, and never `en`.
  *
  * Returns `null` when no row matches, which leaves the header untouched for
  * next-intl's own best fit (`en-*` and everything else → `en`).

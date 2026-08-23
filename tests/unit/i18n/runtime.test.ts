@@ -211,11 +211,14 @@ describe("assembleLocaleTree (02 D-02.8)", () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it("does not throw in dev when not one file of the tree loads (the PR-3.9 window)", () => {
-    // The carve-out is per locale, so it retired itself for `zh-Hans` the day
-    // PR-3.5 landed. It is still what keeps `/zh-Hant` serving on the commit
-    // that adds the id to `routing.locales` before `content/zh-Hant/` is
-    // copied across — 02's add-a-locale checklist, steps 1 and 3.
+  it("does not throw in dev when not one file of the tree loads (the add-a-locale window)", () => {
+    // The carve-out is per locale, so it retires itself: for `zh-Hans` the day
+    // PR-3.5 landed, and for `zh-Hant` the day PR-3.9 copied the tree across.
+    // It is what keeps a locale serving between steps 1 and 3 of 02's
+    // add-a-locale checklist — the id enabled, the directory not yet there —
+    // which is the window this PR passed through and the next locale will too.
+    // The paths below are `zh-Hant`'s because that is the window this case was
+    // written for; nothing here reads the real tree.
     const absent = (directory: "messages" | "collections", namespace: string): LoadedFile => ({
       path: `content/zh-Hant/${directory}/${namespace}.json`,
       namespace,

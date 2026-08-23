@@ -7,7 +7,7 @@ import {
   resolveAcceptLanguage,
   withResolvedLanguage,
 } from "@/i18n/negotiate";
-import { LOCALE_COOKIE_NAME, routing } from "@/i18n/routing";
+import { ACCEPT_LANGUAGE, LOCALE_COOKIE_NAME, routing } from "@/i18n/routing";
 
 /**
  * 06 `D-06.15` — the negotiation table and canonical casing (02 *Routing*).
@@ -24,8 +24,8 @@ function request(url: string, init?: { language?: string; cookie?: string }): Ne
 }
 
 describe("routing.locales", () => {
-  it("enables en and zh-Hans and holds zh-Hant back until PR-3.9 (INV-02.11)", () => {
-    expect([...routing.locales]).toStrictEqual(["en", "zh-Hans"]);
+  it("enables all three ids now that PR-3.9 has seeded zh-Hant (INV-02.11)", () => {
+    expect([...routing.locales]).toStrictEqual(["en", "zh-Hans", "zh-Hant"]);
     expect(routing.defaultLocale).toBe("en");
   });
 
@@ -40,6 +40,8 @@ describe("canonicalCasing (D-06.15(b))", () => {
     ["/zh-hans", "/zh-Hans"],
     ["/zh-hans/menu", "/zh-Hans/menu"],
     ["/ZH-HANS/menu", "/zh-Hans/menu"],
+    ["/zh-hant", "/zh-Hant"],
+    ["/zh-hant/menu", "/zh-Hant/menu"],
     ["/EN", "/en"],
     ["/En/programs", "/en/programs"],
   ])("308-corrects %s to %s", (input, expected) => {
@@ -54,6 +56,8 @@ describe("canonicalCasing (D-06.15(b))", () => {
     ["/en/menu"],
     ["/zh-Hans"],
     ["/zh-Hans/menu"],
+    ["/zh-Hant"],
+    ["/zh-Hant/menu"],
     ["/about"],
     ["/fr/x"],
   ])("leaves %s alone", (input) => {
@@ -61,9 +65,11 @@ describe("canonicalCasing (D-06.15(b))", () => {
   });
 
   it("does not canonicalise a locale that is not enabled", () => {
-    // `zh-Hant` is out of `routing.locales` until PR-3.9, so `/zh-hant/x` is an
-    // unprefixed path, not a mis-cased locale.
-    expect(canonicalCasing("/zh-hant/x")).toBeNull();
+    // Canonical casing is derived from `routing.locales`, so an id the project
+    // does not enable is an unprefixed path, not a mis-cased locale. PR-3.9
+    // enabled `zh-Hant`, which is why `/zh-hant/x` moved to the 308 table above
+    // with no edit to `canonicalCasing` itself; `fr` stands in for the rule.
+    expect(canonicalCasing("/fr-FR/x")).toBeNull();
   });
 });
 
@@ -71,11 +77,12 @@ describe("localePrefixOf", () => {
   it.each([
     ["/en", "en"],
     ["/zh-Hans/menu", "zh-Hans"],
+    ["/zh-Hant/menu", "zh-Hant"],
   ])("reads %s as %s", (pathname, expected) => {
     expect(localePrefixOf(pathname)).toBe(expected);
   });
 
-  it.each([["/"], ["/about"], ["/zh-hans"], ["/zh-Hant"], ["/fr/x"]])(
+  it.each([["/"], ["/about"], ["/zh-hans"], ["/zh-hant"], ["/fr/x"]])(
     "reads no locale from %s",
     (pathname) => {
       expect(localePrefixOf(pathname)).toBeUndefined();
@@ -92,9 +99,14 @@ describe("resolveAcceptLanguage (D-06.15(a) — 02's table)", () => {
   );
 
   it.each([["zh-TW"], ["zh-HK"], ["zh-MO"], ["zh-Hant"], ["zh-Hant-TW"]])(
-    "%s prefers zh-Hant and, while it is held back, falls back to zh-Hans — never en",
+    "%s resolves to zh-Hant now that PR-3.9 has enabled it — and to zh-Hans, never en, if D-10.12 takes it away again",
     (header) => {
-      expect(resolveAcceptLanguage(header)).toBe("zh-Hans");
+      expect(resolveAcceptLanguage(header)).toBe("zh-Hant");
+      // The chain, not just today's survivor: what row 2 falls back to is the
+      // half of D-06.15(a) the fallback depends on and this file is the only
+      // place it is stated.
+      const [, traditional] = ACCEPT_LANGUAGE;
+      expect([...(traditional?.[1] ?? [])]).toStrictEqual(["zh-Hant", "zh-Hans"]);
     },
   );
 
@@ -124,7 +136,7 @@ describe("resolveAcceptLanguage (D-06.15(a) — 02's table)", () => {
   });
 
   it("skips a tag no row matches and keeps walking", () => {
-    expect(resolveAcceptLanguage("fr-FR,zh-TW;q=0.8")).toBe("zh-Hans");
+    expect(resolveAcceptLanguage("fr-FR,zh-TW;q=0.8")).toBe("zh-Hant");
   });
 
   it("keeps document order when two tags share a quality", () => {
@@ -145,7 +157,7 @@ describe("resolveAcceptLanguage (D-06.15(a) — 02's table)", () => {
 describe("withResolvedLanguage", () => {
   it("rewrites Accept-Language to the single resolved tag on an unprefixed path", () => {
     const rewritten = withResolvedLanguage(request("/", { language: "zh-TW,zh;q=0.9" }));
-    expect(rewritten.headers.get("accept-language")).toBe("zh-Hans");
+    expect(rewritten.headers.get("accept-language")).toBe("zh-Hant");
   });
 
   it("keeps every other header and the URL", () => {
@@ -169,7 +181,10 @@ describe("withResolvedLanguage", () => {
   });
 
   it("still negotiates when the cookie holds a locale that is not enabled", () => {
-    const rewritten = withResolvedLanguage(request("/", { language: "zh-CN", cookie: "zh-Hant" }));
+    // A stale cookie: `fr` never was a locale here, and `zh-Hant` stopped being
+    // an example of one the day PR-3.9 enabled it. Either way the value is not
+    // in `routing.locales`, so negotiation runs rather than being short-circuited.
+    const rewritten = withResolvedLanguage(request("/", { language: "zh-CN", cookie: "fr" }));
     expect(rewritten.headers.get("accept-language")).toBe("zh-Hans");
   });
 

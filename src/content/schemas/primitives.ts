@@ -86,9 +86,11 @@ export const RichText = z
  * The key schema is `routing.locales`, and Zod 4 records over an enum are
  * **exhaustive** — so this single line is INV-02.3's "every localized value has
  * an entry for every id in `routing.locales` and no others": a missing locale
- * is a parse error, and a locale that is not enabled (today `zh-Hant`) is an
- * unrecognised key. Enabling a locale in `routing.ts` therefore *breaks the
- * build* until its brand names are authored, which is the point.
+ * is a parse error, and a locale that is not enabled is an unrecognised key.
+ * Enabling a locale in `routing.ts` therefore *breaks the build* until its brand
+ * names are authored — which is the point, and is what PR-3.9 walked into on
+ * `zh-Hant`. The rule bites in both directions: withdrawing an id under D-10.12
+ * takes its brand names out with it.
  */
 export const LocalizedText = z.record(z.enum(routing.locales), Text);
 export type LocalizedText = z.infer<typeof LocalizedText>;

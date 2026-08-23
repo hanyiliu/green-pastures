@@ -195,17 +195,18 @@ function collect(files: ReadonlyArray<LoadedFile>): MessageTree {
  *
  *   The condition is per locale, so the carve-out retires itself: it can no
  *   longer fire for `zh-Hans` now that PR-3.5 has authored `content/zh-Hans/`,
- *   and no code had to change for that. It is kept for `zh-Hant`, which is in
- *   `LOCALE_IDS` but not `routing.locales` and has no tree yet: 02's
- *   add-a-locale checklist enables the id (step 1) before it copies the tree
- *   across (step 3), and this is what makes that order survivable in dev at
- *   PR-3.9 rather than a crash on every `/zh-Hant` request. It retires for
- *   `zh-Hant` the same way, the day that tree lands.
+ *   nor for `zh-Hant` now that PR-3.9 has seeded it — and no code had to change
+ *   for either. It is what makes 02's add-a-locale checklist survivable in the
+ *   order it is written, which enables the id (step 1) before it copies the
+ *   tree across (step 3): between those two steps every file of the new locale
+ *   is absent, and dev renders markers instead of 500ing on every request. It
+ *   is dormant today and live again for whatever locale is added next.
  *
  * - An **authored but empty** file (`{}`) is present, not missing: that is how
- *   a namespace nobody has translated yet is spelled, and it is the state
- *   `content/zh-Hans/` is in today — PR-3.5's prototype strings in `common`,
- *   `home` and `visit`, `{}` in the other fifteen files. That is not a
+ *   a namespace nobody has translated yet is spelled, and it is the state both
+ *   Chinese trees are in today — PR-3.5's prototype strings in `common`, `home`
+ *   and `visit` and PR-3.9's `s2t` conversion of them, `{}` in the other
+ *   fifteen files of each. That is not a
  *   half-authored tree but the phased-translation window D-02.8's CI row and
  *   INV-02.11 describe, and it is the state the site lives in for weeks, so it
  *   must not throw. It is silent here by design — dev renders `⟦…⟧` per key,
