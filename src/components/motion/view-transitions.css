@@ -84,6 +84,22 @@
   opacity: 1;
 }
 
+/*
+ * A footnote to §1 that holds for every rule below it as well. `::view-transition`
+ * is the root of the snapshot tree and `pointer-events` inherits, so one
+ * declaration covers the whole overlay — and the overlay covers the viewport for
+ * the full 500 ms of a slide, eating every click in that window without this.
+ * That is measured rather than feared: PR-4.4 left the declaration out rather
+ * than disable a lint gate it did not own, and found swallowed clicks in all
+ * three engine and viewport combinations it ran. The gate was opened afterwards,
+ * deliberately — this is the one static, non-animated property the
+ * `property-allowed-list` admits, for this file and `ambient.css` only
+ * (05 §5.7, `.stylelintrc.mjs`).
+ */
+::view-transition {
+  pointer-events: none;
+}
+
 /* ---------------------------------------------------------------------- *
  * 2 · Forward — "learn more →" (`transitionTypes={['subpage-enter']}`).
  *
