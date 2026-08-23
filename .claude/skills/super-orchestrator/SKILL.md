@@ -79,7 +79,11 @@ new beads, three sweep rounds, all off a system notification whose own text said
 it as a request from the human. *There is obviously startable work* is not the same as *you
 were asked to start it*. The ratio banner below is a dispatch prompt **only while the run is
 open**; after a close-out instruction the heartbeat has exactly three jobs — confirm nothing is
-dropped, mark every remaining row `--owner human`, and stay quiet.
+dropped, hand every remaining unit of work back to the human, and stay quiet. That hand-back has
+two halves, and they are different tools: in the tracker it is `bd update <id> --assignee human
+--status open`, and on the board it is `board.py task <id> --owner human`. `--owner` is a
+`board.py` flag; `bd` has no such flag, and a row marked on the board alone has not been handed
+back at all (W-11.7).
 
 **A heartbeat that carries facts goes stale and lies.** The same run's heartbeat text still
 described one PR as RED and another as green-but-ungraded hours after both had merged, and a
@@ -125,29 +129,35 @@ Two consequences:
 
 ## Work tracking: beads is the ledger, the board is a projection
 
-`docs/technical/13-work-tracking.md` is binding. Every unit of work is a bead in the `bd`
+`docs/technical/11-work-tracking.md` is binding. Every unit of work is a bead in the `bd`
 graph; the board displays that graph and never becomes a second version of it.
 
-- **`bd prime` before anything else, every session** (W5). Read the graph before you route
+- **`bd prime` before anything else, every session** (W-11.5). Read the graph before you route
   work — dispatching against a stale picture is how two agents end up on one bead.
-- **No bead, no branch** (W1, INV-18). The bead exists and is claimed before a branch does.
-- **The implementer claims its own bead** — `bd update <id> --claim` sets the assignee, and
-  you must never be that assignee. Put the claim in the brief, not in your own hands: a bead
-  you claimed is a task you own, which `board.py` refuses to render. The tier-0 rule and the
-  claim rule are the same rule seen from two sides.
+- **No bead, no branch** (W-11.1, INV-11.1). The bead exists and is claimed before a branch does.
+- **The seat is the assignee; you never are** (W-11.2). `bd update <id> --claim --actor <seat>`
+  sets the assignee to that actor and the status to `in_progress`. You run it *on the seat's
+  behalf* — seats never run `bd` at all — and you record the claim in the brief rather than
+  keeping it in your own hands: a bead assigned to you is a task you own, which `board.py`
+  refuses to render. The tier-0 rule and the claim rule are the same rule seen from two sides.
 - **Lanes are epics, tasks are beads.** `board.py beads` pulls `bd list --json` and maps the
   graph on: an epic bead becomes a lane, its children become task rows, bead status becomes
   board status. A bead-backed row's id *is* its bead id — that is how a re-sync finds it.
 - **The sync is one-way, and that is deliberate.** Never hand-set `--status` on a bead-backed
-  row. Change it in `bd`, then re-sync. If the board could write back, a rendering bug could
-  rewrite the tracker, and 13 makes `bd` the authority on what is done.
-- **`Bead: <id>` trailer on every commit** (W3) — the `bead-trailer` CI gate enforces it.
+  row. Change it in `bd`, then re-sync — and the re-sync is `board.py beads`. There is no
+  `bd sync`: `bd` has no such command, and the two `bd` commands with "sync" in their job
+  (`bd dolt push` / `bd dolt pull`, D-11.6) move Dolt data between machines and have nothing
+  to do with the board. If the board could write back, a rendering bug could rewrite the
+  tracker, and 11 makes `bd` the authority on what is done.
+- **`Bead: <id>` trailer on every commit** (W-11.3) — the `bead-trailer` CI gate enforces it.
 - **Discovered work becomes a bead**, `bd create` + `bd dep add` — never a `TODO`, `FIXME`,
-  or `HACK` (W4, TRAP-23). This binds the standing sweep too: reviewer findings you accept
+  or `HACK` (W-11.4, TRAP-11.9). This binds the standing sweep too: reviewer findings you accept
   become beads, not comments and not a private list.
-- **Open questions are blocking beads owned by the human** (D-27). A bead blocked on an OQ is
-  not yours to unblock by picking an answer. Unclaim it, flag it, route around it.
-- **Never self-close** (W6, TRAP-25). Phase gates define done. The verifier reports the gate
+- **Open questions are blocking beads owned by the human** (W-11.8). A bead blocked on an OQ is
+  not yours to unblock by picking an answer. Unclaim it — `bd update <id> --assignee "" --status
+  open`, or `bd assign <id> ""`; there is no `--unclaim` flag (W-11.2) — then flag it and route
+  around it.
+- **Never self-close** (W-11.6, TRAP-11.8). Phase gates define done. The verifier reports the gate
   result and the close follows from it.
 - **A tracker refusing you is information, not an obstacle.** When `bd` declines a close —
   `cannot close X: blocked by open issues [Y] (use --force to override)` — that is its integrity
@@ -159,10 +169,10 @@ graph; the board displays that graph and never becomes a second version of it.
 - **`.beads/` is human-owned.** Mutate it through `bd` only; never hand-edit graph files. The
   exported `issues.jsonl` is a passive projection that lags the graph — never read state from it
   and never treat its silence as absence.
-- Beads is adopted as a *tracker only* (D-28, TRAP-24). Do not import the architecture or
+- Beads is adopted as a *tracker only* (D-11.1, TRAP-11.10). Do not import the architecture or
   coverage conventions that ship with beads workflows elsewhere — this project rejected them.
 
-`bd`'s flags may have moved since 13 was written (TRAP-10). Verify against `bd --help` before
+`bd`'s flags may have moved since 11 was written (TRAP-11.7). Verify against `bd --help` before
 relying on syntax, and set `ORCH_BD` if the board needs a different binary or wrapper.
 
 ## Every task has two seats
@@ -325,10 +335,10 @@ read as the full stop Liveness says it is, rather than as a fleet that died.
 
 When the authoritative plan is finer-grained than the bead graph — one bead covering several
 plan tasks — **render plan granularity**, a row per plan task under its own plan id with the
-bead id in the title: `task P1.4 --lane P1 --title "PRO-x7q · input rules"`. `beads` upserts
-by bead id, so it re-syncs the rows it owns and leaves these alone. They are a finer
-projection of the same beads, not a second backlog: `bd` stays the tracker of record, and the
-ban on hand-setting `--status` on a bead-backed row is untouched.
+bead id in the title: `task P1.4 --lane P1 --title "gp-73v.2 · i18n & content contract"`.
+`beads` upserts by bead id, so it re-syncs the rows it owns and leaves these alone. They are
+a finer projection of the same beads, not a second backlog: `bd` stays the tracker of record,
+and the ban on hand-setting `--status` on a bead-backed row is untouched.
 
 Load `artifact-design` once, then publish the printed path with `Artifact` — favicon `🛰️`.
 **Publish before dispatching anything, and publish the whole road rather than wave one**, so
@@ -484,8 +494,9 @@ agents never race the index. Worktree agents may commit inside their own worktre
 Pre-authorized: don't ask before pushing, don't ask before merging. Report instead.
 
 1. **Commit** in focused chunks, each ending with a `Bead: <id>` trailer resolving to a real
-   claimed bead — the `bead-trailer` gate blocks the merge otherwise. Follow the repo's
-   `CLAUDE.md` on everything else in the message.
+   claimed bead — the `bead-trailer` gate blocks the merge otherwise. Follow
+   `docs/technical/00-README.md` and `docs/technical/11-work-tracking.md` on everything else
+   in the message.
 2. **Push** with `git push -u origin <branch>`, retrying network failures with backoff. **Then
    verify the push landed, against `git ls-remote` rather than against your own command.** A
    quieted push chained to an echo — `git push -q … ; echo " pushed"` — prints its success
@@ -498,26 +509,8 @@ Pre-authorized: don't ask before pushing, don't ask before merging. Report inste
    splitting makes each piece *easier to review or land independently* — never merely to hit
    a number. Both halves of that bind, and the second is the one a router forgets: a cap
    never justifies condensing or trimming work to fit, and the absence of one never
-   justifies bundling unrelated changes into a single PR. Read `CLAUDE.md` for the binding
-   wording rather than this summary.
-
-   This step read *"checking the repo's size cap first — this repo caps a PR at
-   500 **hand-written** added lines, and exempts machine-generated files
-   (`package-lock.json`, `.beads/` data) and pure documentation or planning PRs.
-   Deletions are uncapped."* until **2026-08-12**, and its closing sentence
-   read *"Over the cap, split into a stack that each stand alone and land in
-   order — never condense the work to fit."* until the same day. `CLAUDE.md`
-   retired that cap on **2026-08-07** (`PRO-vagt`, #228) and says so in as many words, so
-   this file spent five days telling every seat dispatched from it to check a constraint the
-   repository had already withdrawn — and several PRs merged inside that window were well
-   over the retired number and were right to be. **A stale line in a skill file is not a
-   stale line in a document.** A document misleads a reader who can go and check it; this
-   text *becomes* the standing instruction of the run, so a retired constraint here shapes
-   work rather than merely describing it wrongly. The harm is the one `CLAUDE.md` names in
-   the same paragraph that retires the cap — a seat told to check a cap first trims to fit
-   it. The sweep that fixed the doc and README sites (`PRO-vagt`, `PRO-e01s`, `PRO-e1hv`)
-   went past this one because it is an instruction file, and nobody sweeps the instructions
-   (`PRO-3snc`).
+   justifies bundling unrelated changes into a single PR. Read
+   `docs/technical/10-work-breakdown.md` §12 for the binding wording rather than this summary.
 4. **Dispatch reviewers in parallel with distinct lenses** — correctness and regressions,
    security and data handling, conventions and test coverage — each told to *refute* the
    change. Record every verdict, including passes.
@@ -554,12 +547,13 @@ Three things about what a wave does to itself:
 Mark it `failed` with a one-line cause and publish. A fleet that visibly loses an agent and
 recovers reads as competent; one that goes quiet reads as broken.
 
-Then **escalate rather than spin** (W7). One retry with the failure context added to the
+Then **escalate rather than spin** (W-11.7). One retry with the failure context added to the
 brief is fair when the cause was mechanical — a flaky command, a missing path. Anything else,
 and the bead gets **unclaimed** and flagged for the human: a bead blocked on an open question,
 a failing gate, or a second review round is not something more attempts will resolve, and
-silently retrying it is exactly what W7 forbids. Re-cutting into smaller seats is fine; taking
-it inline yourself is not — a tier-0 attempt is the law being broken, not an exception to it.
+silently retrying it is exactly what W-11.7 forbids. Re-cutting into smaller seats is fine;
+taking it inline yourself is not — a tier-0 attempt is the law being broken, not an exception
+to it.
 
 ## Reporting to the human
 

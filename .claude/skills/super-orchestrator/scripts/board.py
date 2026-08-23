@@ -9,7 +9,7 @@ page the user already has open simply updates.
   board.py init   --mission "..." [--repo owner/name] [--branch b]
   board.py lane   L1 --name "Contracts" [--charter "owns src/types/**"]
                      [--status queued|running|done] [--milestone yes]
-                     [--epic PRO-x]   pin the bead epic this lane is a view of
+                     [--epic gp-x]    pin the bead epic this lane is a view of
                                       (alias: wave; the epic is otherwise matched
                                        by name, see lane_epic)
   board.py task   T1 --lane L1 --title "..." --owner <impl> --verifier <check>
@@ -56,10 +56,10 @@ row carries an owner (who implements) and a verifier (who grades). Naming the
 orchestrator in either seat, or the same agent in both, is refused rather than
 rendered — see guard().
 
-Beads (13-work-tracking.md) is the tracker of record; this board is a projection
+Beads (11-work-tracking.md) is the tracker of record; this board is a projection
 of it. `beads` pulls the graph in rather than the board keeping its own copy of
 the truth. Set ORCH_BD to override the command if the CLI's flags have moved
-(TRAP-10 warns they may have).
+(TRAP-11.7 warns they may have).
 
 Every render also re-reads bd and redraws the blocking graph as mermaid — see
 dep_section. It is live by design, which costs a `bd` start per publish; set
@@ -313,7 +313,7 @@ def sync_beads(s, limit, status):
     """Mirror the bd graph onto the board. Beads owns status; the board displays it.
 
     Deliberately one-way. Writing board state back into bd would let a rendering
-    bug rewrite the tracker, and 13-work-tracking.md makes bd the source of truth
+    bug rewrite the tracker, and 11-work-tracking.md makes bd the source of truth
     for what is done — the board must not be able to disagree with it.
 
     Closed beads are pulled too. Without them a bead that closes between syncs
@@ -2198,7 +2198,7 @@ def bead_rail(ms):
 
     A lane is joined to its epic by NAME, not by a table kept in this file. Lanes
     read "Phase 4 · server and sync" and the epic is titled "Phase 4 epic", so the
-    join is derivable and survives a phase being added. `lane <id> --epic PRO-x`
+    join is derivable and survives a phase being added. `lane <id> --epic gp-x`
     pins it explicitly when a rename breaks the match, and every pin prints which
     of the two got it there.
 
