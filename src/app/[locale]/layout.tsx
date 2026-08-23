@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import "../globals.css";
 
+import { fredoka, nunito } from "@/design/fonts";
 import { clientMessages } from "@/i18n/messages";
 import { notFound } from "@/i18n/navigation";
 import { LOCALE_META, routing } from "@/i18n/routing";
@@ -15,9 +16,9 @@ import { LOCALE_META, routing } from "@/i18n/routing";
  * Next allows exactly one `<html>` — there is no `src/app/layout.tsx`.
  *
  * PR-3.1 owns only the locale plumbing: `<html lang>`, `generateStaticParams`,
- * the unknown-locale guard and the client provider. Fonts (PR-4.1),
- * `MotionProvider` (PR-4.x), the sticky nav and footer (PR-4.x) and the
- * metadata block (PR-6.8) attach here later.
+ * the unknown-locale guard and the client provider; the font classes below are
+ * PR-4.1's one line here (03 §3.1). `MotionProvider` (PR-4.x), the sticky nav
+ * and footer (PR-4.x) and the metadata block (PR-6.8) attach here later.
  */
 
 /**
@@ -47,9 +48,20 @@ export default async function LocaleLayout({
   const t = await getTranslations("common");
 
   return (
+    // The two `variable` classes are what makes `src/design/fonts.ts` reach the
+    // page: next/font declares `--font-fredoka` / `--font-nunito` *only* on the
+    // element carrying them, and `src/styles/tokens.css` §3.1 reads both from
+    // `:root` — so `<html>` is the one element they can sit on (03 §3.1, 06
+    // §6.2). Drop them and `--font-display` / `--font-body` fall straight
+    // through to `--font-cjk`, the system stack: legible, and not the brand.
+    //
     // `data-scroll-behavior="smooth"` is Next's opt-in for smooth scrolling on
     // its own route transitions (05 owns the motion that depends on it).
-    <html lang={LOCALE_META[locale].htmlLang} data-scroll-behavior="smooth">
+    <html
+      lang={LOCALE_META[locale].htmlLang}
+      className={`${fredoka.variable} ${nunito.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body>
         {/* 06 §6.2: the skip link targets the `#main` landmark each page renders. */}
         <a href="#main" className="sr-only focus:not-sr-only">
