@@ -1,24 +1,39 @@
 import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getMessages } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import "../globals.css";
 
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SkipLink } from "@/components/layout/SkipLink";
+import { MotionProvider } from "@/components/motion/MotionProvider";
 import { fredoka, nunito } from "@/design/fonts";
 import { clientMessages } from "@/i18n/messages";
 import { notFound } from "@/i18n/navigation";
 import { LOCALE_META, routing } from "@/i18n/routing";
 
 /**
- * The root layout (06 §6.2, 02 `D-02.16`).
+ * The root layout (06 §6.2, 02 `D-02.16`, 04 §1).
  *
  * It sits *inside* `[locale]` because `<html lang>` must be the locale's and
  * Next allows exactly one `<html>` — there is no `src/app/layout.tsx`.
  *
- * PR-3.1 owns only the locale plumbing: `<html lang>`, `generateStaticParams`,
- * the unknown-locale guard and the client provider; the font classes below are
- * PR-4.1's one line here (03 §3.1). `MotionProvider` (PR-4.x), the sticky nav
- * and footer (PR-4.x) and the metadata block (PR-6.8) attach here later.
+ * PR-3.1 owned the locale plumbing (`<html lang>`, `generateStaticParams`, the
+ * unknown-locale guard, the client provider) and PR-4.1 the font classes;
+ * PR-4.5 attaches the rest of 04 §1's stack — `MotionProvider`, `SkipLink`,
+ * `SiteHeader`, `{children}`, `SiteFooter`. The metadata block is still PR-6.8's.
+ *
+ * **`MotionProvider` is mounted here and nowhere else** (05 `D-05.5`). It has
+ * to sit above `SiteHeader`, not merely above `{children}`: the nav links are
+ * `Reveal variant="none"` and are the *first* entries in the locale cascade
+ * (05 §5.6), so they need `LazyMotion`'s features as much as any section does.
+ * It stays inside `NextIntlClientProvider` because nothing in it reads a
+ * message and the order costs nothing either way.
+ *
+ * **`<main>` is deliberately absent.** Each `page.tsx` renders its own, so the
+ * home page can carry `data-snap-root` and the detail pages cannot (04 §1,
+ * 05 §5.8). The skip link targets that landmark by id.
  */
 
 /**
@@ -45,7 +60,6 @@ export default async function LocaleLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
 
   const messages = await getMessages();
-  const t = await getTranslations("common");
 
   return (
     // The two `variable` classes are what makes `src/design/fonts.ts` reach the
@@ -62,18 +76,19 @@ export default async function LocaleLayout({
       className={`${fredoka.variable} ${nunito.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body>
-        {/* 06 §6.2: the skip link targets the `#main` landmark each page renders. */}
-        <a href="#main" className="sr-only focus:not-sr-only">
-          {t("a11y.skipToContent")}
-        </a>
+      <body className="bg-cream font-body text-body">
         {/*
           02 `D-02.16`: a client subtree receives only the namespaces it needs,
           never the whole tree and never `collections.*` wholesale. Everything
           else is rendered by Server Components and reaches the browser as HTML.
         */}
         <NextIntlClientProvider locale={locale} messages={clientMessages(messages)}>
-          {children}
+          <MotionProvider>
+            <SkipLink />
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+          </MotionProvider>
         </NextIntlClientProvider>
       </body>
     </html>
