@@ -1,0 +1,42 @@
+# Prettier's scope is the code this repo writes: `src`, `tests`, `e2e`, `scripts`,
+# `content/**/*.json` and the root config files (08 §2). Everything below is either
+# generated, vendored, hand-wrapped prose, or owned by a tool that writes its own format.
+
+# Build and tooling output
+.next/
+out/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+node_modules/
+next-env.d.ts
+
+# Lockfile — pnpm owns its formatting
+pnpm-lock.yaml
+
+# Plan documents: hand-wrapped prose near 110 columns with table rows past 2000
+# characters (.editorconfig [*.md]). Reflowing them would rewrite every line.
+docs/
+*.md
+
+# Tracker state — written by bd, never by hand (.editorconfig [.beads/**])
+.beads/
+
+# Agent tooling
+.claude/
+
+# Reports are generated artifacts (08 §12)
+reports/
+
+# Not code: the committed environment template (07 §5). It has no Prettier parser.
+.env.example
+
+# Outside 08 §2's stated Prettier scope ("src, tests, scripts, content/**/*.json"),
+# and owned by PR-2.4, which hand-formats both for readability: tsconfig.json keeps
+# one array entry per line, pnpm-workspace.yaml uses single-quoted package names.
+# Prettier would reflow both with no semantic change. Delete these two lines if the
+# scaffold's owner would rather Prettier owned them, and run `pnpm format` once.
+tsconfig.json
+pnpm-workspace.yaml

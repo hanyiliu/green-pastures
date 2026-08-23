@@ -1,0 +1,248 @@
+# The quality pipeline — docs/technical/08-testing-quality.md §10 (job table),
+# §2 (static checks), D-08.7 (e2e runs against a local production build) and
+# D-08.12 (the required-check names).
+#
+# No job declares a `name:`, so the check GitHub reports is the job id verbatim
+# and the human can paste it into the ruleset unchanged (D-08.19, OQ-11.3) —
+# the same convention `bead-trailer.yml` follows. The six checks D-08.12 makes
+# required on `main` are `static`, `content`, `unit`, `build`, `e2e-ok` and
+# `bead-trailer`. Four are below; `bead-trailer` is its own workflow (11 §6);
+# `content` arrives with PR-3.4, which is the PR that creates the
+# `pnpm validate:content` script the job would run. A required check whose job
+# does not exist yet blocks every PR, so the human lists `content` when PR-3.4
+# merges and not before.
+#
+# Later PRs ADD jobs to this file and never edit an existing one (10 §7):
+# PR-3.4 the `content` job, PR-8.5 the perf-budget/Lighthouse job.
+#
+# Every step here runs a script that exists in `package.json` today. The steps
+# 08 §10's `static` row also names — `check:tokens` (PR-4.x), `check:todo` as a
+# script, `check:env`, the `@flaky-known` tag lint (D-08.13) and the dependency
+# allowlist — are deliberately absent: their scripts do not exist yet, and a job
+# calling a missing script fails on every PR. The `TODO` grep is inlined here
+# instead, because PR-2.6 owns only this file.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# INV-08.7: a PR run gets no secrets beyond `GITHUB_TOKEN`, and this workflow
+# reads nothing but the checkout.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 08 §10 `static` · 10 min · required.
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      # This order is load-bearing, not stylistic: `setup-node`'s `cache: pnpm`
+      # resolves the store by shelling out to `pnpm store path`, so it fails
+      # outright unless pnpm is already on PATH (08 §10). `pnpm/action-setup`
+      # takes its version from `packageManager`; `setup-node` takes Node from
+      # `.nvmrc` (= 24). Third-party actions are pinned to a commit SHA and
+      # `actions/*` to a major (08 §10 conventions).
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: typecheck
+        run: pnpm run typecheck
+      - name: eslint
+        run: pnpm run lint
+      - name: stylelint
+        run: pnpm run lint:css
+      - name: prettier
+        run: pnpm run format:check
+
+      # TRAP-11.9 / 08 §2. A comment is not tracked work: a `TODO`, `FIXME` or
+      # `HACK` in source text fails the PR, and the fix is a bead.
+      #
+      # `content/**` is deliberately NOT in the word grep. A literal "TODO" as a
+      # JSON *value* under `content/` is the release gate's business (§3 R2,
+      # D-08.17) and must not red an ordinary PR; what is banned there is a
+      # comment in disguise — a key named `_comment` or `todo`. The two checks
+      # do not overlap and neither replaces the other.
+      #
+      # `git grep` sees tracked files, which on a CI checkout is every file.
+      #
+      # `-w`, not the `\b(…)\b` 08 §2 writes: `\b` is a GNU extension that git's
+      # regex engine honours on glibc and silently drops elsewhere (verified on
+      # Apple Git 2.50.1 — `git grep -E '\bexport\b' -- src` matches nothing in
+      # a tree full of `export`). A word-boundary gate that matches nothing
+      # fails *open*, so it would report green over a file full of TODOs. `-w`
+      # is git's own flag, means the same thing, and works on every platform.
+      - name: check:todo
+        run: |
+          set -euo pipefail
+          status=0
+          if git grep -nwE 'TODO|FIXME|HACK' -- 'src/**' 'tests/**' 'scripts/**'; then
+            echo "::error::TRAP-11.9: a comment is not tracked work. Open a bead and cite its id."
+            status=1
+          fi
+          if git grep -nE '"(_comment|todo)"[[:space:]]*:' -- 'content/**'; then
+            echo "::error::08 §2: no comment-in-disguise keys in content/ — use a bead."
+            status=1
+          fi
+          exit $status
+
+  # 08 §10 `unit` · 10 min · required.
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # `vitest run --coverage`. D-08.16 sets no global floor; the per-glob
+      # thresholds in `vitest.config.ts` are what can fail this step.
+      - name: vitest
+        run: pnpm run test:coverage
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # 08 §10 `build` · 15 min · required. This job is the only place `next build`
+  # is verified: the local sandbox cannot run it (08 §11, status note).
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # 08 §10: keyed on the lockfile plus a hash of the inputs a rebuild has to
+      # invalidate, restore-keys on the lockfile alone. `content/**` and
+      # `public/**` do not exist yet — `hashFiles` returns an empty string for a
+      # pattern that matches nothing, so the key is stable until they arrive.
+      - uses: actions/cache@v6
+        with:
+          path: .next/cache
+          key: >-
+            next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{
+            hashFiles('src/**', 'content/**', 'public/**') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: next build
+        run: pnpm run build
+
+      # D-08.7: `e2e` serves this output with `next start` rather than building
+      # again or pointing at a Vercel preview. `include-hidden-files` is
+      # required — every path in the artifact lives under the dot-directory
+      # `.next`, and upload-artifact skips hidden files by default.
+      # `.next/cache` is excluded: it is the build cache above, not output.
+      # D-08.11's `scripts/ci/bundle-secrets.sh` grep over `.next/static/**`
+      # becomes a step here in the PR that writes that script.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: next-build
+          include-hidden-files: true
+          path: |
+            .next
+            !.next/cache
+          # An empty artifact would surface as an unexplained `next start`
+          # failure two jobs later; fail here instead.
+          if-no-files-found: error
+          retention-days: 1
+
+  # 08 §10 `e2e` · 25 min · required through `e2e-ok`, never by name (a matrix
+  # job reports one check per shard, `e2e (1)` and `e2e (2)`).
+  #
+  # The container is not a convenience: browsers and their OS dependencies ship
+  # in the image, so there is no `install-deps` step and no browser cache, and
+  # its fonts are the ones the `@visual` baselines were taken in (D-08.10). On a
+  # bare runner the font set differs and every CJK screenshot would diff
+  # forever. The tag tracks `@playwright/test` in `package.json` — Renovate
+  # bumps both in one PR, and a mismatch is a startup error, not a silent skew.
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: next-build
+          path: .next
+
+      # `playwright.config.ts` starts the server itself (`pnpm start`) against
+      # the artifact above and supplies the test-key environment of INV-08.7.
+      # Not `pnpm test:e2e`: that script bakes in `--grep-invert @visual` for
+      # macOS hosts, and this container is the one place `@visual` may run.
+      # D-08.13: `retries: 0` and no re-run-to-green — a red shard gets a fix.
+      - name: playwright
+        run: pnpm exec playwright test --shard=${{ matrix.shard }}/2
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.shard }}
+          path: |
+            playwright-report
+            blob-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # 08 §10 `e2e-ok` · 2 min · REQUIRED. One stable check name standing in for a
+  # matrix whose own names change with the shard count.
+  e2e-ok:
+    needs: e2e
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      # `needs.e2e.result` is `success` only when every shard succeeded; a
+      # skipped `e2e` (because `build` failed) or a cancelled run is not
+      # success and must not report green.
+      - name: require every e2e shard to have succeeded
+        run: |
+          set -euo pipefail
+          result='${{ needs.e2e.result }}'
+          echo "e2e result: $result"
+          if [ "$result" != "success" ]; then
+            echo "::error::e2e did not succeed (result: $result)"
+            exit 1
+          fi

@@ -32,6 +32,25 @@ gets the new text (`INV-02.2`). The binding contract is
 - **Do not run `bd`.** The tracker is the orchestrator's; it claims and closes beads on a seat's behalf
   (`INV-11.4`).
 
+## The local agent sandbox
+
+Three facts about the Claude Code sandbox on a developer machine. None is a defect in this repository, and
+none of them applies to CI or to Vercel.
+
+- **Run `pnpm build` and `pnpm verify` with the sandbox disabled.** Turbopack compiles `globals.css`
+  through a PostCSS worker, the worker spawns a process that binds a loopback port, and the sandbox
+  denies that — a bare `listen(0, "127.0.0.1")` returns `EPERM` inside it and succeeds outside. The build
+  dies with `TurbopackInternalError … creating new process … binding to a port … Operation not permitted
+  (os error 1)`.
+- **One sandboxed build poisons the tree.** Next 16 stores the failure in its persistent cache, so every
+  later build replays the same error *even with the sandbox disabled*. The failure then looks permanent
+  and reproducible; it is neither. Recovery is `rm -rf .next/cache/turbopack`, then build unsandboxed.
+  Two seats independently concluded the build was broken before anyone cleared that cache — check it
+  before you report a broken build.
+- **No agent here can read `.env*`.** The permission layer denies it to the shell and to file-reading
+  tools alike, so a seat can write `.env.example` and cannot read back what it wrote. Its contents are
+  verified by a human, never by the seat that produced them.
+
 ## Everything else
 
 [`docs/technical/00-README.md`](docs/technical/00-README.md) indexes the thirteen documents and publishes
