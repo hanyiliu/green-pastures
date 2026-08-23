@@ -28,7 +28,7 @@
   },
   "testimonials": {
     "title": "來自家庭的暖心話",
-    "countLine": "<count>{count, number}</count> 條評價 · 弗裏蒙特家長",
+    "countLine": "<count>{reviews, number}</count> 條評價 · 弗裏蒙特家長",
     "link": "在 Yelp 閱讀全部評價 →"
   },
   "teachers": {
