@@ -1,0 +1,75 @@
+{
+  // Renovate — docs/technical/09-deployment-operations.md D-09.17 and §5
+  // "Dependency updates", scheduled as PR-2.9 in 10-work-breakdown.md §2.
+  // Dependabot is deliberately absent: D-09.17 rejects it because it cannot write
+  // a commit body, and every commit here needs a `Bead:` trailer (11 D-11.4).
+  //
+  // Comments are legal in this file: Renovate parses `renovate.json` as JSONC
+  // (lib/util/common.ts `parseJson` -> `parseJsonc`).
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+
+  // Weekly, and nothing merges itself (D-09.17). `separateMajorMinor` is
+  // Renovate's default and is spelled out here because "majors one PR each" is a
+  // decision, not an accident.
+  "schedule": ["before 6am on Monday"],
+  "automerge": false,
+  "separateMajorMinor": true,
+
+  // Minors and patches arrive as one PR; majors are left ungrouped, so each gets
+  // its own (09 §5). Next.js, React and next-intl majors are the developer's
+  // codemod work under a bead of their own (D-09.17, 01 ADR-001).
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "deps (non-major)",
+      "groupSlug": "deps-non-major"
+    }
+  ],
+
+  // Monthly lockfile refresh (09 §5).
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+
+  // "Security advisories are merged out of cycle" (D-09.17) — advisory PRs ignore
+  // the weekly window. `mergeable: true`, so this merges into Renovate's own
+  // defaults for this block rather than replacing them.
+  "vulnerabilityAlerts": {
+    "schedule": ["at any time"]
+  },
+
+  // ==== the `Bead:` trailer, and why it is not in `prFooter` ====
+  //
+  // 11 §6 check 1 reads every commit's trailer block. `commitTrailers` puts the
+  // line there correctly: Renovate appends it as the message's final paragraph,
+  // blank-line separated (lib/util/git/commit-trailers.ts `formatCommitMessage`).
+  //
+  // 11 §6 check 3 reads the PR body, which is harder, and 09 §5's `prFooter`
+  // cannot carry it. `getPrFooter` hard-codes a `---` divider before the footer
+  // text, and `git interpret-trailers --parse` — the gate's only definition of a
+  // trailer, run without `--no-divider` — treats a line starting with `---` as
+  // the end of the message. Anything below it is invisible. The same is true of
+  // `configDescription` and `controls`, which also hard-code `---`, and of
+  // `changelogs`, whose upstream release notes may contain one.
+  //
+  // So: the footer is off, the three `---`-emitting sections are out of the body
+  // template, and the line rides in `prBodyNotes`, which renders last. (Caveat
+  // for whoever finishes this: `getPrExtraNotes` — the lock-file-maintenance and
+  // pin notices — renders after `prBodyNotes` inside the same `{{{notes}}}` slot,
+  // so on a `lockFileMaintenance` PR the trailer is not the last line either.)
+  //
+  // THIS IS NOT YET SUFFICIENT, and the remaining gap is upstream, not here:
+  // `getPrBody` appends `<!--renovate-debug:...-->` as the body's final line
+  // after the template is rendered, unconditionally and with no config to turn it
+  // off, and a last paragraph of "trailer + HTML comment" is not a trailer block
+  // to git. Until 09 decides how to close that (bead gp-dln.19 reports the
+  // options), a Renovate PR reds `bead-trailer` on check 3 and the developer
+  // clears it by appending the `Bead:` line as a new last paragraph of the body —
+  // which the `edited` trigger re-runs. Renovate's *commits* already pass check 1.
+  "commitTrailers": ["Bead: gp-unset"],
+  "prBodyNotes": ["Bead: gp-unset"],
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}",
+  "prFooter": ""
+}

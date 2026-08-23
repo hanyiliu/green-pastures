@@ -1,0 +1,32 @@
+# CODEOWNERS — docs/technical/09-deployment-operations.md D-09.19 and D-09.10,
+# scheduled as PR-2.9 in docs/technical/10-work-breakdown.md §2.
+#
+# The rule D-09.19 states: `content/**` and `public/images/**` belong to the
+# repository owner (the daycare) *and* the developer as co-owners; everything
+# else belongs to the developer. It is what the `main` ruleset's "require review
+# from code owners" reads (09 §3).
+#
+# TWO ROLES, ONE ACCOUNT — FOR NOW. There is exactly one GitHub account on this
+# project today, @hanyiliu, and it holds both roles. So every rule below names it
+# once. A CODEOWNERS line that names an account which does not exist, or one
+# without write access to this repository, matches nobody *silently*: GitHub
+# requests no review and the ruleset waves the PR through with the box ticked.
+# One honest entry is worth more than two aspirational ones.
+#
+# WHEN THE DAYCARE'S OWN ACCOUNT EXISTS: add it beside @hanyiliu on the two
+# content rules only, and leave the catch-all naming the developer alone. That is
+# the whole change — the owner/developer split is real from that commit on, and
+# nothing else in this file moves.
+#
+# Order matters: the LAST matching pattern wins, so the catch-all comes first.
+
+# Everything → the developer.
+*                @hanyiliu
+
+# The words and the pictures → the owner and the developer.
+# `content/` is the one place a non-developer ever edits (02 D-02.18, HD-8), and
+# `public/images/` is what the pages point at. Directory form is used rather than
+# `content/**` because it is the form GitHub's own documentation guarantees, and
+# it covers the same files; the leading slash anchors both to the repository root.
+/content/        @hanyiliu
+/public/images/  @hanyiliu
