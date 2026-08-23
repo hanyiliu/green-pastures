@@ -19,7 +19,8 @@ owner facts (teacher names, credentials, phone, licence) as provisional content 
 
 Status: draft · seat writer-components · 2026-08-22 · revised 2026-08-22 for HD-5, HD-6, HD-7, HD-9, HD-10,
 HD-12, and again for HD-14 (CJK typeface closed on the system stack) and ADJ-20 (the switcher trigger ships
-with no chevron)
+with no chevron) · revised 2026-08-23 against shipped code (PR-4.2, PR-4.3a): §2's tree and its status note,
+and §3.2's `Chip` tone enum
 
 ## Decisions
 
@@ -247,7 +248,7 @@ leaves. Collections: `getPrograms()`, `getMenu()`, `getGallery()`, `getTestimoni
 ```text
 src/
 ├── app/
-│   ├── globals.css                  @import tailwindcss; imports styles/tokens.css, styles/base.css, motion css (03/05)
+│   ├── globals.css                  @import tailwindcss; imports styles/tokens.css and, when they exist, the motion css (05)
 │   ├── [locale]/layout.tsx          html/body, fonts, providers, SkipLink, SiteHeader, SiteFooter (06 routes; 04 content)
 │   ├── [locale]/page.tsx            home · [locale]/{philosophy,programs,menu,gallery,reviews,team}/page.tsx
 │   ├── [locale]/{faq,enroll}/       RESERVED, not built (D-02.17) · not-found.tsx · [...rest]/page.tsx · error.tsx* · global-error.tsx* (06)
@@ -266,9 +267,9 @@ src/
 │   │                  GalleryExplorer* (GalleryFilters, GalleryGrid, Lightbox), ReviewsList, YelpButton, TeamBio, FaqList, ErrorPanel*
 │   └── forms/         InquiryForm*, FormField*, Turnstile*, SuccessPanel*, FormAlert*, NoscriptFallback, inquiry-codes.ts (07)
 ├── content/ · design/ 02: schemas/, site.ts, collections.ts · 03: tokens.ts (TS mirror, ADJ-8), fonts.ts
-├── i18n/              02: routing.ts, navigation.ts, request.ts, messages.ts, formats.ts, global.d.ts
+├── i18n/              02: routing.ts, navigation.ts, request.ts, messages.ts, formats.ts, global.d.ts · negotiate.ts (06 D-06.15)
 ├── lib/               inquiry/schema.ts (07), analytics.ts (track wrappers, 07 §4), menu-day.ts (default day), cn.ts
-├── styles/            03: tokens.css · base.css (reset, :focus-visible, [data-reveal] noscript rule, html overflow-x clip)
+├── styles/            03: tokens.css — the one token source, and the only file here (no base.css; see below)
 └── proxy.ts           02/06
 ```
 
@@ -276,6 +277,30 @@ src/
 and `src/app/sitemap.ts` / `src/app/robots.ts` are 06's. 05's proposed `src/motion/*` paths map 1:1 into
 `src/components/motion/` (05 §5.1: "names are binding, locations are not"); the token mirror is
 `src/design/tokens.ts` (memo ADJ-8 — 05's `src/motion/tokens.ts` spelling is superseded).
+
+**There is no `src/styles/base.css`.** An earlier draft of this tree gave that file four jobs; the build ships
+all four elsewhere and the file was never created. The reset is Tailwind v4's preflight, which
+`@import "tailwindcss"` already brings in. `:focus-visible` (03 D-03.11) and the three `:lang()` rules live in
+`src/styles/tokens.css`, the one token source (03 D-03.1). The `[data-reveal]` no-JavaScript rule ships **inline
+in `MotionProvider`**, written into a `<noscript>` element — 05 INV-05.10's requirement, PR-4.3a's deliverable
+(10 §3), and the stronger placement of the two: the rule travels with the component that creates the hidden
+state it undoes, so there is no second wiring step to forget and no stylesheet left behind if the provider ever
+moves. (The same component emits the reduced-motion `[data-reveal]` rule beside it, 05 §5.9.) Only
+`html { overflow-x: clip }` (05 §5.8) is still unplaced; it lands with the gallery row that needs it.
+
+**Status against `main`, 2026-08-23.** This tree is the target, not a manifest: under `components/`, three of the
+six directories exist. `components/layout/` holds `Section` and `SectionHeader`; `components/ui/` holds
+`Eyebrow`, `SectionTitle`, `LearnMoreLink`, `Button`, `Chip`, `Emoji` and `PhotoSlot` — together the layout
+shell and primitives of PR-4.2 — with `Picture`, `StarRow`, `IconDot`, `VisuallyHidden` and `rich.tsx` still to
+come. `components/motion/` holds `MotionProvider`, `Reveal` (which exports `RevealItem` and `useRevealed` from
+the one file), `registry.ts` and `variants.ts` from PR-4.3a; `WordSwap`, `CountUp`, `PageTransition`, `AmbientScope`,
+`ambient.css` and `view-transitions.css` are not built. `src/design/` now holds both files 03 §7 declares,
+`tokens.ts` and `fonts.ts`, which the row owning them closed without and which landed later in this wave.
+`components/decor/`, `components/sections/`, `components/pages/`, `components/forms/` and `src/lib/` do not
+exist yet. One consequence worth stating because §1 reads as though it were already true: **`MotionProvider` is
+not yet mounted.** `app/[locale]/layout.tsx` renders `<html lang>`, the skip link and `NextIntlClientProvider`
+and nothing more, so the fonts, the provider, `SiteHeader` and `SiteFooter` in §1's stack are what that file
+will render, not what it renders today; the wiring is a later Phase 4 row.
 
 ### 3 · Component inventory
 
@@ -311,7 +336,7 @@ contract 08 checks. Sizes, radii, shadows and colours are always 03 tokens and a
 | `SectionTitle` | S | `as: 'h1' \| 'h2' \| 'h3'`, `size: 'headline' \| 'section' \| 'quote' \| …`, `children` | — | `text-<token>`, `text-wrap: balance`, `whitespace-pre-line` when the message carries `\n` (02 §Line breaks; the hero honours `\n` only `≥ md` — the mobile variant has no break, mobile reference L55) |
 | `LearnMoreLink` | S | `routeId`, `children` | `home.<section>.link`; `site.routes[]` | next-intl `Link href={route.path} transitionTypes={['subpage-enter']}` (05 §5.7, 06 passes the prop through); `border-b-2` in `--section-link-underline`, text `--section-link`; hit area ≥ 44px via padding; the `→` glyph stays in the string (02) |
 | `Button` | S | `as: 'link' \| 'button'`, `size: 'nav' \| 'hero' \| 'submit'`, `tone: 'sage' \| 'yelp'` | — | pill radius, `--shadow-primary*`; hover lift `@media (hover:hover)` (05 §5.10); `--tap-min` |
-| `Chip` | S | `tone: 'sage' \| 'gold' \| 'cool' \| 'lavender' \| 'white'`, `icon?` (emoji via `Emoji`), `children` | — | hero badge, trust row, dietary chips, filter chips (visual only — the interactive filter is in `GalleryExplorer`), programme highlight chips, teacher tags, HEAD TEACHER badge (`tone="sage"`, uppercase through `Eyebrow` inside); padding tokens `--chip-*` |
+| `Chip` | S | `tone: 'sage' \| 'sage-soft' \| 'gold' \| 'cool' \| 'lavender' \| 'white'` (default `sage-soft`), `icon?` (emoji via `Emoji`), `children` | — | hero badge, trust row, dietary chips, filter chips (visual only — the interactive filter is in `GalleryExplorer`), programme highlight chips, teacher tags, HEAD TEACHER badge (`tone="sage"`, uppercase through `Eyebrow` inside); padding tokens `--chip-*`. **Six tones, not five:** the design draws two sage chips and this row long listed one. `sage` is the solid sage fill with white text that the HEAD TEACHER badge and the credential badge use (desktop L292, L152); `sage-soft` is the pale `--color-chip-bg` fill of the hero badge, the trust row and the preschool tags (L115, L73, L425). They cannot be merged: white text on `#eef2e8` is about 1:1 |
 | `Emoji` | S | `symbol`, `label?`, `size: 'dot' \| 'tile' \| 'inline'` | icon from `site.json` (`icon` fields) | `<span role="img" aria-label>` when `label` given, else `aria-hidden="true"`; `font-emoji`; fixed box so glyph width never shifts layout (03 D-03.8, §9) |
 | `Picture` | S | `image?: {src,width,height,blurDataURL?}`, `alt`, `sizes`, `radius: RadiusToken`, `priority?`, `fit` | `alt` from messages/collections | D-04.12; renders `PhotoSlot` when `image` is absent; `sizes` per breakpoint is mandatory (INV-04.6) |
 | `PhotoSlot` | S | `slotId`, `alt?`, `radius`, `shape: 'rect' \| 'circle'` | — | 03 §9 fill `color-mix(in oklab, var(--section-bg) 92%, var(--color-ink))`; no visible text in production (a dev-only `slotId` label is data, not copy); `role="img" aria-label={alt}` when `alt` exists, else `aria-hidden` |

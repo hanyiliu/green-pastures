@@ -9,7 +9,9 @@ It turns the "⚠ Animation-ready architecture", "Motion system" and "Interactio
 `docs/design/README.md` into rules an implementer can follow without re-deriving numbers, and it keeps the door
 open for the client's planned future scroll animations (parallax, pinning, scrubbing) without a refactor.
 
-Status: draft · seat writer-animation · 2026-08-22
+Status: draft · seat writer-animation · 2026-08-22 · revised 2026-08-23 against the shipped motion core
+(PR-4.3a), which settled §5.6's locale-cascade rule the two readings of this document disagreed on — D-05.9,
+§5.1, §5.6, §5.9 and §5.14 now describe what runs
 
 ## Decisions
 
@@ -40,10 +42,12 @@ Status: draft · seat writer-animation · 2026-08-22
 - **D-05.9 Text swaps.** State-driven swaps (menu day chip → sample line) use `WordSwap` = `AnimatePresence
   mode="wait"` keyed by the value, 200 ms (`--dur-word-swap`) fade + 6 px rise. The EN ↔ 中文 toggle is a URL
   navigation that remounts the `[locale]` subtree (memo ADJ-4), so it animates as an **enter-only cascade** on the
-  new tree: every mounted `Reveal` plays `variant="swap"` with a 14 ms/element delay capped at 300 ms, under a
-  200 ms root View-Transition crossfade (type `locale-swap`; browsers without View Transitions get the cascade
-  alone). The locale cascade is `Reveal variant="swap"` — `WordSwap` is only the keyed menu-line swap — and
-  under reduced motion it is an opacity-only cascade (the `y` track dropped), never a no-cascade instant swap.
+  new tree: every `Reveal` that had already played this session plays `variant="swap"` with a 14 ms/element
+  delay capped at 300 ms, under a 200 ms root View-Transition crossfade (type `locale-swap`; browsers without
+  View Transitions get the cascade alone). One that had never played keeps its own variant and waits for
+  scroll — §5.6 states the rule and its reason. The locale cascade is `Reveal variant="swap"` — `WordSwap` is
+  only the keyed menu-line swap — and under reduced motion it is an opacity-only cascade (the `y` track
+  dropped), never a no-cascade instant swap.
   02 owns the locale mechanism; this doc owns the motion.
 - **D-05.10 Subpage slide.** Production subpages are real routes. The slide is implemented with the **View
   Transitions API through React's `ViewTransition` component** (no config in the Next 16.x App Router; `Link`
@@ -121,8 +125,11 @@ receiving a callback.
 `RevealItem` props: `variant` (required), `index` (drives alternation), `side: 'left' \| 'right'` (polaroids),
 `tail: 'left' \| 'right'` (bubbles), `as`. Both components add `data-reveal` so a `noscript` stylesheet
 (`[data-reveal] { opacity: 1 !important; transform: none !important; filter: none !important }`) shows content
-when JavaScript is unavailable. The hidden state is `opacity`/`transform` only, so nothing leaves the
-accessibility tree and no space is reserved late (INV-05.7).
+when JavaScript is unavailable; that stylesheet is emitted inline by `MotionProvider` as a `<noscript>` element,
+not by a stylesheet file (04 §2). `Reveal` additionally carries `data-reveal-id` = its registry key, which is
+the attribute a DOM or end-to-end test addresses a single block by; `RevealItem` carries neither an id nor an
+index, because the cascade and the registry work on the block, not on its parts (§5.6). The hidden state is
+`opacity`/`transform` only, so nothing leaves the accessibility tree and no space is reserved late (INV-05.7).
 
 Illustrative usage (Programs section, RSC):
 
@@ -146,8 +153,10 @@ staggerChildren, delayChildren } } }`; `RevealItem` renders `m[as]` with `varian
 IntersectionObservers per options set; production `Reveal`s all use the frozen options (`once: true`,
 `amount: 0.16`, `margin: "0px"`), so all reveals share one pooled observer; the ambient-pause `useInView` (§5.4)
 is the page's second and last observer.
-If `registry.revealedIds.has(id)`, `Reveal` renders `initial={false}` (final state, no animation). Above-the-fold
-reveals fire at hydration; the prototype's `checkInView()` rAF fallback is not needed (no iframe root).
+If `registry.revealedIds.has(id)`, `Reveal` renders `initial={false}` (final state, no animation) — unless a
+locale swap is in flight, in which case that same registry hit is exactly what makes it play `swap` instead
+(§5.6). Above-the-fold reveals fire at hydration; the prototype's `checkInView()` rAF fallback is not needed
+(no iframe root).
 
 Token mirror: `src/design/tokens.ts` is declared by `03-design-system-tokens.md` §7 (memo ADJ-8) and is not
 restated here — 05 owns no token value and no export name. Motion code reads that module's exports: `ease.*`
@@ -275,11 +284,18 @@ ADJ-4). The motion we specify:
   available, passes `transitionTypes: ['locale-swap']` so the root crossfades over `--dur-word-swap` 200 ms
   (this stands in for the prototype's out-phase: `opacity .2s ease, transform .2s ease` to `opacity 0;
   translateY(6px)`, text swapped at `210 + min(i × 14, 300)` ms, then back to `opacity 1`).
-- Every `Reveal` that mounts within 1000 ms of the mark plays `swap` instead of its section variant (this is the
-  locale cascade: `Reveal variant="swap"`, not `WordSwap`): opacity 0→1,
-  y 6→0, 200 ms std, delay `min(i × 14 ms, 300 ms)` where `i` is the mount-order counter (nav items first — they
-  are `Reveal variant="none"` — then hero, then the rest in DOM order, like the prototype's `[data-i18n]` order).
-  Below-the-fold `Reveal`s already in the registry render final state; unrevealed ones wait for scroll.
+- **Already-revealed is the whole gate.** A `Reveal` that mounts within 1000 ms of the mark plays `swap` instead
+  of its section variant **if and only if it was already in the registry when it mounted** — it played earlier in
+  this session, or it is a `variant="none"` nav item, which counts as revealed by definition because it has no
+  entrance to wait for. A `Reveal` that had never played keeps its own section variant and waits for scroll,
+  exactly as on a first load. **Where the block sits relative to the fold is never consulted**, on either side of
+  the rule: the only question is whether the reader has already seen this text, which is what the cascade is
+  signalling — the words they were looking at have changed language. The cascade is `Reveal variant="swap"`, not
+  `WordSwap`: opacity 0→1, y 6→0, 200 ms std, delay `min(i × 14 ms, 300 ms)` where `i` is the mount-order counter
+  (nav items first — they are `Reveal variant="none"` — then hero, then the rest in DOM order, like the
+  prototype's `[data-i18n]` order). A cascading container carries the swap by itself; its `RevealItem` children
+  render their final state rather than replaying their own entrance, which is the block granularity the next
+  bullet records.
 - The cascade granularity is the text **block** (`Reveal`), not the individual string. This is a deliberate
   deviation from `docs/design/README.md` L73 ("each tagged string"), recorded as OQ-05.4 for design sign-off.
 - Mobile: the toggle lives in the hamburger menu (`docs/design/mobile/README.md`); the same cascade runs after
@@ -387,8 +403,14 @@ html:active-view-transition-type(locale-swap)::view-transition-new(root) { anima
 ### 5.9 Reduced-motion policy
 
 Global: `MotionConfig reducedMotion="user"` (transform and layout animations off, opacity kept — Motion docs),
-the CSS media query for loops / View Transitions / scroll-behavior / hover, and `useReducedMotion()` for the
-two JS paths Motion does not gate itself (`filter` in `ink`, the count-up). In launch scope, not a later phase.
+and the CSS media query for loops / View Transitions / scroll-behavior / hover. Motion's own gate is not the
+whole story: it leaves `filter` animating (the `ink` blur) and leaves the *hidden* transform on the element, so
+`Reveal` reads the config through `useReducedMotionConfig()` and renders the catalogue's `reduced` form in place
+of the row's own — opacity-only by construction, for every variant, not just the two paths Motion misses. The
+count-up gates itself the same way. `MotionProvider` also emits an inline
+`@media (prefers-reduced-motion: reduce)` rule zeroing `transform` and `filter` on `[data-reveal]`: belt and
+braces once the bundle has run, and the only half that works in the frame before hydration. In launch scope, not
+a later phase.
 
 | Feature | Under `prefers-reduced-motion: reduce` |
 |---|---|
@@ -508,7 +530,8 @@ memo ADJ-8); the table stays here so the mapping from token to variant is explic
 - Reduced-motion parity: with the media query emulated, the settled DOM/styles of every section equal the
   post-animation state of the default run; no transform/filter animations, no loops, count-up shows final values.
 - Reveal once: scrolling away and back does not replay; navigating to a subpage and back (typed Back and browser
-  Back) does not replay; a locale switch plays the `swap` cascade and nothing else.
+  Back) does not replay; a locale switch plays the `swap` cascade over exactly those `Reveal`s that had already
+  played, leaves every `Reveal` that had not on its own variant awaiting scroll (§5.6), and plays nothing else.
 - Stagger timing: children start 110 ms apart; alternation (polaroid side, bubble origin) follows index/tail.
 - Catalogue fidelity: each variant's keyframes, `times`, durations, easings and origins equal §5.2 (unit test on
   `variants.ts`); CSS ↔ TS token parity (`tokens.ts` vs the 03 custom properties).
