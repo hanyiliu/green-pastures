@@ -335,11 +335,11 @@ const PROJECT_LOCALES: LocaleSets = { known: LOCALE_IDS, enabled: routing.locale
  * segment the deciding vote, so a final segment that happens to spell a locale
  * id is an ordinary key there, not a locale suffix.
  *
- * Deliberately the same rule, spelled the same way, as
- * `isPendingLocalePath()` in `scripts/validate-content.ts`: two predicates that
+ * This is the only copy of the rule. `scripts/validate-content.ts` imports it
+ * — it once kept a second, identical predicate, and two predicates that
  * disagreed would put `pnpm validate:content` and `next build` on opposite
- * verdicts for one entry, which is the exact bug this closes. That file's copy
- * exists only because this one did not; it can import this and delete its own.
+ * verdicts for one entry, which is the exact bug this closes. Editing this
+ * function therefore edits both gates; there is no second place to keep in step.
  */
 export function isPendingLocalePath(path: string, locales: LocaleSets = PROJECT_LOCALES): boolean {
   const segments = path.split(".");

@@ -7,8 +7,9 @@ import { z } from "zod";
 import { faqCollectionSchema } from "@/content/schemas/faq";
 import { galleryCollectionSchema } from "@/content/schemas/gallery";
 import { menuCollectionSchema } from "@/content/schemas/menu";
+import { isRichTagToken, tagTokensIn } from "@/content/schemas/primitives";
 import { programsCollectionSchema } from "@/content/schemas/programs";
-import { SiteSchema, type Site } from "@/content/schemas/site";
+import { isPendingLocalePath, SiteSchema, type Site } from "@/content/schemas/site";
 import { teachersCollectionSchema } from "@/content/schemas/teachers";
 import { testimonialsCollectionSchema } from "@/content/schemas/testimonials";
 import { LOCALE_IDS, routing } from "@/i18n/routing";
@@ -56,14 +57,14 @@ import { LOCALE_IDS, routing } from "@/i18n/routing";
  *    an error. The unit suite pins the active behaviour so the rule cannot rot
  *    into the vacuous gate this project has shipped once already.
  * 3. **08 §3 rule 6 is applied to `SiteSchema`'s input.** `SiteSchema` enforces
- *    INV-02.10 for the loader as well and has no notion of a held-back locale,
- *    so it reads `brand.name.zh-Hant` as a stale marker. Left alone it would
- *    reinstate — as a `site-schema` finding — the very error rule 6 removes, and
- *    a failed parse would take the asset, collection-schema and alt-text checks
- *    with it. Pending-locale entries are therefore withheld from the copy this
- *    file parses ({@link siteForSchema}); rules 1–5 still run over the raw list.
- *    The loader itself is not fixed by this — `src/content/schemas/site.ts` owns
- *    that half, and until it carries rule 6 the same entry reds `next build`.
+ *    INV-02.10 for the loader as well, and a stale marker it reinstates — as a
+ *    `site-schema` finding — is the very error rule 6 removes; a failed parse
+ *    would take the asset, collection-schema and alt-text checks with it.
+ *    Pending-locale entries are therefore withheld from the copy this file
+ *    parses ({@link siteForSchema}); rules 1–5 still run over the raw list.
+ *    The rule itself is not written here: `src/content/schemas/site.ts` owns
+ *    `isPendingLocalePath()`, because the loader needs it too, and this file
+ *    imports it. One rule, one spelling, both gates.
  */
 
 /* -------------------------------------------------------------------------- *
@@ -267,12 +268,6 @@ function mergeOverReference(base: unknown, override: unknown): unknown {
  * ICU messages: arguments, rich tags, and the `'{` escape 02 bans
  * -------------------------------------------------------------------------- */
 
-/** Anything tag-shaped, the same token `src/content/schemas/primitives.ts` uses. */
-const TAG_TOKEN = /<\/?[A-Za-z][^>]*>/g;
-
-/** 02 `D-02.5`'s closed allowlist, as the exact tokens a value may contain. */
-const ALLOWED_TAG_TOKEN = /^<\/?(?:em|strong|link|count|day)>$/;
-
 const PLURAL_TYPES = new Set(["plural", "select", "selectordinal"]);
 
 export type IcuShape = {
@@ -403,8 +398,11 @@ export function readIcu(message: string): IcuShape {
 
   const tags = new Set<string>();
   const htmlTokens: string[] = [];
-  for (const token of message.match(TAG_TOKEN) ?? []) {
-    if (ALLOWED_TAG_TOKEN.test(token)) {
+  // Both halves of the split — what counts as a tag, and which tags 02 D-02.5
+  // allows — come from `primitives.ts`, so this gate and the schemas that parse
+  // the same strings on every build cannot draw the line in different places.
+  for (const token of tagTokensIn(message)) {
+    if (isRichTagToken(token)) {
       tags.add(token.replace(/[</>]/g, ""));
     } else {
       htmlTokens.push(token);
@@ -1072,49 +1070,39 @@ function checkAltText(report: Report, site: Site, reference: LocaleView): void {
 
 const RESERVED_TOP_LEVEL = ["collections", "messages"] as const;
 
-/**
- * 08 §3 rule 6 — is this a **pending-locale** entry?
+/*
+ * 08 §3 rule 6 — the pending-locale entry — is `isPendingLocalePath()` in
+ * `src/content/schemas/site.ts`, imported at the top of this file and used by
+ * `resolveProvisional()` and `siteForSchema()` below.
  *
- * A `site.json` path whose final segment is a locale id the project knows
- * (`LOCALE_IDS`) but has not enabled yet (`routing.locales`): `brand.name.zh-Hant`
- * while `zh-Hant` is under review. Such an entry is "neither resolved nor an
- * error"; it is listed as *pending locale* and still blocks `--release` under
- * R1. The path cannot resolve by construction — INV-02.3 forbids `brand.name`
- * from carrying an entry for a locale that is not enabled — which is precisely
- * why the rule exists.
- *
- * The `collections.` / `messages.` forms are excluded: rule 2 gives their first
- * segment the deciding vote, so a final segment that happens to spell a locale
- * id is an ordinary key there, not a locale suffix.
- *
- * One predicate, two callers ({@link resolveProvisional} and the schema input
- * below), so the two cannot drift apart.
+ * It lives there because the schema needs it too: the loader runs `SiteSchema`
+ * on every `next build`, so the rule has to hold in both gates or one is green
+ * while the other is red on the same entry — the bug that put a second copy of
+ * the predicate here in the first place. `LocaleConfig` is that function's
+ * `LocaleSets` plus `reference`, so this file's config is passed straight in.
  */
-export function isPendingLocalePath(path: string, config: LocaleConfig): boolean {
-  const segments = path.split(".");
-  const head = segments[0];
-  if (head === "collections" || head === "messages") return false;
-  const last = String(segments[segments.length - 1]);
-  return config.known.includes(last) && !config.enabled.includes(last);
-}
 
 /**
  * `content/site.json` as `SiteSchema` should see it: without the pending-locale
  * entries of 08 §3 rule 6.
  *
  * `SiteSchema` enforces INV-02.10 for the loader too — every registry path must
- * resolve — and it knows nothing about held-back locales, so it reports
- * `brand.name.zh-Hant` as a stale marker and reinstates, as a `site-schema`
- * finding, exactly the error rule 6 removes. Worse, a failed parse yields no
+ * resolve — and when it knew nothing of held-back locales it reported
+ * `brand.name.zh-Hant` as a stale marker, reinstating as a `site-schema`
+ * finding exactly the error rule 6 removes. Worse, a failed parse yields no
  * `data`, so one exempt entry would also silence the asset, collection-schema
- * and alt-text checks that run off the parsed file.
- *
- * Withholding those entries from the schema's copy is the narrowest fix inside
- * this file: rules 1–5 still run over the raw list in {@link resolveProvisional}
+ * and alt-text checks that run off the parsed file. Withholding the entries was
+ * the narrowest fix inside this file, and it is written so it cannot cost
+ * anything: rules 1–5 still run over the raw list in {@link resolveProvisional}
  * — duplicates included, so hiding an entry here cannot hide a duplicate — and
- * every other schema rule sees the file unchanged. The loader
- * (`src/content/site.ts` → `src/content/schemas/site.ts`) still lacks rule 6 and
- * will red `next build` on the same entry; that fix belongs to that file's owner.
+ * every other schema rule sees the file unchanged.
+ *
+ * `SiteSchema` now carries rule 6 itself, against `routing.ts` — the same lists
+ * this file's `LOCALES` is built from — so on the project's own configuration
+ * the schema would exempt these entries unasked. This stays because it is what
+ * makes the exemption hold for a `config` that is not the project's, and
+ * because the guarantee above is about what the schema is *handed*, not about
+ * what it happens to tolerate.
  */
 function siteForSchema(site: unknown, config: LocaleConfig): unknown {
   if (!isRecord(site) || !Array.isArray(site.provisional)) return site;
