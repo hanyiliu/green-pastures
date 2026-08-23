@@ -25,11 +25,13 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
  * the combination a type error instead, which is why `intro` is declared twice
  * below rather than once as an optional.
  *
- * **Known token gap (03 §3.2).** The section intro is 13–14px `< md` and 17px
- * `≥ md` in the design, but `--text-subhead` carries the *hero* subhead's values
- * (15px / 19px) — 03 §3.2 writes the section values as prose in the same row
- * and mints no second token. The intro therefore renders one step large until
- * 03 mints `--text-subhead-section`; inventing a px here would break INV-03.2.
+ * **The intro is `--text-subhead-section`, not `--text-subhead`.** The two are
+ * different lines: `--text-subhead` carries the *hero's* own subhead (15px `< md`,
+ * 19px `≥ md`), and the intro under a section title is a step smaller — 13px and
+ * 17px (03 §3.2, "Sub-tokens of `--text-subhead`, `--text-button` and
+ * `--text-chip`"). Visit's mobile 14px is the one value the token deliberately
+ * does not carry: a 1px per-section deviation belongs to that section's recipe,
+ * the way Reviews' 36px title already does.
  */
 
 const ALIGN = {
@@ -40,7 +42,7 @@ const ALIGN = {
 export type SectionHeaderAlign = keyof typeof ALIGN;
 
 /** The intro recipe: Nunito 600 on `--section-sub`, capped at the design's 560px. */
-const INTRO = "font-body text-subhead max-w-140 font-semibold text-(color:--section-sub)";
+const INTRO = "font-body text-subhead-section max-w-140 font-semibold text-(color:--section-sub)";
 
 /**
  * The intro half of the props, as the two shapes `D-04.5` actually allows: one

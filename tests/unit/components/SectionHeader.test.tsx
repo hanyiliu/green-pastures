@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { Section } from "@/components/layout/Section";
 import { SectionHeader, type SectionHeaderProps } from "@/components/layout/SectionHeader";
+import { classList } from "@/components/ui/class-names";
 
 /**
  * The header stack. Its contract is the one `D-04.5` is strictest about: a
@@ -79,6 +80,30 @@ describe("SectionHeader", () => {
 
     // Present in the DOM at every width — hidden, never absent.
     expect(intro).toHaveClass("hidden", "md:block");
+  });
+
+  /**
+   * The intro is the line *under* a section title, which the design draws a
+   * step smaller than the hero's own subhead: `--text-subhead-section` is
+   * 13px `< md` and 17px `≥ md`, `--text-subhead` 15px and 19px. Binding the
+   * hero token here renders every section intro two points large.
+   *
+   * It asserts *which* size class is on the element rather than that the hero
+   * spelling is absent, for two reasons. It catches a second size class riding
+   * along beside the right one, which a `not.toHaveClass` would let past. And
+   * Tailwind's source scanner reads this file: a quoted bare utility name in a
+   * test — even one written only to say it must **not** be there — is a
+   * candidate like any other and mints the rule into the production
+   * stylesheet, which is the hazard `src/app/globals.css` excludes `docs/` and
+   * `.beads/` over.
+   */
+  it("sizes the intro from the section sub-token, not the hero subhead", () => {
+    render(<SectionHeader titleId="t" title="Our photo wall" intro="Everyday moments." />);
+    const intro = screen.getByText("Everyday moments.");
+
+    expect(classList(intro.className).filter((name) => name.startsWith("text-sub"))).toEqual([
+      "text-subhead-section",
+    ]);
   });
 
   it("colours the intro from the section role variable, not a section colour", () => {

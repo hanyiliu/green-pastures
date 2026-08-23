@@ -25,12 +25,14 @@ import { withOverrides } from "./class-names";
  */
 
 /**
- * 03 §5's concrete radius steps, as token names. `hero` (26px) is absent
- * because 03 §5 describes that photo radius without minting a step for it;
- * 04 §5.3 asks 03 for the token, and nothing here invents one.
+ * 03 §5's concrete radius steps, as token names — `hero` among them. It was the
+ * one photo radius with no step of its own, and 03 §5 has since minted
+ * `--radius-hero` (22px `< md`, 26px `≥ md`) under the name 04 §5.3 asked for,
+ * so the hero photo binds a step here instead of overriding the recipe.
  */
 const RADIUS = {
   pill: "rounded-pill",
+  hero: "rounded-hero",
   "card-lg": "rounded-card-lg",
   card: "rounded-card",
   "card-md": "rounded-card-md",
