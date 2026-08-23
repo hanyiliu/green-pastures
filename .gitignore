@@ -45,3 +45,7 @@ pnpm-debug.log*
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# next-intl message declarations — generated beside every content/en JSON by
+# `createMessagesDeclaration` (02 D-02.7). Regenerated on every build/dev start.
+*.d.json.ts

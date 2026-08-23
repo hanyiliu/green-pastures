@@ -320,6 +320,9 @@ export default tseslint.config(
       "test-results/**",
       "reports/**",
       "next-env.d.ts",
+      // Generated beside every content/en JSON by next-intl's
+      // `createMessagesDeclaration` (02 D-02.7, next.config.ts).
+      "**/*.d.json.ts",
       "docs/**",
       ".beads/**",
       ".claude/**",
