@@ -13,7 +13,10 @@ It now also carries the human's Phase 1 gate answers (HD-1…HD-15, 2026-08-22) 
 order or what blocks a gate.
 
 Status: draft · seat writer-breakdown · 2026-08-22 · revised 2026-08-22 (HD-2, HD-3, HD-5, HD-6, HD-7, HD-9,
-HD-10; second round the same day: HD-13 domain, HD-14 CJK stack)
+HD-10; second round the same day: HD-13 domain, HD-14 CJK stack) · revised 2026-08-23 (ruleset ground truth
+re-read from the GitHub API: the include list *does* name the default branch, so the protection half of HD-2 /
+OQ-11.3 is live; what is missing is a `required_status_checks` rule, and that is what the Phase 2 gate now
+turns on — §2, §12, §14)
 
 Notes: pass 1 was drafted while 04, 06, 08 and 09 were still being written; pass 2 reconciled every phase with
 them by decision id (§2–§8), added the rows their artifacts need, and rebuilt the open-question roll-up against
@@ -21,7 +24,8 @@ them by decision id (§2–§8), added the rows their artifacts need, and rebuil
 two (HD-10 — Phase 3 gains a `zh-Hant` seed row, Phase 4 a three-option switcher, Phase 6 a 21-URL sitemap,
 Phase 8 a second Chinese lane), the provisional-value registry that replaces `TODO` sentinels (HD-9 — new scope
 in PR-3.2, PR-3.4, PR-3.8 and the Phase 8 gate), Vercel Hobby at start with an upgrade decision before cutover
-(HD-3), the branch-protection ruleset that exists but targets no branch (HD-2, Phase 2 entry), and the answers
+(HD-3), the branch-protection ruleset (HD-2, Phase 2 entry — its ground truth was re-read from the GitHub API
+on 2026-08-23: the ruleset *does* target the default branch, and it requires no check), and the answers
 that unblock build work — six subpages (HD-5), the provisional brand name (HD-6) and provisional owner facts
 (HD-7). §14 and the *Human inputs by phase* table are re-derived from those answers. **Pass 4 (2026-08-22,
 later the same day)** applies the second round: the domain is `greenpasturesdaycare.com` (HD-13), which moves
@@ -64,7 +68,7 @@ itself is Phase 1 and `gp-dln.4` is its gate):
 | # | Phase | Goal (one line) | Exit gate bead (`-a human`) |
 |---|---|---|---|
 | 1 | Technical plan | `docs/technical/00`–`12` accepted as the plan of record | `gp-dln.4` · Phase 1 gate · Human sign-off on the technical plan |
-| 2 | Foundation | Repo scaffolded (Next 16/TS/pnpm/Tailwind v4/next-intl/Motion), tooling + CI gates, tracker snapshot + `bead-trailer`, governance files (CODEOWNERS, PR template, `renovate.json`), root README (replaced in this plan round — §2), first Vercel preview | Phase 2 gate · Foundation accepted (CI + trailer gate required on `main` — needs the HD-2 ruleset pointed at a branch first — preview deploys) |
+| 2 | Foundation | Repo scaffolded (Next 16/TS/pnpm/Tailwind v4/next-intl/Motion), tooling + CI gates, tracker snapshot + `bead-trailer`, governance files (CODEOWNERS, PR template, `renovate.json`), root README (replaced in this plan round — §2), first Vercel preview | Phase 2 gate · Foundation accepted (CI + trailer gate required on `main` — which needs a required-status-checks rule on the HD-2 ruleset first; the ruleset already protects `main` — preview deploys) |
 | 3 | Content & i18n infrastructure | `content/` tree (all `en` keys, `site.json` incl. the 23-entry `provisional` array, schemas), i18n runtime, proxy, `validate:content` + coverage report, `zh-Hans` for the 33 prototype strings, `zh-Hant` seeded from it | Phase 3 gate · Content contract live (`/en`, `/zh-Hans` and `/zh-Hant` render on preview; INV-02.1–11 gates on) |
 | 4 | Design system & motion primitives | Tokens, fonts + SC/TC CJK stack, layout shell, sticky nav + hamburger + three-option locale menu, footer, Reveal/variants/WordSwap/CountUp, View Transitions spike → `PageTransition`, Hero as the vertical slice | Phase 4 gate · **M1** skeleton on preview: three locales, nav + hero + footer, cascade, reveals |
 | 5 | Homepage | The remaining seven sections (both views, hi-fi) + the inquiry form lane (schema, handler, `InquiryForm`) | Phase 5 gate · **M2** homepage complete; form submits on preview (log transport) |
@@ -90,7 +94,7 @@ a half-answered row that keeps its whole question is how a settled fact gets ask
 
 | Before | Decide / supply | Answered at the Phase 1 gate (no longer blocking) |
 |---|---|---|
-| Phase 2 | Close `gp-dln.4`; **point the "Main Protection" ruleset at a branch** (HD-2 left it targeting none) and add `bead-trailer` once it exists — OQ-11.3; OQ-11.4 `CLAUDE.md`; OQ-09.3 preview protection; OQ-09.5 standing beads; OQ-11.1 Dolt push (optional); verify-only: OQ-01.3 / OQ-05.1 (scaffold), OQ-08.5 lint stack, OQ-08.3 CI minutes, OQ-08.8 INV-02.1 wording | HD-1 stack (ADR-001…009 stand); HD-3 plan — **Hobby at start**, so OQ-09.1's plan half and OQ-01.4's are settled for Phase 2 and reopen only before cutover (D-10.13); the root README replacement (done in this plan round) |
+| Phase 2 | Close `gp-dln.4`; **add a `required_status_checks` rule to the "Main Protection" ruleset** and list 08's six names in it, `bead-trailer` once PR-2.3 has created it — the ruleset already protects `main` (verified against the GitHub API 2026-08-23); requiring a check is the half HD-2 left undone — OQ-11.3; OQ-11.4 `CLAUDE.md`; OQ-09.3 preview protection; OQ-09.5 standing beads; OQ-11.1 Dolt push (optional); verify-only: OQ-01.3 / OQ-05.1 (scaffold), OQ-08.5 lint stack, OQ-08.3 CI minutes, OQ-08.8 INV-02.1 wording | HD-1 stack (ADR-001…009 stand); HD-3 plan — **Hobby at start**, so OQ-09.1's plan half and OQ-01.4's are settled for Phase 2 and reopen only before cutover (D-10.13); the root README replacement (done in this plan round) |
 | Phase 3 | OQ-02.2 prod fallback; OQ-06.5 cookie lifetime; OQ-09.4 content-PR approver; OQ-10.4 translation resource and timing (its policy half is answered — HD-12); OQ-02.8 who reviews `zh-Hant` and to which regional conventions; doc-level: OQ-04.8, OQ-06.8, OQ-09.10. **Retired by 02's own decisions:** root-path detection (D-02.9) and the "Child's age" option set (D-02.4 rule 8) | HD-10 locales — OQ-02.1 answered (`en` + `zh-Hans` + `zh-Hant`), OQ-03.3 follows it; HD-6 brand name — OQ-02.4 / `gp-dln.12` answered provisionally; HD-5 subpage set — OQ-02.7 / `gp-dln.6` answered; HD-7 + HD-9 owner facts — `gp-dln.13` ships as 23 provisional sample defaults, so Phase 3 no longer waits on any of them |
 | Phase 4 | OQ-03.2 AA palette; OQ-03.1 tablet; OQ-03.5 emoji; OQ-03.6 vector logo; OQ-04.1 hamburger sheet; OQ-04.4 photo placeholder; OQ-04.6 mobile footer; OQ-04.7 nav at `lg`; OQ-06.6 active-section highlight; OQ-06.10 / OQ-04.11 what the three-option switcher *looks* like (new — HD-10 made it a menu and the handoff draws none); OQ-05.2 spike verdict; OQ-05.3/05.4/05.6/05.8 motion sign-offs; OQ-05.5 (answered by 02 + 06) — all have stated defaults; doc-level: OQ-08.9 (03 §5 → `MC-08.1`) | HD-14 CJK typeface — **closed**, not merely defaulted: OQ-03.4 / OQ-01.2 / OQ-04.9 ship the system stack at launch, split per script by 03 D-03.14 (`--font-cjk-sc` / `--font-cjk-tc`). HD-11 established that the design names no face; HD-14 confirms nobody will name one, so PR-4.1 has no font decision left in it |
 | Phase 5 | OQ-02.6 testimonials in the Chinese locales; OQ-07.10 / OQ-04.10 option sets; OQ-07.1 / OQ-02.5 e-mail language; OQ-07.2 auto-ack; OQ-04.3 drop `gpdevelop`; OQ-08.1 visual-regression scope; OQ-08.6 contrast gate; OQ-10.3 photography timing | HD-7 street address and Maps link — OQ-07.8 ships as a provisional sample, so PR-5.7 and PR-6.8 render a real-looking address from day one |
@@ -317,15 +321,21 @@ and `.gitignore`. There is no `package.json`, no `.github/`, no `.gitattributes`
 
 ### 2 · Phase 2 · Foundation
 
-**Entry.** `gp-dln.4` closed **and the branch-protection ruleset actually protecting `main`.** HD-2 records
-that a "Main Protection" ruleset exists with `deletion`, `non_fast_forward` and `pull_request` — but its
-`conditions.ref_name.include` list is empty, so as of 2026-08-22 it applies to **no branch** and
-`GET /repos/…/rules/branches/main` returns nothing. Treat protection as *intended, not live*: the human adds
-`~DEFAULT_BRANCH` (or `refs/heads/main`) to the include list, and adds `bead-trailer` as a required check once
-PR-2.3 has created that workflow. Repo settings are the human's to change; no seat touches them. Until the
-include list is fixed, the Phase 2 exit gate's "CI and `bead-trailer` required on `main`" cannot be verified —
-a green check on a PR proves the workflow runs, not that it can block a merge — so this is entry *and* exit
-criteria for the same reason, and OQ-11.3 stays open in fact even though it is answered in intent.
+**Entry.** `gp-dln.4` closed **and the "Main Protection" ruleset carrying a `required_status_checks` rule that
+lists 08 `D-08.12`'s six check names.** The older wording of this condition — "the ruleset actually protecting
+`main`" — was both wrong and easier to pass than intended, because that half is already satisfied. Ground
+truth, read from the GitHub API on 2026-08-23 rather than inferred: the ruleset (id 21223922) is **active**
+and its `conditions.ref_name.include` list **does** name the default branch (`~DEFAULT_BRANCH`), so its
+`deletion`, `non_fast_forward` and `pull_request` (squash-only) rules are live and `main` rejects a direct
+push, a force-push and a non-squash merge today. What the ruleset has **no** rule for is
+`required_status_checks`: **zero** checks are required, so a pull request still merges with `content` red.
+That is the outstanding half, and it is the human's — add the rule, list the six names in it, `bead-trailer`
+last, once PR-2.3 has created that workflow and it has reported the check name on `main`. Repo settings are
+the human's to change; no seat touches them. Until that rule exists, the Phase 2 exit gate's "CI and
+`bead-trailer` required on `main`" cannot be verified — a green check on a PR proves the workflow runs, not
+that it can block a merge — so this is entry *and* exit criteria for the same reason, and OQ-11.3's
+required-checks half stays open in fact even though its protection half is now true and the question is
+answered in intent.
 **Scope.** D-01.1, D-01.4 (scaffold), D-01.7 (Vercel); 08's tooling and gate
 inventory by id — D-08.1 (pyramid), D-08.2 (literal-text config), D-08.3 (ESLint run directly), D-08.4
 (Stylelint), D-08.6 (Vitest/RTL), D-08.7 (Playwright projects), D-08.11 (bundle-secret + trailer scripts),
@@ -356,7 +366,7 @@ scheduled — the row is written to work either way, because INV-10.1 keeps ever
 | PR-2.6 | CI: `ci.yml` — install, typecheck, lint (ESLint + Stylelint + Prettier), unit, build, e2e smoke, `TODO\|FIXME\|HACK` grep over `src/**` (TRAP-11.9); concurrency; required-checks list for 09 | new: *Phase 2 · CI pipeline* | `.github/workflows/ci.yml` | PR-2.4, PR-2.5 | S | 2.3 | Workflow green on the PR; a seeded `TODO` fails it; job names match 08's gate inventory |
 | PR-2.8 | Skill sync: `super-orchestrator` SKILL.md ids → 11 (§9 table), W-11.2 unclaim recipe, `board.py` path notes | `gp-dln.5` | `.claude/skills/super-orchestrator/SKILL.md` (+ `scripts/board.py` comments) | — | S | all | Every row of 11 §9 applied; no `13-work-tracking`, `W1`–`W7`, `PRO-*` left outside the history note |
 | PR-2.9 | Repo governance (09): `CODEOWNERS` (`content/** public/images/**` → owner + developer, everything else → developer, D-09.19), `.github/PULL_REQUEST_TEMPLATE.md` whose last line is the `Bead:` trailer (D-09.11), `renovate.json` (weekly grouped minors, majors singly, automerge off, `commitTrailers`/`prFooter` carrying the standing dependency bead, D-09.17) | new: *Phase 2 · repo governance* | `.github/CODEOWNERS`, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json` | PR-2.3 (`scripts/ci/bead-trailer.sh` defines the trailer the template must satisfy) | S | 2.4–2.6, 2.8 | Template's trailer passes the PR-2.3 script unedited; `CODEOWNERS` parses in the GitHub UI and covers `content/**`; Renovate's dry run opens one grouped PR carrying the bead trailer; the two standing beads exist (OQ-09.5) |
-| PR-2.10 | CI: `audit.yml` (D-10.15 (a)) — `pnpm audit --prod --audit-level=high` plus `gitleaks` over the PR diff, on `pull_request` and a weekly `schedule`, `permissions: contents: read`, no repository secret; **advisory**, deliberately not added to INV-08.2's six required checks (OQ-08.7's default, now shipped rather than assumed); its own workflow file because the weekly cron is a different `on:` block from `ci.yml`'s | new: *Phase 2 · dependency & secret audit* (label `ci`) | `.github/workflows/audit.yml`, `docs/technical/08-testing-quality.md` (§10's `Built?` cell for the `audit` row only) | PR-2.4 (`package.json` + `pnpm-lock.yaml` — `pnpm audit` resolves from the lockfile) | S | 2.1–2.3, 2.6, 2.8, 2.9 | A fixture branch pinning a dependency with a known **high** advisory fails the job and one with a **moderate** advisory does not, so `--audit-level` is proven rather than assumed; a seeded fake key in the diff fails gitleaks and the same string already present on the base branch does not, which is the diff scope INV-07.3 relies on; the run carries no secret but `GITHUB_TOKEN` (INV-08.7); `GET /repos/…/rules/branches/main` still lists exactly the six names of INV-08.2, so an advisory job cannot drift into being a seventh required check; a Renovate PR is scanned by it |
+| PR-2.10 | CI: `audit.yml` (D-10.15 (a)) — `pnpm audit --prod --audit-level=high` plus `gitleaks` over the PR diff, on `pull_request` and a weekly `schedule`, `permissions: contents: read`, no repository secret; **advisory**, deliberately not added to INV-08.2's six required checks (OQ-08.7's default, now shipped rather than assumed); its own workflow file because the weekly cron is a different `on:` block from `ci.yml`'s | new: *Phase 2 · dependency & secret audit* (label `ci`) | `.github/workflows/audit.yml`, `docs/technical/08-testing-quality.md` (§10's `Built?` cell for the `audit` row only) | PR-2.4 (`package.json` + `pnpm-lock.yaml` — `pnpm audit` resolves from the lockfile) | S | 2.1–2.3, 2.6, 2.8, 2.9 | A fixture branch pinning a dependency with a known **high** advisory fails the job and one with a **moderate** advisory does not, so `--audit-level` is proven rather than assumed; a seeded fake key in the diff fails gitleaks and the same string already present on the base branch does not, which is the diff scope INV-07.3 relies on; the run carries no secret but `GITHUB_TOKEN` (INV-08.7); `GET /repos/…/rules/branches/main` names no required check outside INV-08.2's six — as of 2026-08-23 it carries no `required_status_checks` rule at all, so the check is that `audit` is absent from that rule whenever the human adds it and cannot drift into being a seventh required check; a Renovate PR is scanned by it |
 | OPS-2.1 | Vercel project linked on the **Hobby** tier (HD-3, D-10.13; D-09.3 settings otherwise: framework Next.js, Node 24.x, pnpm, region `sfo1`, Fluid, Ignored Build Step skipping `docs/**` + `.beads/**` + root-doc-only commits), preview per PR, production from `main`, `NEXT_PUBLIC_SITE_URL` per scope, Deployment Protection on previews with a bypass secret for CI (D-09.4, OQ-09.3, OQ-08.4) | new chore: *Phase 2 · Vercel project* | dashboard (no code) | PR-2.4 | S | all | Preview URL on PR-2.5; production deploy of `main` succeeds; a docs-only commit produces no build; the bypass secret is stored as a GitHub Actions secret and nowhere else; the bead records which tier the project is on and which of D-09.3's settings Hobby does not offer, so Phase 7 knows what the upgrade buys |
 | OPS-2.2 | Tracker relocation before this plan's worktree is removed (TRAP-11.6): export, then move `.beads/embeddeddolt/` and `.beads/backup/` into the main checkout, re-point `BEADS_DIR`, confirm one database | new chore: *Phase 2 · tracker relocation* | `.beads/` outside the worktree (no code) | PR-2.1 (the export it protects) | S | all | The orchestrator's shell reports one database at the main checkout; `git worktree remove` afterwards deletes no tracker data; `issues.jsonl` at `main` still lists every claimed bead |
 
@@ -365,20 +375,26 @@ scheduled — the row is written to work either way, because INV-10.1 keeps ever
 2.10 `dep-audit` · OPS-2.1 `vercel-project` · OPS-2.2 `tracker-relocation`. The id PR-2.7 is retired — the stack deliberately
 jumps 2.6 → 2.8 — and is never reused, so a plan row's id always means the same work on the board.
 
-**Exit gate.** `Phase 2 gate · Foundation accepted`: CI and `bead-trailer` **required on `main`** — which means
-the HD-2 ruleset's `conditions.ref_name.include` list names the default branch and both checks are listed as
-required, verified by reading `GET /repos/…/rules/branches/main` and getting a non-empty answer, not by seeing
-green checks on a PR (OQ-11.3, human); a preview URL on every PR; `issues.jsonl` tracked; the root README
+**Exit gate.** `Phase 2 gate · Foundation accepted`: CI and `bead-trailer` **required on `main`**. The HD-2
+ruleset's `conditions.ref_name.include` list already names the default branch (verified against the GitHub API
+2026-08-23), so what this gate turns on is the other half — the ruleset carries a `required_status_checks`
+rule and both checks are listed in it, verified by reading `GET /repos/…/rules/branches/main` and finding
+**that rule**, not by seeing green checks on a PR and **not** by getting a non-empty answer, which the live
+`deletion`, `non_fast_forward` and `pull_request` rules already produce (OQ-11.3, human); a preview URL on
+every PR; `issues.jsonl` tracked; the root README
 replaced (in this round or by PR-2.2); lint rules proven by fixtures; governance files merged (09 §5.1 item
 10's repo half).
 **Risks.** Version drift between the docs' pins and what `pnpm` resolves (mitigation: PR-2.4 records the
 verified versions and any mismatch becomes an ADR note in 01); the trailer gate failing on its own first PR
 (mitigation: PR-2.1 lands first, D-10.10); 08's gate inventory names `.github/dependabot.yml` while D-09.17
 decides Renovate because Dependabot cannot write a commit body (mitigation: PR-2.9 ships `renovate.json` and
-corrects 08's line in the same PR, per the DoD's "changed decisions change in their owning doc"); **protection
-believed live but targeting nothing** (HD-2) — the mitigation is the gate wording above, because a ruleset with
-an empty include list looks identical to a working one in the settings UI.
-**Human inputs.** OQ-11.3 (the include-list fix, then the required-checks list), OQ-11.4, OQ-09.3, OQ-09.5,
+corrects 08's line in the same PR, per the DoD's "changed decisions change in their owning doc"); **a protected
+branch mistaken for a gated one** (HD-2) — `main` genuinely does reject direct pushes, force-pushes and
+non-squash merges, which makes it easy to read `GET /repos/…/rules/branches/main` returning rules as proof the
+checks are enforced when the ruleset carries no `required_status_checks` rule at all; the mitigation is the
+gate wording above, which names the rule instead of counting rules.
+**Human inputs.** OQ-11.3 (the `required_status_checks` rule and the six names in it — the include list
+already names the default branch), OQ-11.4, OQ-09.3, OQ-09.5,
 OQ-11.1; verification-only: OQ-01.3 / OQ-05.1 at PR-2.4, OQ-08.5 and OQ-08.8 at PR-2.5, OQ-08.3 at PR-2.6.
 **No longer asked here:** OQ-09.1 / OQ-01.4's plan half — HD-3 answers it with Hobby, and it reopens at Phase 8
 (D-10.13).
@@ -761,7 +777,7 @@ until gate latency dominates.
 
 | Weeks | Phase | Milestone at the gate | Human touchpoints |
 |---|---|---|---|
-| 1 | 2 Foundation | Foundation accepted | close gate 2; **fix the ruleset's empty include list** and set the required checks (OQ-11.3, HD-2); Vercel project on Hobby |
+| 1 | 2 Foundation | Foundation accepted | close gate 2; **add the ruleset's missing `required_status_checks` rule** and list the six check names in it — the include list already names the default branch, so `main` is protected already (OQ-11.3, HD-2); Vercel project on Hobby |
 | 2–3 | 3 Content & i18n | Content contract live | answer Phase 3 OQs or accept defaults; name the `zh-Hant` reviewer if one is known (OQ-02.8); close gate 3 |
 | 4–5 | 4 Design system & motion | **M1** skeleton on preview (three locales, nav + hero + footer) | look at the preview on phone + desktop, in all three languages; close gate 4 |
 | 6–8 | 5 Homepage + forms lane | **M2** homepage hi-fi complete, form submits on preview | section-by-section look; close gate 5; open OPS-7.x (accounts, DNS) **including registrar or DNS-host access for the developer** — the one part of the domain still outstanding after HD-13, and the part with lead time (D-10.14) |
@@ -898,7 +914,10 @@ samples), OQ-03.4 / OQ-01.2 / OQ-04.9 (HD-11, the design names no CJK face), OQ-
 for Phases 2–6 (HD-3, Hobby — capability and default, not a disagreement: Hobby is *capable* through Phase 7
 (09 `D-09.2`), and 10's *default* under OQ-10.7 is to upgrade at OPS-7.3 inside Phase 7, so the tier changes
 partway through that phase unless the human defers it to OPS-8.1) and OQ-10.4's policy half (HD-12, warn
-mode). One is answered in intent but **not in fact** — OQ-11.3, whose ruleset targets no branch (HD-2). Two
+mode). One is answered in intent and only **half true in fact** — OQ-11.3: verified against the GitHub API on
+2026-08-23, the ruleset *does* target the default branch, so `main` is protected from direct pushes,
+force-pushes and non-squash merges; it carries no `required_status_checks` rule, so no check is required
+(HD-2). Two
 are new: OQ-02.8 (02's, the `zh-Hant` reviewer) and OQ-10.7 (this document's, when the Vercel plan changes).
 The general restatement HD-9 forces: every row that used to say "the value stays `TODO` and `--release`
 rejects it" now reads "the value ships as a registered sample default and `--release` rejects it while its
@@ -915,7 +934,7 @@ mailbox names plus DKIM/SPF publication are still owed. HD-15 changes no row her
 
 | Phase | OQ | Answerer | Needed by | If unanswered |
 |---|---|---|---|---|
-| 2 | OQ-11.3 | human | Phase 2 gate | **answered in intent, open in fact (HD-2)** — the "Main Protection" ruleset exists but its `conditions.ref_name.include` list is empty, so it protects no branch; no default, the gate cannot close until the include list names the default branch and CI + `bead-trailer` are required checks (§2) |
+| 2 | OQ-11.3 | human | Phase 2 gate | **answered in intent; the protection half is true in fact, the required-checks half is not (HD-2)** — verified against the GitHub API 2026-08-23: the "Main Protection" ruleset is active and its `conditions.ref_name.include` list names the default branch, so `main` rejects a direct push, a force-push and a non-squash merge. What it carries no rule for is `required_status_checks`, so none of 08's six blocks a merge. No default; the gate cannot close until that rule exists and lists CI + `bead-trailer` (§2) |
 | 2 | OQ-11.4 | orchestrator → 00-README owner (`gp-dln.3`) | PR-2.2 | no `CLAUDE.md`; `00-README.md` stays the conventions of record |
 | 2 | OQ-11.1 | human | PR-2.1 | export-only (D-11.6); no `bd dolt push` |
 | 2 → 8 | OQ-09.1 | human (owner) | OPS-2.1, then **reopens** at OPS-7.3 / OPS-8.1 | **answered for Phases 2–6 (HD-3): Hobby** — capability and default, not a disagreement: Hobby is *capable* through Phase 7 (09 `D-09.2`), and 10's *default* under OQ-10.7 is to upgrade at OPS-7.3 inside Phase 7, so the tier changes partway through that phase unless the human defers it to OPS-8.1. No budget concern. Reopens twice: OPS-7.3's WAF rule consumes Hobby's single custom rule, and Hobby's non-commercial terms must be resolved before the cutover — default if still unanswered at OPS-8.1: **the cutover does not happen** (D-10.13) |
