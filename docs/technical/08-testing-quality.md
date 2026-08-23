@@ -528,7 +528,23 @@ scripts: skip link is first `Tab` and lands on `main`; nav order matches the vis
 cycles inside, `Esc` closes and returns focus to the trigger; lightbox: arrows, `Esc`, focus trapped and
 returned; form: `Tab` through all controls, `Enter` submits, error focus management (D-07.4); the
 `:focus-visible` ring has a computed `outline-width` of `3px` (D-03.11). Colour-scheme and zoom: 200 % zoom
-at 1280 shows no horizontal scroll (INV-05.2's `overflow-x: clip` on `html`).
+at 1280 — a 640 px CSS viewport — shows no horizontal scroll, **and so does 390 px unzoomed** (INV-05.2's
+`overflow-x: clip` on `html`). Both halves of that sentence are corrections, and both were measured in
+chromium and webkit on a production build carrying a +150 px bleed, by the row that placed the rule in
+`src/app/globals.css`:
+
+- **The viewport.** The bleed the rule exists to absorb is the gallery's, which is +150 px from the right
+  edge *on 390 px screens*; at 1280 the wall fits and the overflow is 0. A check that only ever ran wide
+  would have passed against a page that scrolled sideways by 126 px on the reference mobile width (03 §3.3),
+  which is the width the design is drawn at. Zooming to 200 % happens to reach the `< lg` layout and so
+  happens to catch this one — but it is 640 px, not 390 px, and a bleed introduced below `md` would sail
+  through it. The narrow viewport is asserted directly, not approached through zoom.
+- **The instrument.** `documentElement.scrollWidth - clientWidth` does **not** measure this rule and must not
+  be what either assertion reads. The root element propagates its overflow to the viewport and is itself left
+  used-value `visible`, so that subtraction reports the bleed identically with the rule and without it — 126
+  px both ways in the measurement above, while user-driven horizontal scrolling went from 126 px to 0. The
+  assertion is `window.scrollX === 0` after a real horizontal input (`mouse.wheel(500, 0)` and `ArrowRight`),
+  which is both what a user experiences and the only reading that changes when the rule is removed.
 
 ### 7 · Performance budgets (Lighthouse CI)
 
@@ -617,7 +633,7 @@ runner can produce it.
 | INV-03.5 | tokens file-snapshot test · PR template "03 updated" box | `unit` · process | both |
 | INV-03.6 | ESLint `font-cjk-(sc\|tc)` className ban · `check-tokens.ts` `--font-cjk-(sc\|tc)` scan outside `src/styles/tokens.css` (§2 (c)) · INV-02.9's locale-comparison rule covers the TypeScript half · `MC-08.1` confirms the TC stack resolves on real machines | `static` · phase gate | CI + manual |
 | INV-05.1 | Stylelint `property-allowed-list` on keyframe files · variants catalogue test | `static` · `unit` | CI |
-| INV-05.2 | Stylelint overflow/contain/content-visibility ban · `@motion` computed-style scan | `static` · `e2e` | CI |
+| INV-05.2 | Stylelint overflow/contain/content-visibility ban · `@motion` computed-style scan · `@a11y` no-horizontal-scroll at 390 **and** at 1280/200 % (§6 — `window.scrollX` after a horizontal input, never `scrollWidth - clientWidth`) | `static` · `e2e` | CI |
 | INV-05.3 | Stylelint `will-change` ban · ESLint `willChange` ban · `@motion` rest scan | `static` · `e2e` | CI |
 | INV-05.4 | `@motion` computed-style scan (nav, shells, fixed/sticky containers) | `e2e` | CI |
 | INV-05.5 | decoration component tests (id, ref, two layers) · `@smoke` unique `deco-*` ids | `unit` · `e2e` | CI |
