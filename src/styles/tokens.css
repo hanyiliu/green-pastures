@@ -23,13 +23,18 @@
  *
  * Two conventions this file had to adopt, because 03 states them nowhere:
  *   - Where a 03 §3.2 row quotes several values under ONE token name (e.g.
- *     `--text-subhead` = "19px/1.6 hero; 17px/1.6 sections"), the token holds
- *     the FIRST-LISTED value and the others are recorded in the comment. 03
- *     names no sub-tokens and D-03.1 forbids inventing a second spelling, so a
- *     sub-token must be added to 03 first.
+ *     `--text-blurb` = "15px head, 14px/1.55 assistants, 14px/1.5 programs"),
+ *     the token holds the FIRST-LISTED value and the others are recorded in the
+ *     comment. D-03.1 forbids inventing a second spelling, so a sub-token must
+ *     be added to 03 first — which is what happened to `--text-subhead`,
+ *     `--text-button` and `--text-chip`: 03 §3.2 now names a
+ *     `--text-<family>-<role>` for each of their remaining values and they are
+ *     declared below.
  *   - Values 03 quotes without giving a token name at all (§4 geometry) are
  *     comments, not tokens, for the same reason. The §2.3 secondary colours
- *     were such values until 03 minted `--color-sub-*-<role>` for them.
+ *     were such values until 03 minted `--color-sub-*-<role>` for them, and
+ *     §4's button and chip padding was such a value until 03 minted `--btn-*`
+ *     and `--chip-*`.
  */
 
 @theme static {
@@ -221,8 +226,18 @@
    */
   --text-section-title: 28px;
   --text-section-title--line-height: normal;
-  --text-subhead: 15px; /* hero; sections 13–14px */
+  --text-subhead: 15px; /* hero — mobile L56 */
   --text-subhead--line-height: 1.6;
+
+  /*
+   * The section intro under a section title, as against the hero's own subhead
+   * above (03 §3.2, "Sub-tokens of `--text-subhead`, `--text-button` and
+   * `--text-chip`"). Visit draws 14px here (mobile L225) against teachers' 13px
+   * (mobile L193) — a per-section deviation 04's recipe carries, the same way
+   * `--text-section-title` carries Reviews' 36px and Visit's 42px.
+   */
+  --text-subhead-section: 13px;
+  --text-subhead-section--line-height: 1.6;
   --text-quote: 26px;
   --text-quote--line-height: 1.35;
   --text-quote-mark: 58px;
@@ -237,8 +252,14 @@
   --text-eyebrow-sm: 10px;
   --text-nav: 15px; /* 03 §3.2 marks mobile n/a (hamburger not designed); desktop value stands */
   --text-lang-toggle: 14px; /* trigger EN/简/繁 and the three menu options (02 D-02.10) */
-  --text-button: 13px; /* nav; hero 17px, submit 16px */
-  --text-chip: 11px; /* hero badge; trust row 12px, benefit 12px, pills 11px, day chips 13px */
+  --text-button: 13px; /* nav pill — mobile L45 */
+  --text-button-hero: 17px; /* hero CTA — mobile L58 */
+  --text-button-submit: 16px; /* "Request a tour" — mobile L235 */
+  --text-chip: 11px; /* hero badge — mobile L54 */
+  --text-chip-trust: 12px; /* hero trust row — mobile L62, L64 */
+  --text-chip-benefit: 11px; /* menu dietary chips — mobile L138, L139 */
+  --text-chip-pill: 10px; /* programme/teacher tag pills — mobile L308, L313, L318 */
+  --text-chip-day: 13px; /* menu day chips, the row's one Fredoka 600 — mobile L130 */
   --text-sample-line: 13px;
   --text-sample-line--line-height: 1.6; /* 03 §3.3 "vs the design's 1.6" */
   --text-panel-label: 10px;
@@ -261,7 +282,16 @@
    * 5 · Radii (03 §5) — MOBILE values here where the two views differ.
    * ---------------------------------------------------------------------- */
   --radius-pill: 999px;
-  --radius-card-lg: 22px; /* bubbles, philosophy photo; = mobile hero photo radius */
+
+  /*
+   * The hero photo: `radius="26"` desktop (L129), `radius="22"` mobile (L68).
+   * Mobile lands on the same number as --radius-card-lg, desktop on a step of
+   * its own, which is why 03 §5 described the value for a long time without
+   * minting it. 04 §5.3 lists `hero` among the radius names `Picture` accepts
+   * and 04 §10 asks for this spelling.
+   */
+  --radius-hero: 22px;
+  --radius-card-lg: 22px; /* bubbles, philosophy photo */
   --radius-card: 20px; /* form card; mobile bubbles */
   --radius-card-md: 18px; /* panel, subpage cards; mobile form card; = mobile philosophy photo */
   --radius-card-sm: 13px; /* mobile; 16px at >= md (meals card, desktop map photo) */
@@ -372,6 +402,25 @@
   --section-py: 48px;
   --section-px: 24px;
 
+  /*
+   * 4 · Button and chip padding (03 §4, "The `--btn-*` and `--chip-*` padding
+   * tokens"). One token per recipe holding the whole `padding` shorthand — the
+   * shape --radius-bubble-l already uses — because Tailwind v4 has no
+   * `--padding-*` namespace, only the single `--spacing` base. Consumed as
+   * `p-(--btn-nav)`. MOBILE values here, desktop below. Line numbers are the
+   * mobile reference.
+   */
+  --btn-nav: 10px 16px; /* nav pill — L45 */
+  --btn-hero: 15px 0; /* hero CTA, full-width: the reference writes `padding:15px 0` — L58 */
+  --btn-submit: 15px 0; /* form submit, full-width — L235 */
+  --chip-hero-badge: 6px 13px; /* L54 */
+  --chip-day: 9px 13px; /* L130 */
+  --chip-day-selected: 9px 16px; /* L132 */
+  --chip-benefit: 7px 12px; /* menu dietary chips — L138 */
+  --chip-pill: 4px 10px; /* programme/teacher tag pills — L308 */
+  --chip-head-teacher: 4px 11px; /* L199 */
+  --chip-yelp: 4px 9px; /* L167 */
+
   /* 4 · Sticky-nav height = logo height + 2 × nav vertical padding; 05's scroll-margin-top */
   --nav-h: 58px;
 
@@ -391,7 +440,8 @@
     --text-headline: 64px;
     --text-headline--line-height: 1.04;
     --text-section-title: 40px; /* Reviews 36px; Visit 42px/1.15 */
-    --text-subhead: 19px; /* hero; sections 17px */
+    --text-subhead: 19px; /* hero — L117 */
+    --text-subhead-section: 17px; /* L164, L191, L220, L281, L312 */
     --text-quote: 44px;
     --text-quote--line-height: 1.32;
     --text-quote-mark: 84px;
@@ -402,8 +452,14 @@
     --text-testimonial: 16px; /* name 14px; attribution 12px */
     --text-eyebrow: 13px;
     --text-eyebrow-sm: 12px; /* programs ages, roles; assistant roles 11px */
-    --text-button: 16px; /* nav; hero 18px, submit 17px */
-    --text-chip: 13px; /* hero badge; trust row 14px, benefit 12px, pills 11px, day chips 14px */
+    --text-button: 16px; /* nav pill — L105 */
+    --text-button-hero: 18px; /* L119 */
+    --text-button-submit: 17px; /* L325 */
+    --text-chip: 13px; /* hero badge — L115 */
+    --text-chip-trust: 14px; /* L123, L125 */
+    --text-chip-benefit: 12px; /* L209, L210 */
+    --text-chip-pill: 11px; /* L409, L563 */
+    --text-chip-day: 14px; /* L200 */
     --text-sample-line: 15px;
     --text-panel-label: 12px;
     --text-panel-value: 16px;
@@ -414,6 +470,7 @@
     --text-countup: 30px;
 
     /* 5 · Radii — desktop */
+    --radius-hero: 26px; /* hero photo — L129 */
     --radius-card-sm: 16px;
     --radius-logo-card: 12px;
     --radius-badge: 7px;
@@ -425,6 +482,18 @@
     --section-py: 70px;
     --section-px: 44px;
     --nav-h: 86px; /* 50px logo + 2 × 18px */
+
+    /* 4 · Button and chip padding — desktop. Line numbers are the desktop reference. */
+    --btn-nav: 12px 24px; /* L105 */
+    --btn-hero: 15px 32px; /* L119 */
+    --btn-submit: 14px 30px; /* L325 */
+    --chip-hero-badge: 7px 15px; /* L115 */
+    --chip-day: 8px 16px; /* L200 */
+    --chip-day-selected: 8px 20px; /* L202 */
+    --chip-benefit: 8px 14px; /* L209 */
+    --chip-pill: 5px 11px; /* L409, L563 — the brand-kit swatch at L74 draws 6px 12px */
+    --chip-head-teacher: 5px 13px; /* L292 */
+    --chip-yelp: 5px 11px; /* L240 */
 
     /* 6 · Inputs — desktop */
     --input-h: 44px;
@@ -446,6 +515,7 @@
 
   /* body / blurb / testimonial 1.75, i.e. every token the design set at 1.6 */
   --text-subhead--line-height: 1.75;
+  --text-subhead-section--line-height: 1.75;
   --text-blurb--line-height: 1.75;
   --text-testimonial--line-height: 1.75;
   --text-sample-line--line-height: 1.75;
