@@ -15,10 +15,10 @@ They must be different people (INV-11.3).
 Tick what applies. Strike a line through with `~~…~~` when it does not apply rather than
 deleting it, so a reviewer can see the question was asked.
 
-- [ ] The five checks that exist today are green: `static`, `unit`, `build`, `e2e-ok`, `bead-trailer` — D-08.12's six names less `content`, which arrives with PR-3.4; nothing is ruleset-enforced yet (D-08.19), so this box is the gate
+- [ ] All six checks are green: `static`, `content`, `unit`, `build`, `e2e-ok`, `bead-trailer` (D-08.12) — nothing is ruleset-enforced yet (D-08.19), so this box is the gate
 - [ ] No new `@flaky-known` test without an open bead
-- [ ] Content coverage shows no missing key in any enabled locale, or this PR names the `--warn-locale` it ran under (INV-02.11) — the coverage report and that flag arrive with PR-3.4
-- [ ] A new sample default adds its path to `content/site.json`'s `provisional`; a replaced real value deletes its path (INV-02.10) — `content/site.json` arrives with PR-3.2
+- [ ] Content coverage shows no missing key in any enabled locale, or this PR names the `--warn-locale` it ran under (INV-02.11) — the `content` check posts the report as a sticky comment on this PR
+- [ ] A new sample default adds its path to `content/site.json`'s `provisional`; a replaced real value deletes its path (INV-02.10)
 - [ ] Visual change → Playwright diff images attached, design file and line cited — baselines arrive with PR-8.6; the design files are under `docs/design/` today
 - [ ] Token change → `docs/technical/03-design-system-tokens.md` edited in this same PR (INV-03.5)
 - [ ] New or changed `INV-*` in 02, 03, 05, 07 or 11 → a row added to 08 §9 (INV-08.1)
