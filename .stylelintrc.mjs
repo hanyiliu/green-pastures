@@ -88,6 +88,16 @@ export default {
        * INV-05.1 / INV-05.11 — the only two files allowed to declare keyframes,
        * and inside them only compositor-friendly properties (`filter` is for the
        * `ink` decoration only, reviewed).
+       *
+       * `pointer-events` is the one entry here that is not an animated property,
+       * and it is deliberate. 05 §5.7 specifies `::view-transition {
+       * pointer-events: none }` so that the snapshot overlay does not swallow
+       * clicks for the 500 ms of the subpage slide; the OQ-05.2 spike measured
+       * the consequence of leaving it out and found exactly that, in every
+       * engine and viewport it tested. The list's intent is to constrain what
+       * these files *animate*, not to forbid the static declaration that makes
+       * an animation usable, so `pointer-events` is allowed — here only, for
+       * these two paths, never globally.
        */
       files: ["src/components/motion/ambient.css", "src/components/motion/view-transitions.css"],
       rules: {
@@ -101,6 +111,7 @@ export default {
           "/^animation/",
           "/^offset/",
           "filter",
+          "pointer-events",
         ],
       },
     },
