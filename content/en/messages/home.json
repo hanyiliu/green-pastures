@@ -57,7 +57,7 @@
   },
   "testimonials": {
     "title": "Kind words from our families",
-    "countLine": "<count>{count, number}</count> {count, plural, one {review} other {reviews}} · Fremont parents",
+    "countLine": "<count>{reviews, number}</count> {reviews, plural, one {review} other {reviews}} · Fremont parents",
     "link": "Read all reviews on Yelp →"
   },
   "teachers": {
