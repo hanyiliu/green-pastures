@@ -99,6 +99,7 @@ parity test see the same values.
 | `--breakpoint-md` | `md:` variant | `48rem` |
 | `--ease-soft` | `ease-soft` | `cubic-bezier(.2,.8,.25,1)` |
 | `--dur-rise` (plain) | `duration-(--dur-rise)` | `750ms` |
+| `--btn-nav` / `--chip-day` (plain) | `p-(--btn-nav)` | `12px 24px` |
 
 ```css
 /* src/styles/tokens.css — excerpt, illustrative */
@@ -129,7 +130,9 @@ parity test see the same values.
 What Tailwind generates, honestly: `--ease-soft` → `ease-soft`; `--color-*`, `--font-*`, `--text-*`, `--radius-*`,
 `--shadow-*`, `--container-*`, `--breakpoint-*` → their utilities; `--dur-*` yields **no** `duration-rise`
 utility — it is consumed as `duration-(--dur-rise)`, `[transition-duration:var(--dur-rise)]`, in CSS Modules
-as `var(--dur-rise)`, or from the TS mirror in Motion. Per-view values (§3, §4) are declared mobile-first and
+as `var(--dur-rise)`, or from the TS mirror in Motion. `--btn-*` and `--chip-*` (§4) are the same case —
+Tailwind v4 has no `--padding-*` namespace, only the single `--spacing` base — so each is a plain custom
+property holding a whole `padding` shorthand and is consumed as `p-(--btn-nav)`. Per-view values (§3, §4) are declared mobile-first and
 re-declared under `@media (width >= 48rem)`. Per-locale values sit in three rules and nowhere else:
 `:root:lang(zh)` for everything both Chinese scripts share (§3.3) — CSS language-range matching makes
 `:lang(zh)` match `zh-Hans` and `zh-Hant` alike — and `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)` for the
@@ -284,7 +287,7 @@ Sources: desktop/README L9–17, mobile/README L10–17; line numbers in the ref
 |---|---|---|---|---|
 | `--text-headline` | `64px/1.04` | `36px/1.08` | Fredoka 600 | hero H1 |
 | `--text-section-title` | `40px/normal` (Reviews `36px`; Visit `42px/1.15`) | `28px/normal` (Reviews `26px`; Visit `28px/1.2`) | Fredoka 600 | section H2 (desktop L163, L242, L311; mobile L98, L169, L224) |
-| `--text-subhead` | `19px/1.6` hero; `17px/1.6` sections | `15px/1.6` hero; `13–14px/1.6` sections | Nunito 600 | under titles |
+| `--text-subhead` (+ `-section`) | `19px/1.6` hero; `17px/1.6` sections | `15px/1.6` hero; `13px/1.6` sections (Visit `14px`) | Nunito 600 | under titles |
 | `--text-quote` | `44px/1.32` | `26px/1.35` | Fredoka 500 | philosophy pull-quote |
 | `--text-quote-mark` | `84px` | `58px` | Fredoka 600 | decorative “ (mobile L82) |
 | `--text-program-title` | `23px` / `28px` (Toddler) | `20px` / `22px` | Fredoka 600 | stepping-stone titles |
@@ -295,8 +298,8 @@ Sources: desktop/README L9–17, mobile/README L10–17; line numbers in the ref
 | `--text-eyebrow-sm` | `12px` (programs ages, roles), `11px` (assistant roles) | `10px` | Nunito 700, `--tracking-label` | age / role lines |
 | `--text-nav` | `15px` | n/a (hamburger menu, not designed) | Nunito 700 | nav links |
 | `--text-lang-toggle` | `14px` | — | Nunito 700 | locale switcher: the trigger (`EN`/`简`/`繁`) and its three menu options; the design's single "EN · 中文" item became a three-option menu (02 D-02.10), same size |
-| `--text-button` | nav `16px`; hero `18px`; submit `17px` | nav `13px`; hero `17px`; submit `16px` | Fredoka 500 | pills (desktop L105, L119, L325; mobile L45, L58, L235) |
-| `--text-chip` | hero badge `13px`; trust row `14px`; benefit `12px`; pills `11px`; day chips Fredoka `14px` | `11px`; `12px`; `12px`; `11px`; `13px` | Nunito 700 / Fredoka 600 | chips |
+| `--text-button` (+ `-hero`, `-submit`) | nav `16px`; hero `18px`; submit `17px` | nav `13px`; hero `17px`; submit `16px` | Fredoka 500 | pills (desktop L105, L119, L325; mobile L45, L58, L235) |
+| `--text-chip` (+ `-trust`, `-benefit`, `-pill`, `-day`) | hero badge `13px`; trust row `14px`; benefit `12px`; tag pills `11px`; day chips Fredoka `14px` | `11px`; `12px`; `11px`; `10px`; `13px` | Nunito 700 / Fredoka 600 | chips |
 | `--text-sample-line` | `15px/1.6` | `13px` | Nunito 600 | menu sample meals |
 | `--text-panel-label` / `--text-panel-value` | `12px` (1px tracking, uppercase) / `16px/1.5` | `10px` / `14px/1.5` | Nunito 700 / 600 | Visit info panel |
 | `--text-form-label` / `--text-input` | `12px` / `14px` | `11px` / `14px` | Nunito 700 / 600 | form |
@@ -323,6 +326,44 @@ the `var()` was invalid at computed-value time, and — because `line-height` is
 through to Preflight's `html, :host { line-height: 1.5 }`. English section titles were silently at `1.5`. The
 base value replaces that accident with the handoff's `normal` and leaves `zh` untouched.
 
+**Sub-tokens of `--text-subhead`, `--text-button` and `--text-chip`.** Three rows above quote several sizes
+under one token name, and the plain token holds only the first-listed one — the hero subhead, the nav pill,
+the hero badge. Every remaining value is named `--text-<family>-<role>`, extending the family it belongs to as
+a prefix, so a component binds a token instead of writing a px (INV-03.2); no other spelling of these sizes
+exists. Line numbers are the two reference files, `docs/design/desktop/Green Pastures - Homepage.dc.html` and
+`docs/design/mobile/Green Pastures - Homepage Mobile.dc.html`.
+
+| Token | Desktop | Mobile | Role | Consumer | Source |
+|---|---|---|---|---|---|
+| `--text-subhead-section` (+`--line-height`) | `17px/1.6` | `13px/1.6` | the intro line under a section title; the hero's own subhead keeps `--text-subhead` | `SectionHeader` (04 §3) | desktop L164 programs, L191 menu, L220 gallery, L281 teachers, L312 visit; mobile L193 teachers, L225 visit |
+| `--text-button-hero` | `18px` | `17px` | the hero CTA pill | `Button size="hero"` (04 §3.2) | desktop L119; mobile L58 |
+| `--text-button-submit` | `17px` | `16px` | the form's "Request a tour" pill | `Button size="submit"` (04 §3.2) | desktop L325; mobile L235 |
+| `--text-chip-trust` | `14px` | `12px` | the hero trust row — "5.0 on Yelp" and the age range | `Chip` (04 §3.2) | desktop L123, L125; mobile L62, L64 |
+| `--text-chip-benefit` | `12px` | `11px` | the menu's dietary/benefit chips | `Chip tone="white"` (04 §3.2) | desktop L209, L210; mobile L138, L139 |
+| `--text-chip-pill` | `11px` | `10px` | programme highlight chips and teacher tags | `Chip` (04 §3.2) | desktop L409, L417, L425, L563; mobile L308, L313, L318 |
+| `--text-chip-day` | `14px` | `13px` | menu day chips — the one Fredoka 600 member of the row | `MenuDayChips` (04 §3) | desktop L200–L204; mobile L130–L134 |
+
+Four things the reference says that these tokens deliberately do not smooth over:
+
+- **Visit's mobile subhead is `14px/1.6`** (mobile L225) where teachers draws `13px/1.6` (mobile L193) — the
+  only two section subheads the mobile view has. `--text-subhead-section` carries `13px`, and Visit's `14px`
+  stays a per-section deviation in 04's recipe, exactly as Reviews' `36px` and Visit's `42px/1.15` already are
+  for `--text-section-title`. Minting a second name for a 1px difference on one section would be worse.
+- **Visit's *desktop* subhead sets no leading** — `font:600 17px 'Nunito'` (desktop L312), against `/1.6` at
+  programs, menu, gallery and teachers (L164, L191, L220, L281). The token carries `1.6`, the value four of
+  the five desktop sections draw and the one both mobile sections draw.
+- **The mobile chip sizes changed** from the earlier `benefit 12px` / `pills 11px`, which the mobile reference
+  does not contain: benefit chips are `11px` (mobile L138–L139) and tag pills `10px` (mobile L308, L313,
+  L318). The row now quotes the reference.
+- **"Tag pills" are the in-page pills, not the kit swatch.** The brand-and-type panel's component row draws a
+  pill at `11px` (desktop L73–L74) and the page's own programme/teacher tags agree at `11px`; the panel is a
+  swatch, the page is the spec, and only the page has a mobile counterpart.
+
+`--text-subhead-section--line-height` is a token the design sets at `1.6`, so §3.3's rule puts it at `1.75`
+under `:root:lang(zh)` with the other four. None of the six size-only sub-tokens gets a line-height: the
+reference sets each of them with a `font:` shorthand carrying no `/line-height` part, exactly as it does for
+the `--text-button` and `--text-chip` bases they extend.
+
 **3.3 Chinese typography — `zh-Hans` and `zh-Hant`** (declared once under `:root:lang(zh)`; `<html lang>` is
 `LOCALE_META[locale].htmlLang` per 02 D-02.9, set by the `[locale]` layout, 06 wires it). Every value in this
 list is our choice — the design specifies nothing for CJK (§3.1).
@@ -342,7 +383,8 @@ same loosened leading, not for a second rule set.
   translated headline wraps to an extra line at 390px, 02's translator guidance (not a token) shortens it.
 - Line-height (choice, at or above 02 D-02.15's floor of ≥ 1.3 display / ≥ 1.6 body):
   `--text-headline--line-height: 1.3`, `--text-section-title--line-height: 1.3`,
-  `--text-quote--line-height: 1.5`, body/blurb/testimonial `1.75` (vs the design's 1.6). Tight Latin leading
+  `--text-quote--line-height: 1.5`, body/blurb/testimonial `1.75` (vs the design's 1.6) — which now includes
+  `--text-subhead-section--line-height`, the fifth token the design sets at 1.6. Tight Latin leading
   clips CJK glyphs. The display values were 1.2 / 1.25 in the merged draft and are raised here to meet the
   floor 02 states; Traditional's stroke density is the second reason.
 - Tracking (choice): `--tracking-eyebrow: .08em`; `text-transform: uppercase` is a no-op on CJK (the script
@@ -374,24 +416,64 @@ same loosened leading, not for a second rule set.
 | `--container-page` | `1280px` (design width; `80rem`) | `390px` design width, fluid | READMEs, first line |
 | `--container-content` | `1080px` (range 980–1080; testimonials 1080, visit 1000, gallery field 980, hero column 760, hero subhead 540, quote 820, section subheads 560, sample line 580, hero photo 1040) | full width minus padding | desktop/README L6–17 |
 | offsets / rotations | Toddler stone raised `34px`; middle bubble pushed down `30px`; Ms. Ping `300px` column, assistants `230px` columns offset `44px`; polaroids rotated `−6°…+6°` | polaroids `±2–6°`; alternating programs path | desktop/README L12–16; mobile/README L13–15 |
-| button padding (`--btn-*`, vertical×horizontal) | nav pill `12×24`; hero CTA `15×32`; submit `14×30` | nav pill `10×16`; hero CTA and submit full-width, `15px` vertical | desktop/README L7, L10; desktop L325; mobile/README L8; mobile L45 |
-| chip padding (`--chip-*`) | day chips `8×16` (selected `8×20`); benefit chips `8×14`; hero badge `7×15`; pills `6×12`; HEAD TEACHER `5×13`; Yelp badge `5×11` | day chips `9×13` (selected `9×16`); hero badge `6×13`; Yelp badge `4×9` | desktop/README L13; desktop L74, L115, L209, L240, L292; mobile/README L14; mobile L54, L130, L167 |
+| button padding (`--btn-*`, vertical×horizontal) | nav pill `12×24`; hero CTA `15×32`; submit `14×30` | nav pill `10×16`; hero CTA and submit full-width, `15×0` | desktop/README L7, L10; desktop L105, L119, L325; mobile/README L8; mobile L45, L58, L235 |
+| chip padding (`--chip-*`) | day chips `8×16` (selected `8×20`); benefit chips `8×14`; hero badge `7×15`; tag pills `5×11`; HEAD TEACHER `5×13`; Yelp badge `5×11` | day chips `9×13` (selected `9×16`); benefit chips `7×12`; hero badge `6×13`; tag pills `4×10`; HEAD TEACHER `4×11`; Yelp badge `4×9` | desktop/README L13; desktop L115, L200, L202, L209, L240, L292, L409; mobile/README L14; mobile L54, L130, L132, L138, L167, L199, L308 |
 | nav logo / padding | `50px` logo, `18px 44px` padding, gap `20px`, link gap `26px` | `38px` logo, `10px 18px` | desktop/README L7; mobile/README L7; desktop L97–98; mobile L42–43 |
 | `--nav-h` (sticky-nav height; 05's `scroll-margin-top`) | `86px` (= 50 + 2×18) | `58px` (= 38 + 2×10) | derived from the row above; 04 keeps nav content within the logo height or updates this token |
 | grid gaps | programs cols `200/236/200` gap `44px`; testimonials `24px`; teachers `40px`; visit `1.2fr/1fr` gap `30px`, form 2-col `12px` | stacked; age/start 2-col row | desktop/README L10–17; mobile/README L17 |
 | header stack | eyebrow→title→sub gap `12px`, margin-bottom `40–44px` | gap `9–10px`, margin-bottom `26–30px` | desktop L161; mobile L96 |
 | component sizes | sun `118px`; leaves `40/28/22px`; plate `230px`, dots `46/56/46`; stones `150/188/150`; Ms. Ping photo `196px`; icon dots `56px`; polaroids `185–210px` wide, frame `10px + 30px` bottom; hero photo `1040×380`; philosophy photo `560×260`; info photo `150px` | sun `72px`; plate `190px`, dots `36/46/36`; stones `104/122/104`; Ms. Ping `150px`; icon dots `48px`; polaroids `146–160px`, frame `8px + 24px`; hero photo `230px` tall; philosophy `190px`; map `120px` | per-view READMEs |
 
+**The `--btn-*` and `--chip-*` padding tokens.** The two rows above named these families without declaring a
+single member, so every button and chip padding sat on Tailwind's `--spacing` scale — legal under INV-03.2 and
+not the token 04 §3.2 cites. Each is one token holding the whole `padding` shorthand, the shape
+`--radius-bubble-l` already uses, consumed as `p-(--btn-nav)`. Tailwind v4 has no `--padding-*` namespace, so
+they are plain `:root` custom properties (§1), declared mobile-first and re-declared at `≥ md`.
+
+| Token | Desktop (≥ md) | Mobile | Consumer | Source |
+|---|---|---|---|---|
+| `--btn-nav` | `12px 24px` | `10px 16px` | `Button size="nav"` (04 §3.2) | desktop L105, desktop/README L7; mobile L45 (mobile/README L7 gives the size, not the padding) |
+| `--btn-hero` | `15px 32px` | `15px 0` | `Button size="hero"` (04 §3.2) | desktop L119, desktop/README L10; mobile L58, mobile/README L8 |
+| `--btn-submit` | `14px 30px` | `15px 0` | `Button size="submit"` (04 §3.2) | desktop L325; mobile L235, mobile/README L8 |
+| `--chip-hero-badge` | `7px 15px` | `6px 13px` | `Chip` default (04 §3.2) | desktop L115; mobile L54 |
+| `--chip-day` | `8px 16px` | `9px 13px` | `MenuDayChips` (04 §3) | desktop L200, L201, L203, L204, desktop/README L13; mobile L130, L131, L133, L134, mobile/README L14 |
+| `--chip-day-selected` | `8px 20px` | `9px 16px` | `MenuDayChips`, selected day | desktop L202, desktop/README L13; mobile L132, mobile/README L14 |
+| `--chip-benefit` | `8px 14px` | `7px 12px` | `Chip tone="white"` (04 §3.2) | desktop L209, L210; mobile L138, L139 |
+| `--chip-pill` | `5px 11px` | `4px 10px` | `Chip` — programme highlight chips, teacher tags | desktop L409, L417, L425, L563; mobile L308, L313, L318 |
+| `--chip-head-teacher` | `5px 13px` | `4px 11px` | `Chip tone="sage"` — the HEAD TEACHER badge | desktop L292; mobile L199 |
+| `--chip-yelp` | `5px 11px` | `4px 9px` | the Yelp badge beside the review count | desktop L240; mobile L167 |
+
+Three notes, so the next reader does not have to re-derive them:
+
+- **`--chip-pill` is `5×11`, not the `6×12` this section used to quote.** `6×12` is the pill in the reference's
+  brand-and-type panel (desktop L73–L74), a swatch the page never renders; every actual tag pill on the page
+  is `5×11` (desktop L409, L417, L425, L563), and only the page has a mobile counterpart (`4×10`, mobile L308,
+  L313, L318). Both draw the same `11px` Nunito 700, so only the padding moved.
+- **`--btn-hero` and `--btn-submit` are `15px 0` below `md` because the reference writes `padding:15px 0`**
+  (mobile L58, L235) on a full-width pill. The `0` is the design's, not a placeholder; the width comes from
+  the component, not from this token.
+- **Two chip recipes 04 draws have no row here and no token.** The gallery filter chips are `8×18` at `13px`
+  (desktop L491–L495) and the philosophy credential badge is `9×16` at `13px` desktop (L152) / `8×14` at
+  `11px` mobile (L88). This section has never enumerated either, so neither is minted; 04 §3.2's `Chip` needs
+  both, and adding them is a separate change to this document.
+
 ### 5 · Shape and elevation
 
 **Radii** (`--radius-*`, `rounded-*`). README L42 envelope: pills `999px`, cards `18–22px`, photos `14–26px`;
-concrete steps: `pill 999px` · `card-lg 22px` (bubbles, philosophy photo) ·
-`card 20px` (form card; mobile bubbles) · `card-md 18px` (panel, subpage cards; mobile form card) ·
-`card-sm 16px` (meals card, desktop map photo; mobile `13px`) · `tile 14px` (icon tiles, mobile map photo) · `logo-card 12px`
-(mobile `10px`) · `input 11px` · `badge 7px` (Yelp; mobile `6px`) · `tail 6px` (bubble corner; mobile `5px`)
-· `polaroid 5px` · `full 50%`. Photos: hero `26px`, philosophy `22px`, mobile hero `22px`, mobile philosophy
-`18px`, map/building photo `16px` desktop (desktop L328) / `14px` mobile (mobile L238) (README L42;
-desktop/README L9–17; mobile/README L10–17).
+concrete steps: `pill 999px` · `hero 26px` (the hero photo; mobile `22px`) · `card-lg 22px` (bubbles,
+philosophy photo) · `card 20px` (form card; mobile bubbles) · `card-md 18px` (panel, subpage cards; mobile
+form card) · `card-sm 16px` (meals card, desktop map photo; mobile `13px`) · `tile 14px` (icon tiles, mobile
+map photo) · `logo-card 12px` (mobile `10px`) · `input 11px` · `badge 7px` (Yelp; mobile `6px`) · `tail 6px`
+(bubble corner; mobile `5px`) · `polaroid 5px` · `full 50%`. Photos: hero `26px`, philosophy `22px`, mobile
+hero `22px`, mobile philosophy `18px`, map/building photo `16px` desktop (desktop L328) / `14px` mobile
+(mobile L238) (README L42; desktop/README L9–17; mobile/README L10–17).
+
+`--radius-hero` is new, and it is the one photo radius that had no step of its own: the desktop hero photo is
+`radius="26"` (desktop L129) and the mobile one `radius="22"` (mobile L68), so the mobile view lands on the
+same number as `--radius-card-lg` while the desktop view has nothing to bind to. 04 §5.3 lists the radius
+names `Picture` may take and asks for exactly this one, under exactly this name, in its §10. The other three
+photo radii need no new token — philosophy is `--radius-card-lg` / `--radius-card-md`, the map photo is
+`--radius-card-sm` / `--radius-tile`.
 Speech-bubble tails (one squared corner) are four-value radius tokens that switch per view:
 `--radius-bubble-l: 22px 22px 22px 6px` (outer cards) and `--radius-bubble-r: 22px 22px 6px 22px` (the
 pushed-down middle card, tail mirrored) at `≥ md` (desktop/README L15); below `md` `20px 20px 20px 5px` then
