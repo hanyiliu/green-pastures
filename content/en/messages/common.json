@@ -1,0 +1,59 @@
+{
+  "logo": {
+    "alt": "{brandShortName} logo"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "philosophy": "Philosophy",
+    "programs": "Programs",
+    "menu": "Menu",
+    "gallery": "Gallery",
+    "reviews": "Reviews",
+    "team": "Our Team",
+    "contact": "Contact",
+    "bookTour": "Book a tour",
+    "menuOpen": "Open menu",
+    "menuClose": "Close menu"
+  },
+  "localeSwitcher": {
+    "ariaLabel": "Change language",
+    "optionAriaLabel": "Switch to {locale}"
+  },
+  "back": {
+    "label": "← Back home",
+    "labelShort": "← Back"
+  },
+  "brand": {
+    "yelp": "Yelp"
+  },
+  "rating": {
+    "ariaLabel": "Rated {rating, number, rating} out of 5 on Yelp"
+  },
+  "links": {
+    "newTab": "opens in a new tab"
+  },
+  "lightbox": {
+    "close": "Close photo",
+    "prev": "Previous photo",
+    "next": "Next photo"
+  },
+  "punctuation": {
+    "quoteOpen": "“",
+    "quoteClose": "”"
+  },
+  "format": {
+    "dayRange": "{from} – {to}",
+    "timeRange": "{from} – {to}"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content"
+  },
+  "meta": {
+    "siteName": "{brandName}",
+    "titleTemplate": "%s · {brandName}",
+    "ogImageAlt": "Children at work in a sunlit Montessori classroom"
+  },
+  "footer": {
+    "copyright": "© {year} {brandName} · {brandNameOther} · Fremont, CA · License # {license}"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "title": "Page not found",
+    "description": "We couldn't find that page. Let's get you back to the front door."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you were looking for isn't here. It may have moved, or the link may be a little out of date.",
+    "cta": "Back to the home page"
+  },
+  "serverError": {
+    "title": "Something went wrong",
+    "body": "Our side hiccuped. Trying again usually sorts it out.",
+    "retry": "Try again"
+  }
+}

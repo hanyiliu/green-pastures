@@ -1,0 +1,34 @@
+{
+  "categories": {
+    "classroom": "Classroom",
+    "outdoors": "Outdoors",
+    "meals": "Meals",
+    "celebrations": "Celebrations"
+  },
+  "photos": {
+    "g01": {
+      "alt": "A child pouring water between two jugs at the practical-life table"
+    },
+    "g02": {
+      "alt": "Two children digging side by side in the garden bed"
+    },
+    "g03": {
+      "alt": "A family-style lunch table set with small bowls and cups"
+    },
+    "g04": {
+      "alt": "A toddler tracing sandpaper letters with one finger"
+    },
+    "g05": {
+      "alt": "A child climbing the low wooden frame in the yard"
+    },
+    "g06": {
+      "alt": "Children singing together around a birthday circle"
+    },
+    "g07": {
+      "alt": "Wooden Montessori materials arranged in order on a low shelf"
+    },
+    "g08": {
+      "alt": "Small hands folding dumplings at the kitchen table"
+    }
+  }
+}

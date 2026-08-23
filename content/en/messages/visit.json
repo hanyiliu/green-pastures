@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "title": "Book a tour",
+    "description": "Tell us a little about your family and we'll reach out to schedule a warm, no-pressure tour of our Fremont Montessori home."
+  },
+  "kicker": "Enrollment",
+  "heading": "Come see it for yourself",
+  "form": {
+    "requiredLegend": "* required",
+    "fields": {
+      "parentName": {
+        "label": "Parent name",
+        "errors": {
+          "required": "Please tell us your name.",
+          "tooShort": "Please enter at least 2 characters.",
+          "tooLong": "Please keep your name under 80 characters."
+        }
+      },
+      "email": {
+        "label": "Email",
+        "errors": {
+          "required": "Please enter an email address so we can reply.",
+          "invalid": "That email address doesn't look right — please check it.",
+          "tooLong": "Please keep your email address under 254 characters."
+        }
+      },
+      "childAge": {
+        "label": "Child's age",
+        "placeholder": "Select…",
+        "options": {
+          "infant": "Infant (6 – 18 months)",
+          "toddler": "Toddler (1.5 – 3 years)",
+          "preschool": "Preschool (3 – 4½ years)",
+          "expecting": "Expecting",
+          "other": "Other"
+        },
+        "errors": {
+          "required": "Please choose an age group.",
+          "invalidOption": "Please choose one of the listed age groups."
+        }
+      },
+      "desiredStart": {
+        "label": "Desired start",
+        "placeholder": "Select…",
+        "options": {
+          "asap": "As soon as possible",
+          "flexible": "Flexible"
+        },
+        "errors": {
+          "invalidOption": "Please choose one of the listed start dates.",
+          "outOfRange": "Please choose a start date within the next two years."
+        }
+      },
+      "message": {
+        "label": "Anything you'd like us to know?",
+        "labelShort": "Message",
+        "errors": {
+          "tooLong": "Please keep your message under 1000 characters."
+        }
+      }
+    },
+    "submit": "Request a tour →",
+    "privacy": "We use your details only to answer your inquiry. We never sell or share them.",
+    "noscript": "JavaScript is switched off, so this form cannot be sent from here.",
+    "directContact": "Or email us at {email} or call {phone}.",
+    "status": {
+      "submitting": "Sending…",
+      "success": {
+        "title": "Thank you — your request is on its way.",
+        "body": "We read every message and usually reply within one business day.",
+        "reset": "Send another"
+      },
+      "error": {
+        "title": "We couldn't send your request.",
+        "body": "Nothing was lost — your answers are still here.",
+        "retry": "Try again"
+      }
+    },
+    "errors": {
+      "required": "Please fill in this field.",
+      "tooShort": "This is a little too short.",
+      "tooLong": "This is a little too long.",
+      "invalid": "Please check this value.",
+      "invalidOption": "Please choose one of the listed options.",
+      "outOfRange": "Please choose a date within the accepted range.",
+      "turnstileFailed": "The security check didn't pass. Please try once more.",
+      "turnstileUnavailable": "The security check couldn't load just now. Please try again in a moment.",
+      "rateLimited": "That's a lot of requests in a short time. Please wait a minute and try again.",
+      "forbidden": "We couldn't accept this request.",
+      "payloadTooLarge": "Your message is too long to send. Please shorten it and try again.",
+      "emailFailed": "We couldn't deliver your request just now.",
+      "network": "We couldn't reach the server. Please check your connection and try again.",
+      "unknown": "Something went wrong on our side. Please try again."
+    }
+  }
+}

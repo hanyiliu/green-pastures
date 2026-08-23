@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "title": "Gallery",
+    "description": "Photos of ordinary, wonderful days — work chosen freely, meals shared together, gardens explored, and birthdays sung."
+  },
+  "kicker": "Gallery",
+  "heading": "Every day, captured",
+  "hint": "Tap any photo to enlarge — lightbox on the live site.",
+  "filters": {
+    "all": "All"
+  }
+}

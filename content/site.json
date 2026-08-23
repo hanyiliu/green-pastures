@@ -1,0 +1,262 @@
+{
+  "brand": {
+    "name": {
+      "en": "Green Pastures Montessori Daycare",
+      "zh-Hans": "优朵幼儿园"
+    },
+    "shortName": {
+      "en": "Green Pastures",
+      "zh-Hans": "优朵"
+    },
+    "url": "https://greenpastures.example"
+  },
+  "contact": {
+    "phone": "+15105550142",
+    "phoneDisplay": "(510) 555-0142",
+    "email": "hello@greenpasturesdaycare.com",
+    "address": {
+      "street": "1234 Sample Way",
+      "city": "Fremont",
+      "region": "CA",
+      "postalCode": "94538",
+      "country": "US"
+    },
+    "mapsUrl": "https://maps.google.com/?q=1234+Sample+Way+Fremont+CA"
+  },
+  "email": {
+    "sendingDomain": "mail.greenpasturesdaycare.com",
+    "fromAddress": "no-reply@mail.greenpasturesdaycare.com"
+  },
+  "license": "000000000",
+  "hours": {
+    "days": ["mon", "tue", "wed", "thu", "fri"],
+    "open": "07:30",
+    "close": "18:00"
+  },
+  "timeZone": "America/Los_Angeles",
+  "ages": {
+    "minMonths": 6,
+    "maxMonths": 54
+  },
+  "yelp": {
+    "rating": 5,
+    "reviewCount": 47,
+    "url": "https://www.yelp.com/biz/green-pastures-montessori-daycare-fremont"
+  },
+  "routes": [
+    { "id": "philosophy", "path": "/philosophy", "homeAnchor": "philosophy" },
+    { "id": "programs", "path": "/programs", "homeAnchor": "programs" },
+    { "id": "menu", "path": "/menu", "homeAnchor": "menu" },
+    { "id": "gallery", "path": "/gallery", "homeAnchor": "gallery" },
+    { "id": "reviews", "path": "/reviews", "homeAnchor": "testimonials" },
+    { "id": "team", "path": "/team", "homeAnchor": "teachers" }
+  ],
+  "nav": {
+    "primary": [
+      { "id": "philosophy", "routeId": "philosophy" },
+      { "id": "programs", "routeId": "programs" },
+      { "id": "menu", "routeId": "menu" },
+      { "id": "gallery", "routeId": "gallery" },
+      { "id": "reviews", "routeId": "reviews" },
+      { "id": "team", "routeId": "team" }
+    ],
+    "footer": [
+      { "id": "philosophy", "routeId": "philosophy" },
+      { "id": "programs", "routeId": "programs" },
+      { "id": "menu", "routeId": "menu" },
+      { "id": "gallery", "routeId": "gallery" },
+      { "id": "reviews", "routeId": "reviews" },
+      { "id": "team", "routeId": "team" },
+      { "id": "contact", "href": "/#visit" }
+    ],
+    "cta": { "href": "/#visit" }
+  },
+  "images": {
+    "hero": { "src": "/images/hero.jpg", "width": 1600, "height": 1200 },
+    "philosophy": {
+      "src": "/images/philosophy.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    "map": { "src": "/images/map.jpg", "width": 1200, "height": 800 },
+    "og": { "src": "/og/cover.png", "width": 1200, "height": 630 }
+  },
+  "hero": {
+    "mealsIcon": "🍎"
+  },
+  "programs": [
+    {
+      "id": "infant",
+      "ageMonths": [6, 18],
+      "ratio": [1, 3],
+      "photo": {
+        "src": "/images/programs/infant.jpg",
+        "width": 800,
+        "height": 800
+      }
+    },
+    {
+      "id": "toddler",
+      "ageMonths": [18, 36],
+      "ratio": [1, 4],
+      "featured": true,
+      "photo": {
+        "src": "/images/programs/toddler.jpg",
+        "width": 800,
+        "height": 800
+      }
+    },
+    {
+      "id": "preschool",
+      "ageMonths": [36, 54],
+      "ratio": [1, 6],
+      "photo": {
+        "src": "/images/programs/preschool.jpg",
+        "width": 800,
+        "height": 800
+      }
+    }
+  ],
+  "teachers": [
+    { "id": "reyes", "icon": "🧸" },
+    {
+      "id": "ping",
+      "head": true,
+      "photo": { "src": "/images/team/ping.jpg", "width": 800, "height": 800 }
+    },
+    { "id": "chen", "icon": "🎨" }
+  ],
+  "gallery": {
+    "categories": [
+      { "id": "classroom" },
+      { "id": "outdoors" },
+      { "id": "meals" },
+      { "id": "celebrations", "onMobile": false }
+    ],
+    "photos": [
+      {
+        "id": "g01",
+        "src": "/images/gallery/g01.jpg",
+        "width": 1200,
+        "height": 900,
+        "category": "classroom",
+        "onHome": true,
+        "onMobile": true
+      },
+      {
+        "id": "g02",
+        "src": "/images/gallery/g02.jpg",
+        "width": 1200,
+        "height": 900,
+        "category": "outdoors",
+        "onHome": true,
+        "onMobile": true
+      },
+      {
+        "id": "g03",
+        "src": "/images/gallery/g03.jpg",
+        "width": 1200,
+        "height": 900,
+        "category": "meals",
+        "onHome": true,
+        "onMobile": true
+      },
+      {
+        "id": "g04",
+        "src": "/images/gallery/g04.jpg",
+        "width": 1200,
+        "height": 900,
+        "category": "classroom",
+        "onHome": true,
+        "onMobile": false
+      },
+      {
+        "id": "g05",
+        "src": "/images/gallery/g05.jpg",
+        "width": 1200,
+        "height": 900,
+        "category": "outdoors",
+        "onHome": true,
+        "onMobile": true
+      },
+      {
+        "id": "g06",
+        "src": "/images/gallery/g06.jpg",
+        "width": 1200,
+        "height": 900,
+        "category": "celebrations",
+        "onHome": true,
+        "onMobile": false
+      },
+      {
+        "id": "g07",
+        "src": "/images/gallery/g07.jpg",
+        "width": 1600,
+        "height": 900,
+        "category": "classroom",
+        "wide": true,
+        "onHome": false,
+        "onMobile": true
+      },
+      {
+        "id": "g08",
+        "src": "/images/gallery/g08.jpg",
+        "width": 1200,
+        "height": 900,
+        "category": "meals",
+        "onHome": true,
+        "onMobile": true
+      }
+    ]
+  },
+  "testimonials": [
+    { "id": "meiL", "rating": 5, "onHome": true, "onMobile": true },
+    { "id": "davidPriya", "rating": 5, "onHome": true, "onMobile": true },
+    { "id": "karenT", "rating": 5, "onHome": true, "onMobile": false },
+    { "id": "alanW", "rating": 5, "onHome": false, "onMobile": true }
+  ],
+  "menu": {
+    "days": ["mon", "tue", "wed", "thu", "fri"],
+    "meals": ["breakfast", "lunch", "snack"],
+    "dietary": [
+      { "id": "vegetarian", "onHome": true },
+      { "id": "allergy", "onHome": true },
+      { "id": "flavors", "onHome": false }
+    ]
+  },
+  "principles": [
+    { "id": "environment", "icon": "🏡" },
+    { "id": "followTheChild", "icon": "🌟" },
+    { "id": "handsOn", "icon": "✋" }
+  ],
+  "dailyRhythm": [
+    { "id": "arrival", "time": "08:00" },
+    { "id": "outdoor", "time": "10:30" },
+    { "id": "lunch", "time": "12:00" },
+    { "id": "rest", "time": "13:30" }
+  ],
+  "faq": [],
+  "provisional": [
+    "brand.url",
+    "brand.name.zh-Hans",
+    "brand.shortName.zh-Hans",
+    "contact.email",
+    "contact.phone",
+    "contact.phoneDisplay",
+    "contact.address.street",
+    "contact.address.postalCode",
+    "contact.mapsUrl",
+    "email.sendingDomain",
+    "email.fromAddress",
+    "license",
+    "yelp.rating",
+    "yelp.reviewCount",
+    "yelp.url",
+    "collections.teachers.ping.name",
+    "collections.teachers.reyes.name",
+    "collections.teachers.chen.name",
+    "collections.teachers.ping.credentials",
+    "collections.teachers.reyes.credentials",
+    "collections.teachers.chen.credentials"
+  ]
+}

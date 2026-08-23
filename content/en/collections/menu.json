@@ -1,0 +1,43 @@
+{
+  "week": {
+    "mon": {
+      "breakfast": "Oatmeal & banana",
+      "lunch": "Chicken & veggie rice bowl",
+      "snack": "Apple slices & cheese"
+    },
+    "tue": {
+      "breakfast": "Congee with egg",
+      "lunch": "Pasta marinara & peas",
+      "snack": "Yogurt & berries"
+    },
+    "wed": {
+      "breakfast": "Whole-grain pancakes",
+      "lunch": "Tofu & veggie stir-fry, brown rice",
+      "snack": "Hummus & cucumber"
+    },
+    "thu": {
+      "breakfast": "Scrambled eggs & toast",
+      "lunch": "Turkey & sweet potato",
+      "snack": "Orange wedges & crackers"
+    },
+    "fri": {
+      "breakfast": "Millet porridge",
+      "lunch": "Veggie dumplings & broccoli",
+      "snack": "Banana muffin"
+    }
+  },
+  "dietary": {
+    "vegetarian": {
+      "label": "🥦 Vegetarian options daily",
+      "labelShort": "🥦 Vegetarian daily"
+    },
+    "allergy": {
+      "label": "🌾 Allergy-aware kitchen",
+      "labelShort": "🌾 Allergy-aware"
+    },
+    "flavors": {
+      "label": "🍚 Familiar flavors from home",
+      "labelShort": "🍚 Flavors from home"
+    }
+  }
+}

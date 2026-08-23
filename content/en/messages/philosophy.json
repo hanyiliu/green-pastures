@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "title": "Our Montessori philosophy",
+    "description": "Certified Montessori guides, unhurried mornings, and a prepared home where independence grows naturally — in English and 中文."
+  },
+  "kicker": "Philosophy",
+  "eyebrow": "How we teach",
+  "heading": "Montessori, the way it's meant to be",
+  "intro": "Certified Montessori guides, unhurried mornings, and a prepared home where independence grows naturally — in English and 中文.",
+  "introShort": "Certified Montessori guides, unhurried mornings, and a prepared home — in English and 中文.",
+  "principlesHeading": "Core principles",
+  "principles": {
+    "environment": {
+      "title": "The prepared environment",
+      "body": "Child-sized, beautifully ordered spaces that invite independence and calm focus."
+    },
+    "followTheChild": {
+      "title": "Follow the child",
+      "body": "We observe closely and meet every child exactly where they are, today."
+    },
+    "handsOn": {
+      "title": "Hands-on learning",
+      "body": "Concrete Montessori materials turn big abstract ideas into something real."
+    }
+  },
+  "dayTitle": "A day at {brandShortName}",
+  "day": {
+    "arrival": {
+      "title": "Arrival & morning work cycle",
+      "titleShort": "Arrival & work cycle",
+      "body": "children choose their own Montessori work.",
+      "bodyShort": "children choose their own work."
+    },
+    "outdoor": {
+      "title": "Outdoor play & gardening",
+      "body": "digging, watering, climbing, wondering.",
+      "bodyShort": "digging, climbing, wondering."
+    },
+    "lunch": {
+      "title": "Family-style lunch",
+      "body": "fresh, home-cooked, eaten together.",
+      "bodyShort": "fresh, home-cooked, together."
+    },
+    "rest": {
+      "title": "Rest & quiet play",
+      "body": "books, naps, soft music."
+    }
+  },
+  "badges": {
+    "ams": "AMS-certified head teacher",
+    "bilingualDaily": "English · 中文 every day"
+  },
+  "photo": {
+    "alt": "A child concentrating on Montessori materials at a low wooden table"
+  }
+}
