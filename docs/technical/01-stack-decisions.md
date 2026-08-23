@@ -206,7 +206,7 @@ across route-segment changes in the App Router** (children are swapped immediate
 captures the internal `LayoutRouterContext`, which can break on upgrade; `template.tsx` is enter-only) —
 `AnimatePresence` across routes is **rejected**. The decision (05, confirmed here): React/Next **View
 Transitions** — `<ViewTransition>` + `<Link transitionTypes>` (Next ≥ 16.2, no config; React API canary but
-bundled by Next; Chromium 125+/recent Safari/Firefox) with the design's `.5s` SOFT slide expressed as
+bundled by Next; browser support per 05 §5.7) with the design's `.5s` SOFT slide expressed as
 `::view-transition-old/new` CSS keyed by transition type; unsupported browsers get a silent **instant swap**.
 Imperative exit-then-navigate and parallel-route overlays were considered and not adopted (extra latency /
 `default.js` slot plumbing). The locale toggle reuses the same mechanism with its own `transitionTypes`

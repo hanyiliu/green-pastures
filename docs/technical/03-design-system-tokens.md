@@ -4,11 +4,14 @@
 `docs/design/mobile/README.md`, with the `.dc.html` references consulted only for values the READMEs omit) into
 the single token vocabulary the codebase will use: colours, typography, spacing, shape, elevation, touch targets
 and motion timing. It fixes the token **names and values**, how they are declared in Tailwind CSS v4 `@theme`,
-how they are mirrored into TypeScript for Motion, how the `zh` locale changes typography, how the two design
+how they are mirrored into TypeScript for Motion, how the two Chinese locales (`zh-Hans`, `zh-Hant`) change
+typography, how the two design
 widths (1280 / 390) become breakpoints, and which token pairs fail WCAG contrast. It does not describe components
 (04), how motion tokens are sequenced (05), or the i18n message contract (02).
 
-Status: draft · seat writer-tokens · 2026-08-22
+Status: draft · seat writer-tokens · 2026-08-22 · revised 2026-08-22 for HD-10 (three locales, per-script CJK
+stacks), HD-11 (the designs name no CJK typeface — false premise recorded, system stack stands) and HD-14
+(the human confirmed that system stack for both scripts — OQ-03.4 answered, no CJK webfont at launch)
 
 ## Decisions
 
@@ -30,13 +33,16 @@ Status: draft · seat writer-tokens · 2026-08-22
   states (README L37), plus Nunito 800 — a choice, because the reference's Yelp badge uses `font:800`
   (desktop L240). `display: "swap"`, `subsets: ["latin"]`, exposed as `--font-fredoka` / `--font-nunito`;
   `@theme` maps them to `--font-display` and `--font-body`.
-- **D-03.5 — CJK strategy (our choice; the design names no CJK typeface — OQ-03.4).** Fredoka and Nunito carry
-  no CJK glyphs, and `next/font/google` cannot assign a face per script (no `unicode-range` option, memo
-  ADJ-6), so the fallback is a **font-family stack**: Fredoka/Nunito first (Latin letters and digits inside
-  Chinese copy still render in brand type), then a **system CJK stack** (`--font-cjk`). We do not self-host a
-  CJK web font at launch; the documented alternative is Noto Sans SC via `next/font/google` with
-  `preload: false, adjustFontFallback: false`, loaded only in the `zh` layout. `zh` overrides line-height,
-  tracking and uppercase rules via `:root:lang(zh)` (Design §3.3).
+- **D-03.5 — CJK strategy: the system stack, because the design names no CJK face (HD-11, confirmed by
+  HD-14).** The premise that there is "a CJK typeface used in the designs" is false — the handoff specifies
+  Fredoka and Nunito (`docs/design/README.md` L37), neither of which carries CJK glyphs, so the system CJK
+  stack (`--font-cjk`) *is* what the prototypes already render (§3.1, *Why there is no CJK design face*).
+  Mechanism: `next/font/google` cannot assign a face per script (no `unicode-range` option, memo ADJ-6), so
+  the fallback is a **font-family stack** — Fredoka/Nunito first (Latin letters and digits inside Chinese copy
+  stay in brand type), then `--font-cjk`, which resolves per script (D-03.14). **No CJK web font ships at
+  launch: HD-14 (2026-08-22) confirmed this stack for both Chinese scripts and closed OQ-03.4.** Naming a face
+  later is still a one-token change, but it is now a future brand choice, not a pending answer. The Chinese
+  line-height, tracking and wrapping overrides are declared once under `:root:lang(zh)` (§3.3).
 - **D-03.6 — Breakpoints.** Mobile-first. Token values switch from the mobile spec to the desktop spec at
   `--breakpoint-md: 48rem` (768px); 04 enables the desktop multi-column layouts at `--breakpoint-lg: 64rem`
   (1024px) — see §8; content containers cap at the desktop design width (`--container-page: 80rem`). No third type scale is
@@ -61,6 +67,15 @@ Status: draft · seat writer-tokens · 2026-08-22
 - **D-03.13 — Ownership.** 03 owns token names and values. 05 owns how motion tokens are sequenced, staggered
   and reduced-motion-gated. 04 owns components and which token each surface uses. 02 owns strings — no token
   ever contains copy.
+- **D-03.14 — `--font-cjk` resolves per script (HD-10; requirement from 02 D-02.15).** Three locales ship —
+  `en`, `zh-Hans`, `zh-Hant` (02 D-02.1) — and the two Chinese scripts want different system faces: setting
+  Traditional copy in `PingFang SC` or `Microsoft YaHei` renders Simplified glyph forms for the code points
+  the two scripts share, which is a wrong-language rendering, not a style preference. `tokens.css` therefore
+  declares two script stacks — `--font-cjk-sc` and `--font-cjk-tc` (§3.1) — plus one selector token
+  `--font-cjk`, switched by exactly two rules, `:root:lang(zh-Hans)` and `:root:lang(zh-Hant)`.
+  `--font-display` and `--font-body` never change, no component branches on locale (INV-03.6, 02 INV-02.9),
+  and the base value of `--font-cjk` stays the SC stack: on an `en` page it is reached only for glyphs
+  Fredoka/Nunito lack (`←` `→` `↗` `★`, §3.1), which are script-neutral.
 
 ## Design
 
@@ -93,10 +108,9 @@ parity test see the same values.
   --color-ink: #34402c;    --color-body: #6b7060;    --color-chip-bg: #eef2e8;
   --color-bg-philosophy: #e8efe0;  --color-accent-programs: #c08552;
   --font-display: var(--font-fredoka), var(--font-cjk);
-  --font-body: var(--font-nunito), var(--font-cjk);
+  --font-body: var(--font-nunito), var(--font-cjk);  --font-cjk: var(--font-cjk-sc);  /* §3.1 */
   --text-headline: 36px;  --text-headline--line-height: 1.08;   /* mobile first */
-  --radius-pill: 999px;   --radius-card: 18px;      --radius-input: 11px;
-  --shadow-primary: 0 10px 24px rgba(111,138,95,.32);
+  --radius-pill: 999px;  --radius-card: 18px;  --shadow-primary: 0 10px 24px rgba(111,138,95,.32);
   --ease-soft: cubic-bezier(.2,.8,.25,1);  --ease-spring: cubic-bezier(.34,1.56,.5,1);
   --breakpoint-md: 48rem; --breakpoint-lg: 64rem; --container-page: 80rem;
 }
@@ -107,15 +121,21 @@ parity test see the same values.
   /* --reveal-threshold: 0.16 is a JS constant (REVEAL_THRESHOLD in tokens.ts), not CSS */
 }
 @media (width >= 48rem) { :root { --text-headline: 64px; --text-headline--line-height: 1.04; } }
-:root:lang(zh) { --text-headline--line-height: 1.2; --tracking-eyebrow: .08em; }
+:root:lang(zh) { --text-headline--line-height: 1.3; --tracking-eyebrow: .08em; }   /* both scripts, §3.3 */
+:root:lang(zh-Hans) { --font-cjk: var(--font-cjk-sc); }   /* stacks in §3.1 */
+:root:lang(zh-Hant) { --font-cjk: var(--font-cjk-tc); }
 ```
 
 What Tailwind generates, honestly: `--ease-soft` → `ease-soft`; `--color-*`, `--font-*`, `--text-*`, `--radius-*`,
 `--shadow-*`, `--container-*`, `--breakpoint-*` → their utilities; `--dur-*` yields **no** `duration-rise`
 utility — it is consumed as `duration-(--dur-rise)`, `[transition-duration:var(--dur-rise)]`, in CSS Modules
 as `var(--dur-rise)`, or from the TS mirror in Motion. Per-view values (§3, §4) are declared mobile-first and
-re-declared under `@media (width >= 48rem)`; per-locale values under `:root:lang(zh)`. Components never write
-`md:text-[64px]`; they write `text-headline`.
+re-declared under `@media (width >= 48rem)`. Per-locale values sit in three rules and nowhere else:
+`:root:lang(zh)` for everything both Chinese scripts share (§3.3) — CSS language-range matching makes
+`:lang(zh)` match `zh-Hans` and `zh-Hant` alike — and `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)` for the
+one thing that differs, `--font-cjk` (D-03.14). `--font-cjk-sc` / `--font-cjk-tc` do generate `font-cjk-sc` /
+`font-cjk-tc` utilities; components must never use them (INV-03.6). Components never write `md:text-[64px]`;
+they write `text-headline`.
 
 ### 2 · Colour tokens
 
@@ -204,19 +224,37 @@ export const nunito  = Nunito({ subsets: ["latin"], weight: ["600", "700", "800"
 // <html lang={locale} className={`${fredoka.variable} ${nunito.variable}`}>
 ```
 
+**Why there is no CJK design face** (HD-11, confirmed by HD-14; recorded so the question is not re-asked). The
+handoff was searched for a Chinese typeface and names none. `docs/design/README.md` L37 specifies "Headings:
+Fredoka … Body: Nunito" and nothing else; the three design READMEs contain no CJK, Noto or PingFang mention at
+all. Per `.dc.html` file, exactly — the desktop reference declares two families (`'Fredoka',cursive` and
+`'Nunito',system-ui,sans-serif`) and its Google Fonts link (L13) additionally requests Quicksand and Baloo 2,
+the brand-kit exploration faces; the **mobile** reference declares the same two families and its link (L13)
+requests Fredoka and Nunito only — no Quicksand, no Baloo 2; and `docs/design/Wireframes.dc.html`, the low-fi
+third file, uses neither of the brand faces, setting its text in `'Patrick Hand',cursive` throughout (204
+declarations; its link also names Gaegu, which no rule in the file applies). Not one of those faces carries a Han ideograph, and the
+wireframes' own `English · 中文` (L65) is itself set in Patrick Hand. The 中文 in all three prototypes is
+therefore *already* drawn by whatever face the reader's operating system substitutes — PingFang SC on macOS,
+Microsoft YaHei on Windows, Noto Sans CJK on most Linux and Android. There is nothing to reproduce and no face
+to match: the system stack below is not a downgrade from the designs, it is a faithful reading of them, and
+D-03.5 ships it. Naming a Chinese face would be a new brand choice, not the recovery of a lost one — and
+HD-14 declined to make it for launch (OQ-03.4, answered 2026-08-22).
+
 Glyph coverage: Google's `latin` subset (U+0000–00FF, U+2000–206F, U+2191/2193, …) covers `½ · — “ ”` but
 **not** `←` `→` (U+2190/2192), `↗` (U+2197) or `★` (U+2605). In every "learn more →" link, the hero CTA, the
 Yelp button and the star rows those glyphs render from the next face in the stack: first next/font's
-metric-adjusted local Arial fallback (carries the arrows, not `★`), then `--font-cjk` / the system sans
-(PingFang SC, Microsoft YaHei, Noto Sans CJK SC — all carry the arrows and `★`). Accepted as is (no extra
-font, a choice); 04 keeps arrows and stars out of tracked eyebrow text, and 08's per-OS visual snapshot at
-390/1280 covers these glyphs.
+metric-adjusted local Arial fallback (carries the arrows, not `★`), then `--font-cjk` — whichever script stack
+is in force, since PingFang SC/TC, Microsoft YaHei/JhengHei and the Noto CJK builds all carry the arrows and
+`★`. Accepted as is (no extra font, a choice); 04 keeps arrows and stars out of tracked eyebrow text, and 08's
+per-OS visual snapshot at 390/1280 covers these glyphs.
 
 | Token | Value | Note |
 |---|---|---|
 | `--font-display` | `var(--font-fredoka), var(--font-cjk)` | headings, quote, names, buttons, day chips |
 | `--font-body` | `var(--font-nunito), var(--font-cjk)` | everything else |
-| `--font-cjk` | `"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", sans-serif` | CJK fallback (D-03.5) |
+| `--font-cjk-sc` | `"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", sans-serif` | Simplified system stack: macOS · macOS legacy · Windows · Linux/Android · webfont names if one is ever added |
+| `--font-cjk-tc` | `"PingFang TC", "Hiragino Sans CNS", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", "Source Han Sans TC", sans-serif` | Traditional system stack, same shape, TC faces (D-03.14) |
+| `--font-cjk` | base `var(--font-cjk-sc)`; `var(--font-cjk-tc)` under `:root:lang(zh-Hant)`, `var(--font-cjk-sc)` under `:root:lang(zh-Hans)` | the selector `--font-display`/`--font-body` fall through to (D-03.5, D-03.14) |
 | `--font-emoji` | `"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif` | emoji icons (D-03.8) |
 | weights | Fredoka `500` (buttons, quote) / `600` (headings); Nunito `600` (body) / `700` (eyebrows, links, labels) / `800` (Yelp badge) | README L37–38; desktop L240 |
 | `--tracking-eyebrow` / `--tracking-label` / `--tracking-stars` | `1.5px` / `.5px` / `1px` (count-up stars `2px`) | README L39; desktop L169, L238 |
@@ -241,7 +279,7 @@ Sources: desktop/README L9–17, mobile/README L10–17; line numbers in the ref
 | `--text-eyebrow` | `13px` | `11px` | Nunito 700, uppercase, `--tracking-eyebrow` | section eyebrows (desktop L143; mobile L81) |
 | `--text-eyebrow-sm` | `12px` (programs ages, roles), `11px` (assistant roles) | `10px` | Nunito 700, `--tracking-label` | age / role lines |
 | `--text-nav` | `15px` | n/a (hamburger menu, not designed) | Nunito 700 | nav links |
-| `--text-lang-toggle` | `14px` | — | Nunito 700 | "EN · 中文" |
+| `--text-lang-toggle` | `14px` | — | Nunito 700 | locale switcher: the trigger (`EN`/`简`/`繁`) and its three menu options; the design's single "EN · 中文" item became a three-option menu (02 D-02.10), same size |
 | `--text-button` | nav `16px`; hero `18px`; submit `17px` | nav `13px`; hero `17px`; submit `16px` | Fredoka 500 | pills (desktop L105, L119, L325; mobile L45, L58, L235) |
 | `--text-chip` | hero badge `13px`; trust row `14px`; benefit `12px`; pills `11px`; day chips Fredoka `14px` | `11px`; `12px`; `12px`; `11px`; `13px` | Nunito 700 / Fredoka 600 | chips |
 | `--text-sample-line` | `15px/1.6` | `13px` | Nunito 600 | menu sample meals |
@@ -251,29 +289,46 @@ Sources: desktop/README L9–17, mobile/README L10–17; line numbers in the ref
 | `--text-scroll-cue` | `13px` | `12px` | Nunito 700, `.5px` | "scroll" cue |
 | `--text-countup` | `30px` | `22px` | Fredoka 600 | "5.0" |
 
-**3.3 `zh` adjustments** (declared once under `:root:lang(zh)`; `<html lang>` is set by the `[locale]` layout
-from 02's locale code, 06 wires it). Every value in this list is our choice — the design specifies nothing for
-CJK.
+**3.3 Chinese typography — `zh-Hans` and `zh-Hant`** (declared once under `:root:lang(zh)`; `<html lang>` is
+`LOCALE_META[locale].htmlLang` per 02 D-02.9, set by the `[locale]` layout, 06 wires it). Every value in this
+list is our choice — the design specifies nothing for CJK (§3.1).
 
-- Stack: unchanged tokens — `--font-cjk` is already last in `--font-display`/`--font-body`, so CJK glyphs fall
-  through while digits/Latin stay Fredoka/Nunito. Weights: PingFang SC has 600; YaHei/Noto map 600→700 (bold).
+**One rule set, two scripts.** CSS language-range matching means `:lang(zh)` matches `zh-Hans` *and*
+`zh-Hant` (and any later `zh-*`), so every rule below applies to both Chinese locales unchanged and neither is
+special-cased. The **only** thing that differs by script is the font stack (D-03.14). Concretely: the raised
+line-heights, the eyebrow tracking, the uppercase no-op and the wrapping rules are all script-neutral —
+Traditional characters are denser (more strokes per em) than Simplified at the same size, which argues for the
+same loosened leading, not for a second rule set.
+
+- Stack: `--font-cjk` is already last in `--font-display`/`--font-body`, so CJK glyphs fall through while
+  digits and Latin stay Fredoka/Nunito; `:root:lang(zh-Hant)` swaps `--font-cjk-sc` for `--font-cjk-tc`, and
+  nothing else in the cascade moves. Weights: PingFang SC and PingFang TC both carry 600; Microsoft YaHei,
+  Microsoft JhengHei and the Noto CJK system builds map 600→700 (synthesised or nearest bold).
 - Sizes: unchanged. CJK glyphs are visually larger at the same px size, so no size bump is needed; if a
   translated headline wraps to an extra line at 390px, 02's translator guidance (not a token) shortens it.
-- Line-height (choice): `--text-headline--line-height: 1.2`, `--text-section-title--line-height: 1.25`,
-  `--text-quote--line-height: 1.5`, body/blurb/testimonial `1.75` (vs the design's 1.6). Tight Latin
-  leading clips CJK glyphs.
-- Tracking (choice): `--tracking-eyebrow: .08em`; `text-transform: uppercase` is a no-op for CJK but must not
-  be applied to mixed strings such as "ENGLISH · 中文" — 04 uses `uppercase` only via the eyebrow recipe.
-- `word-break: normal; overflow-wrap: anywhere` on body text for CJK/Latin mixing; no hyphenation in `zh`.
-- **Toggle layout stability.** Per memo ADJ-4 the EN↔中文 toggle is a locale navigation that remounts the
-  `[locale]` subtree and plays an enter-only cascade (`--dur-word-swap`, `--stagger-word`, 05) — not a
-  per-string in-place swap. Font metrics must still not cause jumps. What to measure, at 390 and 1280:
-  (1) nav height and every section's height in `en` vs `zh`, recorded by a Playwright snapshot (08) — where a
-  section differs by more than one text line, 04 adds a `min-height` so the section the user is looking at
-  does not move under the cascade; (2) CLS during the cascade via `PerformanceObserver('layout-shift')`,
-  target **0** (budget ≤ 0.02) — the cascade animates only `opacity`/`transform`; (3) no font request on
-  toggle — system CJK is synchronous and Fredoka/Nunito are preloaded by `next/font`, so the cascade can
-  never trigger FOUT; the Playwright check asserts no `fonts.gstatic`/`_next/static/media/*.woff2` request.
+- Line-height (choice, at or above 02 D-02.15's floor of ≥ 1.3 display / ≥ 1.6 body):
+  `--text-headline--line-height: 1.3`, `--text-section-title--line-height: 1.3`,
+  `--text-quote--line-height: 1.5`, body/blurb/testimonial `1.75` (vs the design's 1.6). Tight Latin leading
+  clips CJK glyphs. The display values were 1.2 / 1.25 in the merged draft and are raised here to meet the
+  floor 02 states; Traditional's stroke density is the second reason.
+- Tracking (choice): `--tracking-eyebrow: .08em`; `text-transform: uppercase` is a no-op on CJK (the script
+  has no case) and stays on the eyebrow recipe rather than being unset per locale, but must not be applied to
+  mixed strings such as "ENGLISH · 中文" — 04 uses `uppercase` only via the eyebrow recipe.
+- Wrapping: `word-break: normal; overflow-wrap: anywhere` on body text for CJK/Latin mixing; never
+  `word-break: break-all`; no hyphenation. `text-wrap: balance` on headings (02 D-02.15) is declared in the
+  heading recipe for **every** locale, not scoped to `:lang(zh)` — it is a line-count balancer, harmless in
+  `en`, and it stops a two-line Chinese headline from stranding one glyph on the second line.
+- **Switcher layout stability.** Per memo ADJ-4 the locale switcher — now a three-option menu, 02 D-02.10 — is
+  a navigation that remounts the `[locale]` subtree and plays an enter-only cascade (`--dur-word-swap`,
+  `--stagger-word`, 05), not a per-string in-place swap. Font metrics must still not cause jumps. What to
+  measure, at 390 and 1280: (1) nav height and every section's height in `en` vs **each** Chinese locale
+  (`zh-Hans` and `zh-Hant` are separate rows — different faces, different metrics), recorded by a Playwright
+  snapshot (08) — where a section differs by more than one text line, 04 adds a `min-height` so the section
+  the user is looking at does not move under the cascade; (2) CLS during the cascade via
+  `PerformanceObserver('layout-shift')`, target **0** (budget ≤ 0.02) — the cascade animates only
+  `opacity`/`transform`; (3) no font request on switch — every CJK face is a system face and Fredoka/Nunito
+  are preloaded by `next/font`, so the cascade can never trigger FOUT; the Playwright check asserts no
+  `fonts.gstatic`/`_next/static/media/*.woff2` request.
 
 ### 4 · Spacing and layout
 
@@ -356,7 +411,7 @@ are recorded in the note; the token holds the chosen value.
 | `--dur-polaroid: 800ms` | gallery fly-in, `.8s SPRING` |
 | `--dur-visit-fade: 1100ms` | Visit "slow 1.1s fade" |
 | `--dur-subpage: 500ms` | subpage slide `.5s SOFT` (reference uses `.55s` desktop / `.5s` mobile) |
-| `--dur-word-swap: 200ms` | EN↔中文 cascade "~200ms fade + 6px rise" |
+| `--dur-word-swap: 200ms` | locale-switch cascade (the design's EN↔中文 swap) "~200ms fade + 6px rise" |
 | `--stagger-child: 110ms` | per-section content stagger "110ms/child" |
 | `--dur-leaf: 8s` | pick inside "7–9s" (midpoint); leaves float ±10–12px (reference: 7s / 8s / 9s per leaf) |
 | `--dur-sun: 9s` | sun rotates ±22°, "9s" |
@@ -427,7 +482,7 @@ Source shorthand: `D:n` = `docs/design/desktop/README.md` line n, `M:n` = `docs/
 | What changes | `< md` (mobile spec, 390) | `≥ md` (768) | `≥ lg` (1024) | Source |
 |---|---|---|---|---|
 | section padding | `48px / 24px` (gallery `10px`) | `70px / 44px` | — | D:6, M:6 |
-| nav | logo `38px`, pill `13px`, hamburger | logo `50px`, link row `15px`, pill `16px` `12×24`, "EN · 中文" | — | D:7, M:7 |
+| nav | logo `38px`, pill `13px`, hamburger (locale options listed inline) | logo `50px`, link row `15px`, pill `16px` `12×24`, locale-menu trigger at `--text-lang-toggle` | — | D:7, M:7 |
 | hero | headline `36px/1.08`, subhead `15px`, full-width CTA, photo `230px` tall r22, sun `72px` | headline `64px/1.04`, subhead `19px/1.6`, CTA `15×32`, photo `1040×380` r26, sun `118px` | — | D:10, M:11 |
 | philosophy | quote `26px/1.35`, photo `190px` r18, badges stacked | quote `44px/1.32`, photo `560×260` r22 | — | D:11, M:12 |
 | programs | alternating path, circles `104/122/104`, titles `20–22px` | titles `23–28px`, circles `150/188/150` | three-column row (`200/236/200`, gap `44px`) | D:12, M:13 |
@@ -507,6 +562,13 @@ every duration is a token so 05 can zero them in one place.
   (`--reveal-threshold: 0.16`), which has no CSS twin and lives only in `tokens.ts`.
 - **INV-03.5** Token values equal the design handoff unless an OQ-03.2 decision records a replacement in this
   document first; a token change is a doc change plus a code change in one PR.
+- **INV-03.6** Typography never branches on locale in TypeScript. The only per-locale styling in the codebase
+  is the three `:lang()` rules in `src/styles/tokens.css` — `:root:lang(zh)` for the shared Chinese rules and
+  `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)` for `--font-cjk` (D-03.14). No component, hook or
+  `src/design/tokens.ts` export reads the locale to pick a family, and `--font-cjk-sc` / `--font-cjk-tc` are
+  never referenced outside those two rules (no `font-cjk-sc` utility in any component). The locale-comparison
+  half is already machine-checked by 02 INV-02.9's ESLint rule; 08 adds the utility-name check to the
+  Tailwind arbitrary-value regex sweep of INV-03.2.
 
 ## Open questions
 
@@ -516,13 +578,28 @@ every duration is a token so 05 can zero them in one place.
   `#5f6454`, muted/muted-2 `#7a7160`; (b) eyebrow/link/subhead darkening per section; (c) primary-button fill
   `#5e7a4e` vs keeping sage; (d) selected day chip ink text; (e) footer copyright `#c8d6bd`; (f) input border.
   Default if unanswered by the 04 component PR: ship design values, keep this table as the known-failure list.
-- **OQ-03.3** (orchestrator / 02) Is `zh` Simplified only (`zh-Hans`)? The `--font-cjk` stack is SC-first; a
-  Traditional locale needs a TC-first stack (`PingFang TC`, `Microsoft JhengHei`, `Noto Sans TC`).
-- **OQ-03.4** (the human — Hanyi; surfaced per memo ADJ-6) The design names no CJK typeface. D-03.5 ships the
-  system CJK stack; the alternative is self-hosting Noto Sans SC via `next/font/google` (`preload: false`,
-  `adjustFontFallback: false`, loaded only in `zh`) for identical rendering across OSes at the cost of a large
-  build artefact and a first-paint font swap in `zh`. Decide before the 04 typography PR; if unanswered, the
-  system stack ships and this stays open for a post-launch review with screenshots from macOS/Windows/Android.
+- **OQ-03.3** (orchestrator / 02) — **answered 2026-08-22 (human, HD-10; 02 D-02.1):** no, not Simplified only.
+  Three locales ship — `en`, `zh-Hans` and `zh-Hant` — so one SC-first stack is not enough. `--font-cjk` now
+  resolves per script (D-03.14): `--font-cjk-sc` under `:root:lang(zh-Hans)`, `--font-cjk-tc` (`PingFang TC`,
+  `Hiragino Sans CNS`, `Microsoft JhengHei`, `Noto Sans CJK TC`, `Noto Sans TC`, `Source Han Sans TC`) under
+  `:root:lang(zh-Hant)`, both listed in §3.1. The shared `:root:lang(zh)` typography rules (§3.3) match both
+  scripts and are not split. 08's visual-regression matrix gains a `zh-Hant` row (08 owns it).
+- **OQ-03.4** (the human — Hanyi; surfaced per memo ADJ-6, restated per HD-11) — **answered 2026-08-22 (human,
+  HD-14): the system CJK stack ships for both Chinese scripts, and no CJK webfont is loaded at launch.** The
+  question had already changed shape once — HD-11 recorded that the designs name no CJK face (§3.1, D-03.5),
+  so the stack was never a substitute for a design value, it is what the prototypes render — and HD-14 then
+  confirmed it as the shipping decision. `--font-cjk-sc`, `--font-cjk-tc` and the `--font-cjk` selector stand
+  exactly as §3.1 and D-03.14 declare them; nothing in this document is provisional on a later answer, and no
+  seat is waiting. Its aliases close with it: **OQ-01.2** (`docs/technical/01-stack-decisions.md`) and
+  **OQ-04.9** (`docs/technical/04-components-sections.md`) are the same question carried into those documents,
+  and `docs/technical/12-open-questions.md` keeps the three as one register row (each doc marks its own copy —
+  03 does not edit them). Naming a Chinese face later stays possible without staying an open question: it is a
+  one-token change — point `--font-cjk-sc` and `--font-cjk-tc` at the new families and add the
+  `next/font/google` loader with `preload: false, adjustFontFallback: false` scoped to the Chinese layouts, no
+  component, no other token, no test moving — weighed against a multi-megabyte CJK build artefact per script
+  and a first-paint swap on Chinese pages. The per-OS look at the shipped stack is not lost with the question:
+  it is 08's named manual check `MC-08.1 per-OS glyph render` (macOS and Windows 11, `/en` + `/zh-Hans` +
+  `/zh-Hant` at 390 and 1280), which already confirms that `zh-Hant` resolves to a Traditional face.
 - **OQ-03.5** (design owner) Keep emoji icons or move to an icon set (design README leaves it open)? If swapped,
   the icons need a `--color-*` fill token per section; sizes stay as the fixed containers above.
 - **OQ-03.6** (client) Provide a vector (SVG/PDF) logo master; the 373×161 PNG limits crisp rendering above
@@ -535,14 +612,19 @@ every duration is a token so 05 can zero them in one place.
 
 - Design: `docs/design/README.md` (tokens L30–43, motion L45–58, assets), `docs/design/desktop/README.md`,
   `docs/design/mobile/README.md`, `docs/design/desktop/Green Pastures - Homepage.dc.html`,
-  `docs/design/mobile/Green Pastures - Homepage Mobile.dc.html`, `docs/design/assets/logo.png`.
+  `docs/design/mobile/Green Pastures - Homepage Mobile.dc.html`, `docs/design/assets/logo.png`, and
+  `docs/design/Wireframes.dc.html` (low-fi, cited only in §3.1's font survey — no token comes from it).
 - Plan: `docs/technical/01-stack-decisions.md` (ADR-001 + ADJ-1..7: Next.js 16.x, React 19.2, Node 24,
   Tailwind v4, next-intl, Motion; ADJ-4 locale toggle, ADJ-5 no duration namespace, ADJ-6 no CJK subsetting),
-  `docs/technical/02-i18n-content-contract.md` (strings; `<html lang>` per locale),
-  `docs/technical/04-components-sections.md` (token consumers, `Emoji`, `PhotoSlot`, swap component),
+  `docs/technical/02-i18n-content-contract.md` (strings; the three locale ids and `LOCALE_META`, D-02.1;
+  `<html lang>` per locale, D-02.9; the CJK requirements placed on this doc, D-02.15; no locale branching,
+  INV-02.9),
+  `docs/technical/04-components-sections.md` (token consumers, `Emoji`, `PhotoSlot`, the locale-switcher menu),
   `docs/technical/05-animation-system.md` (uses §7 names verbatim; reduced motion),
-  `docs/technical/06-routing-pages-seo.md` (locale layout sets `lang` and font classes),
-  `docs/technical/08-testing-quality.md` (lint rules for INV-03.1–3, parity test, toggle-CLS check),
-  `docs/technical/12-open-questions.md` (OQ-03.*).
+  `docs/technical/06-routing-pages-seo.md` (locale layout sets `lang` and font classes for all three locales),
+  `docs/technical/08-testing-quality.md` (lint rules for INV-03.1–3 and INV-03.6, parity test, the
+  switch-CLS check, and the per-locale visual snapshot that now needs a `zh-Hant` row),
+  `docs/technical/12-open-questions.md` (OQ-03.*; OQ-03.3 and OQ-03.4 are both answered — the latter by HD-14,
+  with its aliases OQ-01.2 and OQ-04.9).
 - Code paths this doc names: `src/styles/tokens.css`, `src/app/globals.css`, `src/design/tokens.ts`,
   `src/design/fonts.ts`, `public/brand/logo.png`.
