@@ -93,7 +93,7 @@ parity test see the same values.
 | `--font-display` | `font-display` | hero headline |
 | `--text-headline` (+`--line-height`) | `text-headline` | `64px/1.04` desktop |
 | `--tracking-eyebrow` | `tracking-eyebrow` | `1.5px` |
-| `--radius-card` | `rounded-card` | `18px` |
+| `--radius-card` | `rounded-card` | `20px` |
 | `--shadow-card-warm` | `shadow-card-warm` | testimonial card |
 | `--container-content` | `max-w-content` | `1080px` |
 | `--breakpoint-md` | `md:` variant | `48rem` |
@@ -110,7 +110,7 @@ parity test see the same values.
   --font-display: var(--font-fredoka), var(--font-cjk);
   --font-body: var(--font-nunito), var(--font-cjk);  --font-cjk: var(--font-cjk-sc);  /* §3.1 */
   --text-headline: 36px;  --text-headline--line-height: 1.08;   /* mobile first */
-  --radius-pill: 999px;  --radius-card: 18px;  --shadow-primary: 0 10px 24px rgba(111,138,95,.32);
+  --radius-pill: 999px;  --radius-card: 20px;  --shadow-primary: 0 10px 24px rgba(111,138,95,.32);
   --ease-soft: cubic-bezier(.2,.8,.25,1);  --ease-spring: cubic-bezier(.34,1.56,.5,1);
   --breakpoint-md: 48rem; --breakpoint-lg: 64rem; --container-page: 80rem;
 }
@@ -186,13 +186,28 @@ and no hue-named alias (`--color-lavender*`, `--color-amber-chip`) exists (D-03.
 | Section | `--color-accent-*` (eyebrow) | `--color-link-*` | `--color-link-underline-*` | `--color-sub-*` (subhead / blurb) | Source |
 |---|---|---|---|---|---|
 | hero | — (badge chip = chip tokens) | `#4f6b43` | `#c3d2b6` | `#6b7060` | desktop L115, L120 |
-| philosophy | `#6f8a5f` | `#4f6b43` | `#b6c9a6` | attribution `#7e8a72`; quote mark `#c2d4b6` | desktop L143–146 |
+| philosophy | `#6f8a5f` | `#4f6b43` | `#b6c9a6` | attribution `#7e8a72`; quote mark `#c2d4b6` (`--color-quote-mark`, §2.4) | desktop L143–146 |
 | programs | `#c08552` (also age eyebrows) | `#b06a35` | `#e6bf95` | `#7d7468` | desktop L162–164 |
 | menu | `#bd9326` | `#a8852f` | `#e6cf86` | `#897a4e` | desktop L189–191 |
 | gallery | `#6f8a9a` | `#56707e` | `#b4c8d0` | `#6f7a80` | desktop L218–220 |
-| testimonials | — (stars `#f0a93a`) | `#c2553f` | `#e3b3a8` | quote `#5c5045`; attribution `#9a8578`; count `#8a7468` | desktop L238–271 |
+| testimonials | — (stars `#f0a93a`) | `#c2553f` | `#e3b3a8` | quote `#5c5045`; `-attribution` `#9a8578`; `-count` `#8a7468` | desktop L238–271 |
 | teachers | `#8677a3` (also role eyebrows) | `#6d5f92` | `#c3b7d6` | `#757080` | desktop L279–281 |
-| visit | labels `#9bb78c` | footer links `#c8d6bd` | — | subhead `#c8d6bd`; copyright `#8ba07c` | desktop L312–342 |
+| visit | labels `#9bb78c` | footer links `#c8d6bd` | — | subhead `#c8d6bd`; `-copyright` `#8ba07c` | desktop L312–342 |
+
+**Sub-tokens of `--color-sub-*`.** Three sections print a second and third greyed colour in the same
+subhead/blurb role, and the plain `--color-sub-<section>` holds only the first. The extras are named
+`--color-sub-<section>-<role>`, one per remaining value, so a component binds to a token instead of a hex
+(INV-03.1); no other spelling of these three colours exists.
+
+| Token | Hex | Role | Consumer | Source |
+|---|---|---|---|---|
+| `--color-sub-testimonials-attribution` | `#9a8578` | the relation line under a reviewer's name ("parent of a 3-year-old"), on white | `SpeechBubble` (04 §3) | desktop L251, L259, L267 (homepage) and L526, L531, L536, L541 (reviews subpage); mobile L176, L181 and L425, L430, L435 |
+| `--color-sub-testimonials-count` | `#8a7468` | the "47 reviews · Fremont parents" count line on `--color-bg-testimonials` | `ReviewsHeader` (04 §3) | desktop L243 (homepage) and L520 (reviews subpage); mobile L170 and L420 |
+| `--color-sub-visit-copyright` | `#8ba07c` | the footer copyright line on forest | `Copyright` (04 §3) | desktop L342; mobile L248; desktop/README L17 |
+
+All three are §10 contrast failures (`3.50` / `3.77` / `2.89`) with proposed replacements in that table; the
+tokens carry the **design** values because OQ-03.2 is unanswered and its stated default is to ship the design
+and keep §10 as the known-failure list (INV-03.5 — a replacement is recorded here first or not at all).
 
 **2.4 Chips, badges, menu graphics, decorations**
 
@@ -268,7 +283,7 @@ Sources: desktop/README L9–17, mobile/README L10–17; line numbers in the ref
 | Token | Desktop | Mobile | Family/weight | Used for |
 |---|---|---|---|---|
 | `--text-headline` | `64px/1.04` | `36px/1.08` | Fredoka 600 | hero H1 |
-| `--text-section-title` | `40px` (Reviews `36px`; Visit `42px/1.15`) | `28px` (Reviews `26px`; Visit `28px/1.2`) | Fredoka 600 | section H2 (desktop L163, L242, L311; mobile L98, L169, L224) |
+| `--text-section-title` | `40px/normal` (Reviews `36px`; Visit `42px/1.15`) | `28px/normal` (Reviews `26px`; Visit `28px/1.2`) | Fredoka 600 | section H2 (desktop L163, L242, L311; mobile L98, L169, L224) |
 | `--text-subhead` | `19px/1.6` hero; `17px/1.6` sections | `15px/1.6` hero; `13–14px/1.6` sections | Nunito 600 | under titles |
 | `--text-quote` | `44px/1.32` | `26px/1.35` | Fredoka 500 | philosophy pull-quote |
 | `--text-quote-mark` | `84px` | `58px` | Fredoka 600 | decorative “ (mobile L82) |
@@ -288,6 +303,25 @@ Sources: desktop/README L9–17, mobile/README L10–17; line numbers in the ref
 | `--text-footer-link` / `--text-copyright` | `14px` / `12px` | `12px` / `10px` | Nunito 700 / 600 | footer |
 | `--text-scroll-cue` | `13px` | `12px` | Nunito 700, `.5px` | "scroll" cue |
 | `--text-countup` | `30px` | `22px` | Fredoka 600 | "5.0" |
+
+**Why `--text-section-title--line-height` is `normal`.** The references set section titles with the CSS `font`
+shorthand and no `/line-height` part — `font:600 40px 'Fredoka'` (desktop L163, L190, L219, L280; Reviews L242)
+and `font:600 28px 'Fredoka'` (mobile L98, L121, L149, L192; Reviews L169). The shorthand *resets* leading, so
+the design's own computed value for every one of those headings is `normal`; the reference sets a number only
+where it wants one, and for this token it does so exactly once, on Visit (`42px/1.15`, `28px/1.2`). Neither
+reference declares a document-wide `line-height` (desktop `<style>` L16–28 sets none). `normal` is therefore
+the handoff's value, not a stand-in for a missing one, and it is what the token carries on both views — one
+declaration, mobile-first, no `≥ md` re-declaration because the two views agree.
+
+Declaring it fixes **`en`**, not `zh` (bead `gp-dln.38`). The token's one consumer, `SectionTitle`
+(`src/components/ui/SectionTitle.tsx`, PR-4.2), applies `leading-(--text-section-title--line-height)`, which
+compiles to its own `line-height: var(--text-section-title--line-height)` declaration and so reads the custom
+property directly, independent of Tailwind's `--text-*` / `--text-*--line-height` pairing. §3.3's
+`:root:lang(zh) { --text-section-title--line-height: 1.3 }` was therefore already resolving: Chinese section
+titles have rendered at `1.3` since PR-4.2 and were never broken. Everywhere else the variable was undefined,
+the `var()` was invalid at computed-value time, and — because `line-height` is inherited — the heading fell
+through to Preflight's `html, :host { line-height: 1.5 }`. English section titles were silently at `1.5`. The
+base value replaces that accident with the handoff's `normal` and leaves `zh` untouched.
 
 **3.3 Chinese typography — `zh-Hans` and `zh-Hant`** (declared once under `:root:lang(zh)`; `<html lang>` is
 `LOCALE_META[locale].htmlLang` per 02 D-02.9, set by the `[locale]` layout, 06 wires it). Every value in this
