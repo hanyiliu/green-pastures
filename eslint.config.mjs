@@ -253,11 +253,40 @@ const SYNTAX_BAN = {
       "JSXAttribute[name.name='className'] TemplateElement[value.raw=/\\bfont-cjk-(sc|tc)\\b/]",
     message: "use font-display/font-body; :lang() picks the script (INV-03.6)",
   },
-  /** INV-05.6 — motion values come from the token catalogue. */
+  /**
+   * INV-05.6 — motion values come from the token catalogue.
+   *
+   * The shape is the whole point: what is banned is a *literal* in the
+   * positions Motion reads a time or a curve, never the positions themselves.
+   * `duration: dur.rise` and `ease: ease.spring` are member expressions and
+   * pass; `duration: 0.75` and `ease: [0.34, 1.56, 0.5, 1]` are literals and
+   * fail. That distinction is what makes this ban safe to apply to
+   * `src/components/motion/variants.ts` itself — see `gp/exempt-motion-components`.
+   *
+   * Two widenings of 08 §2's excerpt, both of which close a hole rather than
+   * open one:
+   *
+   * - `Literal` is matched as a **descendant**, not a direct child, so
+   *   `delay: index * 0.014`, `duration: 0.75 as number` and
+   *   `delayChildren: stagger(0.11)` are caught alongside the bare form. The
+   *   only nodes this adds are literals *inside* a motion value's expression,
+   *   which INV-05.6 bans just as squarely as the value itself.
+   * - `ease` joins the key list instead of being spelled `> ArrayExpression`.
+   *   The old form was simultaneously too loose — `ease: 'easeOut'` is a raw
+   *   easing and slipped through — and too tight: `ease: [ease.soft,
+   *   ease.std]`, Motion's legal per-segment easing array, is entirely
+   *   token-sourced and was banned anyway, which is the sort of false positive
+   *   that gets a file exempted.
+   *
+   * What this cannot cover is INV-05.6's *distance* clause. `y: rise.base` and
+   * `y: -34` are the same syntax in the same position, and only the first is a
+   * token; the second is §5.2 keyframe geometry, which `variants.ts` owns and
+   * for which 03 mints nothing. No selector separates them. Distances are held
+   * by the catalogue unit test (08 §4), not by lint.
+   */
   motionValue: {
     selector:
-      "Property[key.name=/^(duration|delay|staggerChildren|delayChildren|repeatDelay)$/] > Literal, " +
-      "Property[key.name='ease'] > ArrayExpression",
+      "Property[key.name=/^(duration|delay|ease|staggerChildren|delayChildren|repeatDelay)$/] Literal",
     message: "motion values from tokens (INV-05.6)",
   },
   /** INV-05.3 — will-change is applied for the duration of an animation, never statically. */
@@ -430,6 +459,19 @@ export default tseslint.config(
   },
   {
     // 05 §5.12: the motion tree owns the pooled observer and the scroll listener.
+    //
+    // `scrollListener` is the *only* ban this tree is excused. 08 §2 also
+    // excuses `src/components/motion/variants.ts` from `motionValue`, on the
+    // stated grounds that `src/components/motion/**` "is where `ease`/`duration`
+    // literals are *defined*". That premise does not hold: `variants.ts` defines
+    // no duration and no easing — it imports every one of them from
+    // `src/design/tokens.ts`, which is the actual definition site and keeps its
+    // own exemption below. What `variants.ts` owns is the *geometry* of the
+    // entrances — keyframe stops, `times`, transform origins — and `motionValue`
+    // never matched any of those, so the exemption bought the catalogue nothing
+    // it needed while removing the only automated check INV-05.6 has in the one
+    // file it is aimed at. It is withdrawn here; 08 §2's "Overrides" paragraph
+    // is now one file out of date on this point.
     name: "gp/exempt-motion-components",
     files: ["src/components/motion/**"],
     rules: {
@@ -445,21 +487,14 @@ export default tseslint.config(
     },
   },
   {
-    // INV-03.4 / INV-05.6: the two files where motion values are *defined*.
-    // `no-restricted-syntax` is replaced, not merged, by a later matching block,
-    // so `variants.ts` — which is also inside the motion tree above — has to
-    // restate the scroll-listener exemption it would otherwise lose.
+    // INV-03.4 / INV-05.6: the one file where motion values are *defined*.
+    // 03's TS mirror is the bottom of the chain — the numbers have to be typed
+    // somewhere, and this is the somewhere. Everything downstream imports them,
+    // which is why nothing downstream is exempt.
     name: "gp/exempt-token-catalogue-design",
     files: ["src/design/tokens.ts"],
     rules: {
       "no-restricted-syntax": noRestrictedSyntax(syntaxBansExcept("motionValue")),
-    },
-  },
-  {
-    name: "gp/exempt-token-catalogue-motion",
-    files: ["src/components/motion/variants.ts"],
-    rules: {
-      "no-restricted-syntax": noRestrictedSyntax(syntaxBansExcept("motionValue", "scrollListener")),
     },
   },
   {
@@ -495,6 +530,16 @@ export default tseslint.config(
       // Test files render fixture markup; INV-02.1 is a rule about the product.
       "react/jsx-no-literals": "off",
       "gp/jsx-no-literal-attributes": "off",
+      // `motionValue` is a rule about the product too, and in a unit test it
+      // inverts: 08 §4 asks the catalogue test to assert "durations/easings
+      // reference tokens", and the only assertion that can fail is one that
+      // spells the expected number out — `expect(…duration).toBe(0.75)`.
+      // Import `dur.rise` to satisfy the ban instead and the assertion becomes
+      // `dur.rise === dur.rise`, a test that cannot fail. The literal in an
+      // `expect` is the check, not a hard-coded animation, so the ban comes off
+      // here and the catalogue test keeps its teeth. Every other ban stays on;
+      // `gp/e2e` keeps the full set, having no motion values to assert.
+      "no-restricted-syntax": noRestrictedSyntax(syntaxBansExcept("motionValue")),
     },
   },
 
