@@ -1,5 +1,6 @@
 import { PageTransition } from "@/components/motion/PageTransition";
 import { HeroSection } from "@/components/sections/hero/HeroSection";
+import PhilosophySection from "@/components/sections/philosophy";
 
 /**
  * Home route (04 §1, 05 §5.7, §5.8).
@@ -28,6 +29,7 @@ export default function HomePage() {
     <PageTransition>
       <main id="main" data-snap-root="">
         <HeroSection />
+        <PhilosophySection />
       </main>
     </PageTransition>
   );
