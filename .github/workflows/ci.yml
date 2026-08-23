@@ -6,11 +6,11 @@
 # and the human can paste it into the ruleset unchanged (D-08.19, OQ-11.3) —
 # the same convention `bead-trailer.yml` follows. The six checks D-08.12 makes
 # required on `main` are `static`, `content`, `unit`, `build`, `e2e-ok` and
-# `bead-trailer`. Four are below; `bead-trailer` is its own workflow (11 §6);
-# `content` arrives with PR-3.4, which is the PR that creates the
-# `pnpm validate:content` script the job would run. A required check whose job
-# does not exist yet blocks every PR, so the human lists `content` when PR-3.4
-# merges and not before.
+# `bead-trailer`. Five are below; `bead-trailer` is its own workflow (11 §6).
+# `content` arrived with PR-3.4, the PR that created the `pnpm validate:content`
+# script it runs. A required check whose job does not exist yet blocks every PR,
+# which is why the name was withheld until now: **the human adds `content` to
+# the ruleset's required list when this PR merges.**
 #
 # Later PRs ADD jobs to this file and never edit an existing one (10 §7):
 # PR-3.4 the `content` job, PR-8.5 the perf-budget/Lighthouse job.
@@ -98,6 +98,79 @@ jobs:
             status=1
           fi
           exit $status
+
+  # 08 §10 `content` · 5 min · REQUIRED (D-08.12). The content contract's gate:
+  # `pnpm validate:content` checks three-way key/tag/array parity against `en`,
+  # ICU arguments as a subset (INV-02.2), key shape, empty strings, `'{`, HTML,
+  # the INV-02.4 data-pattern scan, the Zod schemas and their id cross-refs,
+  # assets and alt text, and it resolves and prints the provisional registry
+  # (INV-02.10). `--release` is NOT run here — it is `lighthouse-prod`'s
+  # preflight at the launch gate (08 §3, §12.3).
+  #
+  # `--warn-locale zh-Hans` is the phased-translation flag of 08 §3 / HD-12: it
+  # demotes that locale's PARITY findings to warnings while its tree is being
+  # filled in, and affects nothing else — never the Zod checks, never INV-02.4,
+  # never the registry. It is the one line in this file later PRs edit rather
+  # than append to (10 §7): PR-3.9 adds `--warn-locale zh-Hant`, PR-8.1 removes
+  # the `zh-Hans` flag and PR-8.8 the `zh-Hant` one. No other PR touches it.
+  content:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # The sticky coverage comment (08 §3, INV-02.6) is the only write in this
+      # workflow; every other job runs on the read-only default above.
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # `continue-on-error` so the report still reaches the summary, the sticky
+      # comment and the artifact when the gate is red — an editor's to-do list is
+      # most useful on exactly the run that failed. The last step re-raises it.
+      - name: validate:content
+        id: validate
+        continue-on-error: true
+        run: pnpm run validate:content --report --warn-locale zh-Hans
+
+      - name: job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -f reports/content-coverage.md ]; then
+            cat reports/content-coverage.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::validate:content produced no reports/content-coverage.md"
+          fi
+
+      # One sticky comment per PR, rewritten in place on every push, so the
+      # editor sees the current missing-key list and the shrinking provisional
+      # block instead of a thread of stale ones (08 §3; 09 explains it).
+      - name: coverage comment
+        if: always() && github.event_name == 'pull_request' && hashFiles('reports/content-coverage.md') != ''
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: content-coverage
+          path: reports/content-coverage.md
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: content-coverage
+          path: reports/content-coverage.md
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: require validate:content to have passed
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "::error::pnpm validate:content found at least one error — see the job summary and the PR comment (08 §3)."
+          exit 1
 
   # 08 §10 `unit` · 10 min · required.
   unit:
