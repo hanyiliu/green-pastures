@@ -140,18 +140,41 @@ describe("loadMessages (02 D-02.7, D-02.8)", () => {
     expect(Object.keys(reference.collections).sort()).toStrictEqual([...COLLECTION_NAMESPACES]);
   });
 
-  it("logs one error per file and renders markers while a locale tree is unauthored", async () => {
+  it("loads every zh-Hans file silently now that PR-3.5 has authored the tree", async () => {
     const messages = await loadMessages("zh-Hans");
 
-    // content/zh-Hans/ arrives at PR-3.5; until then nothing loads and no key
-    // resolves, which is what makes `getMessageFallback` visible.
-    expect(Object.keys(messages)).toStrictEqual(["collections"]);
-    expect(consoleError).toHaveBeenCalledTimes(
-      MESSAGE_NAMESPACES.length + COLLECTION_NAMESPACES.length,
+    expect(Object.keys(messages).sort()).toStrictEqual(
+      [...MESSAGE_NAMESPACES, "collections"].sort(),
     );
-    expect(String(consoleError.mock.calls[0]?.[0])).toContain(
-      "content/zh-Hans/messages/common.json",
-    );
+    expect(Object.keys(messages.collections).sort()).toStrictEqual([...COLLECTION_NAMESPACES]);
+    // Nothing is *missing*: the untranslated namespaces are authored as `{}`,
+    // which is the phase state (INV-02.11), not an editing mistake.
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("leaves an untranslated namespace empty in dev rather than filling it from en", async () => {
+    const messages = await loadMessages("zh-Hans");
+
+    expect(messages.common.nav.bookTour).toBe("预约参观");
+    // An untranslated sibling is absent, not English — dev has no fallback, so
+    // it renders `getMessageFallback`'s marker and the gap is seen (D-02.8).
+    expect(messages.common).not.toHaveProperty("footer");
+    expect(Object.keys(messages.email)).toStrictEqual([]);
+    expect(Object.keys(messages.collections.teachers)).toStrictEqual([]);
+  });
+
+  it("renders en for that same gap in prod, which is what the site serves today", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      const messages = await loadMessages("zh-Hans");
+
+      expect(messages.common.nav.bookTour).toBe("预约参观");
+      expect(messages.common.footer).toStrictEqual(reference.common.footer);
+      expect(messages.email).toStrictEqual(reference.email);
+      expect(messages.collections.teachers).toStrictEqual(reference.collections.teachers);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
@@ -170,6 +193,48 @@ describe("assembleLocaleTree (02 D-02.8)", () => {
         { production: false },
       ),
     ).toThrow("content/zh-Hans/messages/home.json");
+  });
+
+  it("counts an authored-but-empty file as present, not missing", () => {
+    // `{}` is how an untranslated namespace is spelled while a locale is being
+    // filled; it must not trip the missing-file throw above, or the dev server
+    // would die on exactly the state `content/zh-Hans/` is in today.
+    expect(() =>
+      assembleLocaleTree(
+        [file("common", { nav: { bookTour: "预约参观" } }), file("email", {})],
+        [],
+        {
+          production: false,
+        },
+      ),
+    ).not.toThrow();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("does not throw in dev when not one file of the tree loads (the PR-3.9 window)", () => {
+    // The carve-out is per locale, so it retired itself for `zh-Hans` the day
+    // PR-3.5 landed. It is still what keeps `/zh-Hant` serving on the commit
+    // that adds the id to `routing.locales` before `content/zh-Hant/` is
+    // copied across — 02's add-a-locale checklist, steps 1 and 3.
+    const absent = (directory: "messages" | "collections", namespace: string): LoadedFile => ({
+      path: `content/zh-Hant/${directory}/${namespace}.json`,
+      namespace,
+      messages: undefined,
+    });
+    const tree: Record<string, unknown> = assembleLocaleTree(
+      MESSAGE_NAMESPACES.map((namespace) => absent("messages", namespace)),
+      COLLECTION_NAMESPACES.map((namespace) => absent("collections", namespace)),
+      { production: false },
+    );
+
+    expect(Object.keys(tree)).toStrictEqual(["collections"]);
+    expect(tree.collections).toStrictEqual({});
+    expect(consoleError).toHaveBeenCalledTimes(
+      MESSAGE_NAMESPACES.length + COLLECTION_NAMESPACES.length,
+    );
+    expect(String(consoleError.mock.calls[0]?.[0])).toContain(
+      "content/zh-Hant/messages/common.json",
+    );
   });
 
   it("does not fall back to en in dev, so gaps render as markers", () => {

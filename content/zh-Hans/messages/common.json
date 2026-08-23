@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "philosophy": "教学理念",
+    "programs": "课程班级",
+    "menu": "餐点",
+    "gallery": "相册",
+    "reviews": "家长评价",
+    "team": "我们的团队",
+    "bookTour": "预约参观"
+  },
+  "punctuation": {
+    "quoteOpen": "“",
+    "quoteClose": "”"
+  }
+}
