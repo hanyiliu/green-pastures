@@ -1,0 +1,137 @@
+# The dependency and secret audit — docs/technical/08-testing-quality.md §10 (the
+# `audit` row: PR · weekly `schedule` · 10 min · no artifacts · advisory),
+# D-08.11 (what it scans) and 10 §3's PR-2.10 / D-10.15 (a) (why the row is
+# Phase 2 rather than later, and why it is a file of its own).
+#
+# Its own workflow instead of a job inside `ci.yml`, because the weekly cron is
+# an `on:` block `ci.yml` does not have and 10 §7 gives every workflow file one
+# owning PR. Nothing here edits `ci.yml`.
+#
+# **Advisory, and deliberately so — do not make it required.** INV-08.2 fixes
+# the required checks on `main` at exactly six — `static`, `content`, `unit`,
+# `build`, `e2e-ok`, `bead-trailer` — and only the human changes that set
+# (INV-11.5). `audit` is not one of them, which is what "a new advisory must not
+# block an unrelated PR" (D-08.11) means in practice: this job may go red
+# without stopping a merge. What it does *not* mean is that the job never goes
+# red. `--audit-level=high` reds it on a high or critical advisory and says
+# nothing about a moderate one, which is the threshold D-08.11 writes down and
+# OQ-08.7's stated default; whether a high advisory should one day *block* a PR
+# is the open half of OQ-08.7, it is post-launch, and adding this check to the
+# ruleset's required list would answer it by accident.
+#
+# No job declares a `name:`, so the check GitHub reports is the job id verbatim
+# and a human can paste it into the ruleset unchanged (D-08.19) — the same
+# convention `ci.yml` and `bead-trailer.yml` follow. Here that id is `audit`,
+# §10's own row name, which is none of the six above.
+name: audit
+
+on:
+  pull_request:
+  schedule:
+    # Weekly (§10), on Monday after Renovate's "before 6am on Monday" window
+    # (`renovate.json`, 09 D-09.17), so the scan of the tree and the week's
+    # dependency PRs arrive together. Off the hour on purpose: GitHub queues
+    # cron runs and the top of an hour is its most congested slot. Two standing
+    # facts about `schedule` that this file cannot change — a scheduled run
+    # always uses the workflow file on the default branch, and GitHub disables
+    # the schedule after 60 days with no repository activity.
+    - cron: "17 7 * * 1"
+
+# INV-08.7: a PR run gets no secrets beyond `GITHUB_TOKEN`. There is no
+# `GITLEAKS_LICENSE` to hold — gitleaks-action requires a licence key only for
+# repositories owned by an *organisation* account, and this repository is owned
+# by a user account (§10's bracketed note; confirmed against the GitHub API on
+# 2026-08-23), so the free path is the one that applies and no exception to
+# INV-08.7 has to be asked for.
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 08 §10 `audit` · 10 min · advisory.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      # gitleaks asks `GET /repos/{owner}/{repo}/pulls/{number}/commits` which
+      # commits the pull request adds, and scans that range and no more. With
+      # `pull-requests` left unset that call is `Resource not accessible by
+      # integration` even on a public repository, and the step would fail
+      # before it scanned anything. Read-only, and still not a secret
+      # (INV-08.7) — `GITHUB_TOKEN` is the one credential in this file.
+      pull-requests: read
+    steps:
+      # `fetch-depth: 0`, as gitleaks-action requires: it scans
+      # `<first commit>^..<last commit>` of the pull request, so the *parent* of
+      # the first commit has to be in the clone. A default shallow checkout
+      # makes that revision unresolvable.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # The same setup pair and the same pinning discipline as `ci.yml` —
+      # third-party actions to a commit SHA, `actions/*` to a major (08 §10
+      # conventions) — with pnpm's version from `packageManager` and Node's from
+      # `.nvmrc` (= 24).
+      #
+      # One deliberate difference from `ci.yml`'s jobs: no `cache: pnpm` and no
+      # `pnpm install --frozen-lockfile`. `pnpm audit` resolves the dependency
+      # tree from `pnpm-lock.yaml` alone (10 §3, PR-2.10's dependency line), so
+      # this job never installs anything and would cache an empty store.
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # D-08.11. `--prod` scopes the scan to `dependencies` and
+      # `optionalDependencies`: a devDependency advisory reaches neither a
+      # visitor's browser nor the deployed server, and reddening this job for
+      # one would train people to ignore it.
+      #
+      # `continue-on-error`, with the exit code re-raised in the last step, is
+      # `ci.yml`'s `content` pattern and it is here for the same reason: gitleaks
+      # is the other half of INV-07.3 and must run whatever the dependency tree
+      # says. A run that stopped at a stale transitive advisory and never looked
+      # for a leaked key would be the wrong way round.
+      - name: pnpm audit
+        id: audit
+        continue-on-error: true
+        run: pnpm audit --prod --audit-level=high
+
+      # gitleaks, INV-07.3's third job (08 §9). On `pull_request` it scans only
+      # the commits this PR adds, so a string already present on the base branch
+      # is not this PR's failure — that diff scope is the point, not an
+      # optimisation. On the weekly `schedule` there is no diff and it scans the
+      # whole history instead, which is the standing check the cron buys.
+      # `pull_request` and `schedule` are both supported events (its
+      # `src/index.js`, read at v3.0.0); an unsupported one exits 1 loudly
+      # rather than scanning nothing.
+      #
+      # It decides whether a licence is needed by asking `GET /users/{owner}`
+      # what kind of account owns the repository, and treats a failed lookup as
+      # "organisation" — so if that call ever breaks, the step exits 1 with
+      # "missing gitleaks license" and the fix is the account type, not a key.
+      #
+      # Two of its defaults are turned off. PR comments need
+      # `pull-requests: write` and this job is read-only, and the SARIF artifact
+      # is not in §10's `Artifacts` cell for this row, which reads `—`. What
+      # stays on is the job summary, which needs no token and is where the
+      # findings are read.
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+      - name: require pnpm audit to have passed
+        if: steps.audit.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          echo "::error::pnpm audit found a high or critical advisory in the production tree (D-08.11)."
+          echo "Advisory job: this blocks no merge (INV-08.2). The fix is an upgrade under a bead."
+          exit 1
