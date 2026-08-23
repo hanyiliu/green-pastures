@@ -111,6 +111,17 @@ describe("view-transitions.css", () => {
     expect(flat).toMatch(/::view-transition-group\(root\) \{[^}]*opacity: 1 !important;/);
   });
 
+  it("stops the snapshot overlay swallowing clicks for the length of a slide", () => {
+    // The full declaration, as written, for the same reason the reduced-motion
+    // block below is pinned whole: a prefix match is how a quiet edit slips
+    // past. `::view-transition` is the root of the snapshot tree and
+    // `pointer-events` inherits, so this one rule covers the entire overlay —
+    // which spans the viewport for all 500 ms of the slide. PR-4.4 shipped
+    // without it and measured the cost: every click in that window, in all
+    // three engine/viewport combinations.
+    expect(flat).toContain("::view-transition { pointer-events: none; }");
+  });
+
   it("slides only under the two typed navigations", () => {
     expect(flat).toContain(
       "html:active-view-transition-type(subpage-enter)::view-transition-new(.gp-page) { animation: gp-slide-in var(--dur-subpage) var(--ease-soft) both; }",
@@ -141,9 +152,18 @@ describe("view-transitions.css", () => {
   it("removes the slide entirely under reduced motion", () => {
     const reduced = flat.slice(flat.indexOf("@media (prefers-reduced-motion: reduce)"));
 
-    expect(reduced).toContain("::view-transition-group(*) { animation: none !important;");
-    expect(reduced).toContain("::view-transition-old(*) { animation: none !important;");
-    expect(reduced).toContain("::view-transition-new(*) { animation: none !important;");
+    // Full declarations, `!important` included. These are not redundant
+    // defaults: each one beats a UA *animation*, and an automated "this opacity
+    // is already 1" cleanup has silently stripped them once already.
+    expect(reduced).toContain(
+      "::view-transition-group(*) { animation: none !important; opacity: 1 !important; }",
+    );
+    expect(reduced).toContain(
+      "::view-transition-old(*) { animation: none !important; opacity: 0 !important; }",
+    );
+    expect(reduced).toContain(
+      "::view-transition-new(*) { animation: none !important; opacity: 1 !important; }",
+    );
     // Instant, not merely fast: a shortened slide is still a slide.
     expect(reduced).not.toMatch(/var\(--dur-/);
   });
