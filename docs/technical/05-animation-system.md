@@ -11,7 +11,9 @@ open for the client's planned future scroll animations (parallax, pinning, scrub
 
 Status: draft · seat writer-animation · 2026-08-22 · revised 2026-08-23 against the shipped motion core
 (PR-4.3a), which settled §5.6's locale-cascade rule the two readings of this document disagreed on — D-05.9,
-§5.1, §5.6, §5.9 and §5.14 now describe what runs
+§5.1, §5.6, §5.9 and §5.14 now describe what runs · revised again 2026-08-23 against the View Transitions
+spike (PR-4.4), which found §5.7's CSS shipped a blank outgoing page when implemented literally — §5.7 and
+OQ-05.2 now describe what runs
 
 ## Decisions
 
@@ -334,42 +336,123 @@ Mechanism:
   `router.back()` restores the exact offset and keeps history minimal but cannot carry `transitionTypes` — no
   slide-out. Decision: typed `replace`; the design's slide-out wins, and the hash + `scroll-margin-top` puts the
   user at the section they left. 06 confirms in D-06.8 (OQ-05.5 closed).
-- The CSS (tokens from 03; illustrative, the full file is small):
+- The CSS (tokens from 03). This is `src/components/motion/view-transitions.css` as it ships, with its comments
+  stripped, plus the one declaration a lint gate was blocking when it shipped (`pointer-events`, second note
+  below). Take it literally: the version of this block that stood here before the OQ-05.2 spike was written as
+  a set of *absences* — "animate nothing" — and a literal implementation of it shipped a blank outgoing page.
+  The notes after the fence say which declarations are load-bearing and why.
 
 ```css
-/* src/motion/view-transitions.css */
-::view-transition-new(.gp-page) { animation: gp-slide-in var(--dur-subpage) var(--ease-soft) both; }
-::view-transition-old(.gp-page) { animation: gp-slide-out var(--dur-subpage) var(--ease-soft) both; }
-/* forward: old page stays put underneath; new root hidden until the slide ends */
-html:active-view-transition-type(subpage-enter)::view-transition-old(root) { animation: none; }
-html:active-view-transition-type(subpage-enter)::view-transition-new(root) { animation: none; opacity: 0; }
-/* back: new (home) visible at once; old detail page slides out above it */
-html:active-view-transition-type(subpage-exit)::view-transition-old(root) { animation: none; opacity: 0; }
-html:active-view-transition-type(subpage-exit)::view-transition-new(root) { animation: none; }
-/* locale switch: root crossfade at word-swap speed */
-html:active-view-transition-type(locale-swap)::view-transition-old(root),
-html:active-view-transition-type(locale-swap)::view-transition-new(root) { animation-duration: var(--dur-word-swap); }
-/* everything untyped: instant */
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0s; }
+/* src/components/motion/view-transitions.css — imported by PageTransition.tsx, not by globals.css */
+
+/* The floor. It is stated as a picture — old snapshot hidden, new snapshot visible, nothing running — rather
+   than as "no animation", because "no animation" is what produced the blank page. Every untyped navigation
+   (browser Back/Forward, refresh, a nav link, a Suspense reveal) lands here, and so does a typed navigation in
+   a browser that has View Transitions but not transition *types*: it degrades to the instant swap rather than
+   to a broken half-slide. Hiding the old snapshot matters as much as stopping the animation — the UA
+   composites the two images with `mix-blend-mode: plus-lighter` on the assumption that their opacities
+   cross-fade and sum to one, so two snapshots left at full opacity add together into a white flash. */
+::view-transition-group(root) { animation: none; opacity: 1 !important; }
+::view-transition-old(root) { animation: none; opacity: 0; }
+::view-transition-new(root) { animation: none; opacity: 1; }
+
+/* The snapshot overlay covers the viewport for the whole 500 ms of a slide; without this it eats every click
+   in that window. Measured, in all three engine/viewport combinations the spike ran. */
 ::view-transition { pointer-events: none; }
-@keyframes gp-slide-in  { from { translate: 103% 0; } to { translate: 0 0; } }
+
+/* Forward — the one direction that has to invert the floor: the page the visitor is looking at is the *old*
+   snapshot, and the destination's own background must stay hidden until the panel has finished travelling, or
+   it appears beside the panel as a growing blank margin. */
+html:active-view-transition-type(subpage-enter)::view-transition-old(root) { opacity: 1; }
+html:active-view-transition-type(subpage-enter)::view-transition-new(root) { opacity: 0; }
+html:active-view-transition-type(subpage-enter)::view-transition-new(.gp-page) {
+  animation: gp-slide-in var(--dur-subpage) var(--ease-soft) both;
+}
+
+/* Back — one rule, because the floor's picture is already the right one here: the home page is visible from
+   the first frame and the page being left slides off above it. */
+html:active-view-transition-type(subpage-exit)::view-transition-old(.gp-page) {
+  animation: gp-slide-out var(--dur-subpage) var(--ease-soft) both;
+}
+
+/* Locale switch: a root cross-fade at word-swap speed. It has to name its own keyframes — the floor set
+   `animation: none` on `root`, so restoring a duration alone would restore nothing, there being no
+   `animation-name` left to time. `both` fill is what lets the two tracks override the floor's static
+   opacities for the length of the fade and hand them back afterwards. */
+html:active-view-transition-type(locale-swap)::view-transition-old(root) {
+  animation: gp-fade-out var(--dur-word-swap) var(--ease-std) both;
+}
+html:active-view-transition-type(locale-swap)::view-transition-new(root) {
+  animation: gp-fade-in var(--dur-word-swap) var(--ease-std) both;
+}
+
+/* `translate`, not `transform: translateX()`: it is the independent transform property, so nothing a page
+   sets on `transform` can clobber it. `103%` is the design's figure — the extra 3% keeps the panel's shadow
+   off-screen at rest. */
+@keyframes gp-slide-in { from { translate: 103% 0; } to { translate: 0 0; } }
 @keyframes gp-slide-out { from { translate: 0 0; } to { translate: 103% 0; } }
+@keyframes gp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gp-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* Reduced motion (§5.9): removed outright, not shortened — a full-viewport horizontal slide is the likeliest
+   thing on this site to make a motion-sensitive visitor unwell. `animation: none` rather than a `0s`
+   duration, because INV-03.2 bans a raw `s` in this file and there is no zero-duration token to spell it
+   with; a removed animation is also the truer "instant", since it ends the snapshot overlay on the next frame
+   instead of holding a frozen picture of the page over it. The opacities repeat the floor across *every*
+   group, not `root` alone, because the `.gp-page` groups exist under reduced motion too and must resolve to
+   the same destination-only picture. */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
-    animation-duration: 0s !important; animation-delay: 0s !important;
-  }
+  ::view-transition-group(*) { animation: none !important; opacity: 1 !important; }
+  ::view-transition-old(*) { animation: none !important; opacity: 0 !important; }
+  ::view-transition-new(*) { animation: none !important; opacity: 1 !important; }
 }
 ```
 
+- **`opacity: 1 !important` on the root group is load-bearing. Do not tidy it away as redundant.** With
+  `animation: none` alone — which is how this block read before the OQ-05.2 spike — the root group computes to
+  `opacity: 0`, so *nothing in it paints*: a forward navigation shows white where the outgoing page should be
+  and the panel slides in over blank paper. The value being overridden is not in any stylesheet. It comes from
+  a UA **animation** on the group, which appears in `getAnimations()` with a null `animationName` — that is
+  precisely why `animation: none` cannot cancel it, there being no name for the shorthand to match — and the
+  cascade puts animations above normal author declarations, so only an important declaration outranks one. The
+  spike isolated seven variants of this block; six were pixel-identical to the broken original, and this
+  declaration was the difference. It costs one line, it is invisible in code review, and deleting it re-ships a
+  blank page.
+- **`pointer-events` needed a gate change, and got one.** It is not an animated property, so
+  `.stylelintrc.mjs`'s `property-allowed-list` for the two motion stylesheets did not carry it and the first
+  implementation left the declaration out rather than bypass a gate it did not own; the measured consequence
+  was swallowed clicks for the length of every slide. The allow-list constrains what these files *animate*, not
+  the static declaration that makes an animation usable, so `pointer-events` is now allowed — for
+  `src/components/motion/view-transitions.css` and `src/components/motion/ambient.css` only, never globally.
+- **The locale-swap rules are correct and, today, never fire.** A locale switch starts no view transition at
+  all. The spike drove it both ways — `router.replace(pathname, { locale, scroll: false, transitionTypes:
+  ['locale-swap'] })` per D-06.9, and a plain different-locale `Link` — and neither called
+  `startViewTransition`: no snapshot pseudo-elements existed at any point, and the document did not reload
+  either, so this is a client navigation that simply declines to animate rather than a full page load in
+  disguise. The rules stay, because they are the right rules the day the navigation does start one and they
+  cost nothing while it does not. What must not happen is code written against an assumption they hold:
+  **PR-4.5 cannot assume the 200 ms root cross-fade plays**, so under today's stack the locale cascade of §5.6
+  (`Reveal variant="swap"`) is the whole of the visible motion, and it is enough on its own — the cross-fade
+  was always the out-phase stand-in, not the signal. Why the transition does not start was not established;
+  nothing is blocked on the answer.
 - Scroll: forward navigation scrolls to top (Next default, = prototype `scrollTop = 0`); Back lands on the
   origin section via the hash; browser Back restores position (Next). During router navigations Next switches
   `scroll-behavior` to `auto` because the `html` element carries `data-scroll-behavior="smooth"` (ADJ-1), so
   neither scroll is animated under the slide.
-- Focus: after the transition the detail page's `h1` (`tabIndex={-1}`) receives focus with `preventScroll`; on
-  Back, the origin section heading receives focus (04 implements; OQ-05.2 checks whether Next's own focus
-  handling makes this redundant).
+- **Focus: required, not optional.** OQ-05.2 (e) asked whether Next's own navigation handling already focuses
+  the arriving page and so makes this paragraph redundant. Measured, it does not: after a typed forward
+  navigation, after typed Back and after browser Back, `document.activeElement` is `<body>` in every case — the
+  router moves focus nowhere at all. So 04 implements it. After the transition the detail page's `h1`
+  (`tabIndex={-1}`) receives focus with `preventScroll`; on Back, the origin section heading receives focus.
+  Skipped, a keyboard visitor's next Tab restarts from the top of the document on every navigation.
 - Direct URL load of a detail page: no transition (View Transitions only run on client navigations); the SSR
   HTML is the final layout; in-page `Reveal`s behave as on the home page.
+- **The slide is best-effort for un-prefetched routes.** If the destination suspends before it has rendered,
+  the old and new sides never form a pair, so there is no `.gp-page` enter to animate and the navigation is
+  instant with no animation — observed, not inferred. This is not a CSS bug and there is nothing to fix in this
+  file: it is a fourth silent-fallback path alongside untyped navigation, reduced motion and an unsupporting
+  browser, and it is a concrete reason to leave `Link` prefetching on for the six detail routes. A visitor who
+  clicks faster than the route loads gets the destination, just without the 500 ms.
 - In-page reveals keep working during a transition: the new snapshot is live, so `whileInView` entrances play
   while the page slides; the registry stops the home page replaying on Back.
 - The sticky nav is layout chrome shared by both pages; it does not slide (unnamed → part of the root, visually
@@ -539,7 +622,12 @@ memo ADJ-8); the table stays here so the mapping from token to variant is explic
 - No layout shift: `layout-shift` entries during reveals, count-up and loops are 0; LCP element is not
   opacity-animated.
 - Subpage slide: typed forward/back apply `103%`, 500 ms, `--ease-soft`; untyped, reduced-motion and
-  unsupported-browser paths swap instantly; URL, scroll-to-top on enter, hash landing on Back, focus on the `h1`.
+  unsupported-browser paths swap instantly; URL, scroll-to-top on enter, hash landing on Back, focus on the
+  `h1`. Two of these are regression tests for §5.7 rather than feature tests, and both need the transition
+  frozen mid-slide to see anything: the outgoing page is **still painted** beside the arriving panel (delete
+  `opacity: 1 !important` and it is blank), and a click landing on the panel's own control during the slide
+  reaches it rather than the overlay. Focus is asserted after all three navigations — typed forward, typed
+  Back, browser Back — because the router supplies none of them.
 - Count-up end values and decimals per locale; `WordSwap` on day change; default day rule.
 - Hover gating: no hover styles under `(hover: none)`; colour-only under reduced motion.
 - Performance: exactly two IntersectionObservers on the home page (reveal pool + ambient pause); loops paused
@@ -551,11 +639,21 @@ memo ADJ-8); the table stays here so the mapping from token to variant is explic
 - **OQ-05.1 (01 · check-stack)** Confirm Next 16.3 / React 19.2 and that `ViewTransition` from `react` plus
   `Link transitionTypes` are available without flags at the pinned version; if 01 ever withdraws View
   Transitions, F1 (§5.7) becomes the decision.
-- **OQ-05.2 (04 implementer, spike in 10)** Verify in a spike: (a) React starts a view transition for typed
-  navigations with the `PageTransition` props above; (b) z-order of the `.gp-page` old group over the root during
-  `subpage-exit`; (c) Safari behaviour ("some animations may behave differently"); (d) snapshot size of a tall
-  page group on mobile; (e) whether Next's navigation focus handling already focuses the new page (else 04 sets
-  focus); (f) next-intl `Link`/`useRouter` pass `transitionTypes` through.
+- **OQ-05.2 (04 implementer, spike in 10) — answered; two residuals.** The spike ran a throwaway Next app
+  outside `src/` against the real `PageTransition` and stylesheet, driven by Playwright with each transition
+  paused at `currentTime = 150ms` so screenshots are deterministic, then sampled by pixel. **Verdict: View
+  Transitions.** D-05.10 stands and 01 needs no amendment. (a) yes — React starts a transition for both typed
+  navigations with the `PageTransition` props above. (b) named groups are captured after the document element,
+  so a `.gp-page` group always paints above `root`: frozen mid-slide, the pixels left of the panel edge are the
+  other page's, in both directions and both engines. (e) **no** — the router focuses nothing; `activeElement`
+  stays `<body>`, so §5.7's focus paragraph is required (recorded there). The spike also produced three
+  findings §5.7 now carries: the `opacity: 1 !important` that stops the outgoing page going blank, the
+  `pointer-events` gate change, and the fact that a locale switch starts no view transition at all. Residuals,
+  both for the Phase 4 gate rather than for this document: **(c) not settled** — Firefox was untested (no
+  binary, and the sandbox has no route to fetch one) and the Safari cells are inferred from Playwright's
+  WebKit, which is a proxy and not Safari, so a real Safari pass is still owed; **(d) and (f) unmeasured** —
+  mobile snapshot size of a tall page group, and whether next-intl's `useRouter` carries `transitionTypes`
+  through (the locale-swap finding is consistent with either answer and does not decide it).
 - **OQ-05.3 (design / owner)** Three prototype gaps: `gpdevelop` is defined but unused — implement or drop;
   the day-chip sample-line swap has no specified animation — keep `WordSwap` or none; the hamburger sheet
   open/close has no specified motion — default is `fade` + `rise` with existing tokens.
