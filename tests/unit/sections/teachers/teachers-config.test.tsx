@@ -12,12 +12,14 @@ import { Chip } from "@/components/ui/Chip";
  * instead of per component: no raw value, no breakpoint outside 03's two, no
  * `uppercase` (04 §5.5), and the one reorder the section is allowed.
  *
- * The last block is the interesting one. The HEAD TEACHER badge has to restate
- * its padding override behind `md:`, because `Chip`'s recipe hard-codes the
- * *hero* badge's padding at that breakpoint instead of reading 03 §4's
- * `--chip-*` tokens. That is a `Chip` defect, and the test below is written so
- * it starts failing the day the defect is fixed or moves — a workaround nobody
- * can forget to remove.
+ * The last block is the interesting one. The HEAD TEACHER badge overrides
+ * `Chip`'s padding with 03 §4's `--chip-head-teacher`, and it does so with
+ * **one** important class: the token flips at `--breakpoint-md` inside
+ * `tokens.css`, and `!important` outranks a non-important rule whether or not
+ * that rule sits in a media query. The badge carried a `md:` twin as well until
+ * `gp-dln.135` measured the pair against the single class in chromium and found
+ * them identical at 390px and 1280px; the assertion below now pins the single
+ * class, so restoring the twin fails rather than passing unnoticed.
  */
 
 const CLASSES: ReadonlyArray<readonly [string, string]> = Object.entries(layout);
@@ -126,7 +128,7 @@ describe("the overrides a primitive's recipe would otherwise win (04 §3.2)", ()
     }
   });
 
-  it("lands --chip-head-teacher on the badge at every width Chip claims padding", () => {
+  it("lands --chip-head-teacher on the badge with one important class, not two", () => {
     const { container } = render(
       <Chip tone="sage" className={layout.TEACHERS_HEAD_BADGE}>
         {"HEAD TEACHER"}
@@ -149,14 +151,13 @@ describe("the overrides a primitive's recipe would otherwise win (04 §3.2)", ()
       padding.set(variant, entry);
     }
 
-    // The recipe claims padding unprefixed and again at `md:`; both need an
-    // important override beside them, or the badge silently keeps the hero
-    // badge's box from 768px up.
-    expect([...padding.keys()].sort()).toEqual(["", "md"]);
+    // Padding is claimed at exactly one variant — unprefixed — on both sides.
+    // `Chip`'s recipe binds `--chip-hero-badge`, whose own `var()` flips at
+    // `md`, so neither the recipe nor the override has a `md:` twin to answer.
+    expect([...padding.keys()].sort()).toEqual([""]);
     for (const [variant, entry] of padding) {
-      expect([variant, entry.override]).toEqual([variant, true]);
+      expect([variant, entry.recipe, entry.override]).toEqual([variant, true, true]);
     }
     expect(layout.TEACHERS_HEAD_BADGE).toContain("p-(--chip-head-teacher)!");
-    expect(layout.TEACHERS_HEAD_BADGE).toContain("md:p-(--chip-head-teacher)!");
   });
 });
