@@ -331,10 +331,6 @@ the only place the truth is written down.
 that turns out to be right* — the Chinese name, perhaps — delete its line anyway. The list means "not
 confirmed yet", and confirming it is the act.
 
-> **Status.** The automatic `content` check is still being wired up (§10). Until it appears on your pull
-> requests, the developer reads the `provisional` list by hand before merging and runs the launch gate the
-> same way. The steps above do not change; only who notices first.
-
 ---
 
 ## 7 · Adding or changing a Chinese translation
@@ -342,9 +338,8 @@ confirmed yet", and confirming it is the act.
 English is written first, always. Then:
 
 1. The pull request's check publishes a **coverage report** — a to-do list of every key that English has and a
-   Chinese file does not, with Simplified and Traditional counted separately. (Until that check is live —
-   §10 — ask the developer for the list, or work down the English file yourself: today `zh-Hans` has the home
-   page and the navigation and nothing else.)
+   Chinese file does not, with Simplified and Traditional counted separately. (Today that is a long list:
+   `zh-Hans` and `zh-Hant` have the home page and the navigation and nothing else.)
 2. For each missing key, open the file **at the same path** under `content/zh-Hans/` and add the key with the
    Chinese text. Same key, same place in the file, same `{…}`, same tags, same `\n`.
 3. Commit to the same branch, `Bead:` line in the extended description. The list shrinks on the next run.
@@ -479,9 +474,10 @@ Each line names the language it is talking about. The common ones:
 The `static`, `unit`, `build` and `e2e-ok` checks do not fail on text changes. If one does, the developer
 looks. The Lighthouse comment is advice, never a blocker.
 
-> **Status.** The `content` check described here is being wired up now. Until it appears on your pull
-> requests, the developer runs the same checks by hand before merging — the rules do not change, only who
-> notices first.
+> **Where these lines appear.** The `content` check runs by itself on every pull request, a few minutes
+> after each commit. Click **Details** beside it to read the lines above in full, and look for the check's
+> comment on the pull request itself — the coverage report, rewritten in place each time you commit, so
+> the list you are reading is never a stale one.
 
 ---
 
