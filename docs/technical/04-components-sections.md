@@ -12,9 +12,14 @@ accessibility rules, what must be tested, and the invariants other docs may cite
 restated, only cited), `03-design-system-tokens.md` (every colour, size, radius, shadow, duration is a token),
 `05-animation-system.md` (the `Reveal` primitive, variant names, `PageTransition`, `WordSwap`, `CountUp`) and
 `07-forms-integrations.md` (the inquiry form). It does not define routes or metadata (06), test mechanics (08)
-or operations (09).
+or operations (09). Revised 2026-08-22 for the human's Phase 1 gate decisions: **three locales** (`en`,
+`zh-Hans`, `zh-Hant` — the language switcher is a three-option menu, not a two-name toggle), **six subpages**
+with FAQ and Enrollment reserved rather than built, the brand name as an ICU argument instead of a literal, and
+owner facts (teacher names, credentials, phone, licence) as provisional content the components cannot see.
 
-Status: draft · seat writer-components · 2026-08-22
+Status: draft · seat writer-components · 2026-08-22 · revised 2026-08-22 for HD-5, HD-6, HD-7, HD-9, HD-10,
+HD-12, and again for HD-14 (CJK typeface closed on the system stack) and ADJ-20 (the switcher trigger ships
+with no chevron)
 
 ## Decisions
 
@@ -78,13 +83,19 @@ Status: draft · seat writer-components · 2026-08-22
   and the filter chips are inert (OQ-04.2 if the owner prefers URL-backed filters).
 - **D-04.8 Hamburger menu = full-screen sheet below the nav bar** (the design leaves it undesigned,
   `docs/design/mobile/README.md` "Layout"): cream background, the six primary links, `common.nav.contact`, the
-  `LangSwitcher`, and the "Book a tour" pill; opens/closes with 05's default `fade` + `rise` (OQ-05.3); focus is
-  trapped, `Escape` closes, the page behind is `inert`, body scroll is locked. Design sign-off is OQ-04.1.
-- **D-04.9 Navigation row at `lg`, not `md`.** The full desktop nav (logo 50px + six links + divider + "EN · 中文"
-  + pill, `docs/design/desktop/README.md` "Layout") needs ≈ 990px (116 logo + 505 links/gaps + 40 divider +
-  65 toggle + 138 pill + 88 padding + gaps), so it cannot fit at 768px; the hamburger stays until `lg` (1024px)
-  while 03's `md` token values (logo height, pill size) still switch at `md`. This refines 03 §8's "nav" row;
-  03 keeps the tokens, 04 owns the switch point (D-03.6 delegates layout switches to 04).
+  **three locale rows** (`LangSwitcher variant="sheet"` — flat, no nested disclosure, 02 D-02.10), and the
+  "Book a tour" pill; opens/closes with 05's default `fade` + `rise` (OQ-05.3); focus is
+  trapped, `Escape` closes, the page behind is `inert`, body scroll is locked. The design's sheet list
+  (`docs/design/mobile/README.md` "Mobile-only behaviors") ends "…, Contact, EN·中文" — one language item;
+  with three locales that item becomes three rows, so the sheet is one row taller. Design sign-off is OQ-04.1;
+  the switcher's own appearance is OQ-04.11.
+- **D-04.9 Navigation row at `lg`, not `md`.** The full desktop nav (logo 50px + six links + divider + the
+  language switcher + pill, `docs/design/desktop/README.md` "Layout") needs ≈ 955px (116 logo + 505 links/gaps
+  + 40 divider + ≈ 32 switcher trigger + 138 pill + 88 padding + gaps), so it cannot fit at 768px; the hamburger
+  stays until `lg` (1024px) while 03's `md` token values (logo height, pill size) still switch at `md`. HD-10
+  narrows the switcher — the design's 65px "EN · 中文" text becomes a ≈ 32px bare `EN` trigger (D-04.16 ships
+  it with no chevron, ADJ-20), a ~33px saving that changes nothing: 955px is still ~185px past `md`. This
+  refines 03 §8's "nav" row; 03 keeps the tokens, 04 owns the switch point (D-03.6 delegates switches to 04).
 - **D-04.10 Menu day chips swap server-rendered sample lines.** `MenuSection` renders one `SampleLine` node per
   weekday (`home.menu.sampleLine` over `collections.menu.week.<day>`) and passes `Record<DayId, ReactNode>` plus
   `{ id, label }[]` (labels from the `weekdayShort` format) to `MenuDayChips` (client), which owns
@@ -101,7 +112,10 @@ Status: draft · seat writer-components · 2026-08-22
   `height`), `alt` from the per-locale collection/message key, `sizes` per breakpoint, radius from a 03 radius
   token name, `priority` only for the hero photo, `PhotoSlot` fill as the background (03 §9) so no blur data is
   required; `placeholder="blur"` only when `site.json` carries a `blurDataURL` (optional field, §10). Until
-  client photography lands, `Picture` renders `PhotoSlot` when `image` is absent.
+  client photography lands, `Picture` renders `PhotoSlot` when `image` is absent — **settled by HD-12**:
+  photography stays a placeholder, no stock imagery is bought or committed, which answers OQ-04.4. Dropping a
+  real photo in later is adding an `image` object to `site.json`; no component and no layout changes, because
+  the slot already reserves the photo's box.
 - **D-04.13 Rich text tag map is one helper.** `richTags()` in `src/components/ui/rich.tsx` maps 02's allowlist:
   `em` → `<em class="not-italic text-(--section-accent)">`, `strong` → `<strong>`, `link` → next-intl `Link`
   (href supplied by the caller), `count` → `CountUp`, `day` → `<strong>`. Every `t.rich` call uses it; a
@@ -119,6 +133,65 @@ Status: draft · seat writer-components · 2026-08-22
   the kind, numbered when a section holds more than one (`deco-hero-leaf-1`, `deco-philosophy-leaf-2`,
   `deco-visit-sun`), unique on the page, and `data-deco` repeats it so 08 can assert the pair in the DOM. They
   are stateless and receive server-rendered children, so the "sections are server" rule holds around them.
+- **D-04.16 The language switcher is one component with three options — a disclosure, not a toggle and not
+  three pills (HD-10).** 02 D-02.10 decided the *behaviour* (a trigger showing `LOCALE_META[current].shortLabel`
+  opening a list of endonyms); 04 decides the *markup*, and the decision is a **native `<details>` disclosure**:
+  `<summary>` is the trigger, a `<ul>` of three next-intl `Link`s is the panel. Reasons, in order of weight.
+  (a) It opens and closes with **no JavaScript**, which the two-name toggle got for free and a `useState`
+  dropdown would lose — and 02 requires each option to be a real `Link` that works unscripted (INV-02.7).
+  (b) `role="menu"` is **rejected**: these are links to URLs, not application commands, so the correct ARIA
+  pattern is a disclosure over a list, and `role="menu"` would promise arrow-key/typeahead semantics we do not
+  implement. (c) Three pills in the nav bar are **rejected**: the design allots the language control ≈ 65px
+  between the divider and the CTA pill (its "EN · 中文" text). Three endonym pills measure ≈ 265px (≈ 88px each
+  at the design's 10×16 chip padding, plus gaps) and even three `shortLabel` pills measure ≈ 145px — the first
+  pushes D-04.9's row past 1180px, past `lg` itself, and both redraw a nav bar the design fixed. A disclosure
+  keeps the control at ≈ 32px (a bare `shortLabel`, ADJ-20) and leaves the row alone. It stays a single file, so
+  D-04.1's counts (30 client components, 32 `'use client'` files, 86 named components) are unchanged.
+  **Contract.** `variant="nav"`: `<details>` + `<summary>` rendering `shortLabel` (`EN` / `简` / `繁`) and
+  nothing else — **no chevron, no disclosure glyph** (ADJ-20); `aria-label` =
+  `common.localeSwitcher.ariaLabel`; the panel is a `<ul>` in `routing.locales`
+  order (English · 简体中文 · 繁體中文) of `Link href={pathname} locale={target} hrefLang` items labelled with
+  `LOCALE_META[target].nativeName`, each carrying `aria-label` = `common.localeSwitcher.optionAriaLabel`
+  `{locale}` (the target's `nativeName`) and, for the current locale, `aria-current="true"`. Enhancement layered
+  on top by the same client component: `onClick` → `preventDefault()` → `registry.markLocaleSwap()` →
+  `router.replace(pathname + search + hash, {locale, scroll:false, transitionTypes:['locale-swap']})`
+  (02 D-02.10, 05 §5.6, 06 D-06.9); `Escape` and an outside `pointerdown` close the panel and return focus to
+  the `<summary>`; the panel closes on navigation. `variant="sheet"`: **no disclosure** — the same three `Link`s
+  render as flat rows inside `MobileMenu` (02: "on mobile the three items sit directly in the hamburger menu"),
+  wrapped in a `<ul>` carrying `aria-label` = `common.localeSwitcher.ariaLabel` so the group is still named
+  where there is no trigger to name it.
+  Nothing here enumerates a locale: the option list is `routing.locales.map(...)`, so a fourth locale is a
+  config entry (INV-04.12). **06's `Menu` is this markup, not a new component**: 06 D-06.9's sketch wraps the
+  option list in `<Menu triggerLabel ariaLabel>` and assigns the primitive to 04 — that wrapper is
+  `LangSwitcher`'s own `<details>`/`<summary>`, inlined, because the site has exactly one such control and a
+  generic `Menu` with a single consumer is speculation. Hence no new file and no count change. **The chevron
+  question is settled against the chevron (ADJ-20, 2026-08-22):** 02 D-02.10 wrote the trigger as `shortLabel`
+  "plus the design's `⌄` chevron", but that premise was never checked against the handoff. 06 checked it — the
+  handoff's only `⌄` is the hero scroll cue's ("scroll to come inside ⌄") and `[data-langtoggle]` is a bare nav
+  item with no disclosure affordance (06 OQ-06.10) — so the default trigger carries **no chevron** and 02's
+  mention is the stale half. The trigger's resting/hover/**open-state** appearance, including any glyph the
+  design owner may yet add, is decided in **06 OQ-06.10**, which 04 does not duplicate — see OQ-04.11 for the
+  markup half. Tokens are existing ones (§3.1).
+- **D-04.17 Brand names are ICU arguments supplied on the server, never literals (HD-6).** `brand.name` and
+  `brand.shortName` are localized values in `site.json` (02 D-02.19), so a component that wants a brand name
+  calls one helper — `brandArgs(locale)` in `src/content/site.ts`, returning
+  `{ brandName, brandShortName, brandNameOther }` where `brandNameOther` is
+  `site.brand.name[LOCALE_META[locale].brandPairLocale]` — and spreads it into `t(...)`. Three call sites at
+  launch: `Copyright` (`common.footer.copyright` `{year, brandName, brandNameOther, license}`),
+  `GallerySection` (`home.gallery.title` now takes `{brandShortName}` — the re-authoring 02 D-02.19 requires
+  after 绿茵园 was rejected; the `en` value becomes "Life at {brandShortName}") and 06's metadata
+  (`common.meta.titleTemplate`). The helper is the only place the pairing is read, so no component branches on
+  a locale (INV-02.9) and changing 优朵幼儿园 touches `site.json` and nothing else. `brandNameZh` and
+  `{brandNameZh}` are retired everywhere in this document.
+- **D-04.18 Provisional owner facts are invisible to components (HD-7 · HD-9 · HD-12).** Teacher names and
+  credentials, the phone number, the address, the licence number and the Yelp figures ship as sample defaults
+  registered in `site.json.provisional` (02 D-02.20). 04 needs **no provisional-aware component**: the registry
+  is read only by `pnpm validate:content`, so there is no badge, no wrapper, no "placeholder" styling and no
+  conditional. `collections.teachers.<id>.name|credentials` are ordinary per-locale collection text read exactly
+  like every other collection field, and `contact.phoneDisplay` / `contact.phone` are ordinary `site.json`
+  fields. The corollary this document enforces: **no component, prop, class, test fixture or layout table in 04
+  names a teacher** — geometry keys off the `head` flag and `site.teachers[]` order (D-04.6), never off "Ping",
+  so replacing the three names is a content edit that moves nothing (INV-04.11).
 
 ## Design
 
@@ -128,7 +201,7 @@ Status: draft · seat writer-components · 2026-08-22
 flowchart TD
   RL["app/[locale]/layout.tsx · RSC<br/>html lang + font vars · NextIntlClientProvider(common, visit, errors[, gallery])<br/>MotionProvider · SkipLink · SiteHeader · {children} · SiteFooter · Analytics"]
   RL --> HP["app/[locale]/page.tsx · RSC<br/>PageTransition → main[data-snap-root] → 8 × Section"]
-  RL --> SP["app/[locale]/&lt;route&gt;/page.tsx × 6 (+faq, enroll optional) · RSC<br/>PageTransition → SubpageBar → composites"]
+  RL --> SP["app/[locale]/&lt;route&gt;/page.tsx × 6 · RSC · faq+enroll reserved, not built<br/>PageTransition → SubpageBar → composites"]
   HP --> S1["HeroSection · RSC"] --> L1["Reveal / RevealItem · client"] --> C1["content · RSC children"]
   S1 --> D1["Sun · Leaf · ScrollCue · client (m.div outer, CSS inner)"]
   HP --> S4["MenuSection · RSC"] --> L4["MenuDayChips · client<br/>props: days[], lines Record&lt;day, ReactNode&gt;"]
@@ -149,9 +222,12 @@ exists for a root `not-found` is 06's call (02 §Routing).
 `PhilosophySection`, `ProgramsSection`, `MenuSection`, `GallerySection`, `TestimonialsSection`,
 `TeachersSection`, `VisitSection`. The six detail pages (`philosophy`, `programs`, `menu`, `gallery`, `reviews`,
 `team`; ids from `site.routes[]`) = `PageTransition` → `SubpageBar` → `<main id="main">` → `SubpageHeader` +
-the composites in §3.6, with a focusable `h1` (`tabIndex={-1}`) for 05 §5.7. Optional `faq` and `enroll` pages
-(OQ-02.7) reuse `SubpageBar` + `FaqList` / `InquiryForm source="enroll"`. Metadata per page is 06's
-(`<page>.meta.*`).
+the composites in §3.6, with a focusable `h1` (`tabIndex={-1}`) for 05 §5.7. **Six is the whole set** (HD-5,
+02 D-02.17): "Staff" in `docs/design/README.md` line 17 **is** Team — one page, the `team` namespace, and no
+`staff` component or namespace exists anywhere in this inventory. `faq` and `enroll` are **reserved, not
+built**: the plan records how they would compose (`SubpageBar` + `FaqList` / `InquiryForm source="enroll"`) so
+the route can ship the day content exists, and until then neither page, nor `FaqList`, nor a nav entry, nor a
+sitemap row, nor a Playwright row is created. Metadata per page is 06's (`<page>.meta.*`).
 
 **Boundary rule.** Props that cross to a client component are strings, numbers, booleans, plain arrays/objects
 of those, or React nodes rendered on the server — never functions, never collection objects, never `t`. Client
@@ -174,7 +250,7 @@ src/
 │   ├── globals.css                  @import tailwindcss; imports styles/tokens.css, styles/base.css, motion css (03/05)
 │   ├── [locale]/layout.tsx          html/body, fonts, providers, SkipLink, SiteHeader, SiteFooter (06 routes; 04 content)
 │   ├── [locale]/page.tsx            home · [locale]/{philosophy,programs,menu,gallery,reviews,team}/page.tsx
-│   ├── [locale]/{faq,enroll}/       OPTIONAL (OQ-02.7) · not-found.tsx · [...rest]/page.tsx · error.tsx* · global-error.tsx* (06)
+│   ├── [locale]/{faq,enroll}/       RESERVED, not built (D-02.17) · not-found.tsx · [...rest]/page.tsx · error.tsx* · global-error.tsx* (06)
 ├── components/
 │   ├── layout/        SiteHeader, PrimaryNav*, LangSwitcher*, BookTourButton, TrackedLink*, Hamburger*,
 │   │                  MobileMenu*, SiteFooter, LogoCard, FooterLinks*, Copyright, SkipLink, Section,
@@ -213,17 +289,17 @@ contract 08 checks. Sizes, radii, shadows and colours are always 03 tokens and a
 |---|---|---|---|---|---|---|---|
 | `SiteHeader` | S | — | `common.logo.alt`, `common.nav.<id>` for `site.nav.primary[]`, `common.nav.bookTour`; `site.routes[]` | desktop/README "Layout"; mobile/README "Layout" | `≥ lg`: logo 50px · `PrimaryNav` · divider · `LangSwitcher` · pill; `< lg`: logo 38px · pill · `Hamburger` (D-04.9) | nav items `Reveal variant="none"` (join the locale cascade) | `<header>` + `<nav aria-label={t('common.nav.label')}>` (key requested, §10); sticky, height `--nav-h`; never transformed (INV-05.4) |
 | `PrimaryNav` | C | `items: {id, anchor, label, href}[]` | as above — labels are resolved by `SiteHeader` and arrive as props; this component reads no messages | desktop/README "Layout" | row `≥ lg` only | none | client because it calls `usePathname()` from `src/i18n/navigation` and picks per item `<a href="#anchor">` on the home page vs next-intl `Link href` elsewhere (06 D-06.7); current section not tracked (no scroll spy at launch) |
-| `LangSwitcher` | C | `variant: 'nav' \| 'sheet'` | `common.localeSwitcher.label\|ariaLabel`; `LOCALE_META[code].shortLabel` and `nativeName` (02 rule 11 — endonyms live in `LOCALE_META`, never message keys); `routing.locales` | root README "EN ↔ 中文 toggle" | nav item `≥ lg`; sheet row `< lg` | calls `registry.markLocaleSwap()` then `router.replace(pathname, {locale, scroll:false, transitionTypes:['locale-swap']})` (02 D-02.10, 05 §5.6) | rendered as next-intl `Link` (`hreflang`), `aria-label`; no `locale === 'zh'` branch — iterates `routing.locales` |
+| `LangSwitcher` | C | `variant: 'nav' \| 'sheet'`, `current: Locale` (06 D-06.9's sketch passes it; `useLocale()` would also do) | `common.localeSwitcher.ariaLabel\|optionAriaLabel`; `LOCALE_META[id].shortLabel` and `nativeName` (02 rule 11 — endonyms live in `LOCALE_META`, never message keys); `routing.locales` | root README "EN ↔ 中文 toggle" — the design's one two-name item, now three options (D-04.16, OQ-04.11) | `nav`: `<details>` trigger `≥ lg` showing `shortLabel` and no chevron (ADJ-20), styled with the design's lang-toggle recipe (Nunito 700 14px, `--color-muted` → 03 §10's `#7a7160`), panel on `--color-nav-bg` + `--shadow-nav` + `--radius-card`; `sheet`: three flat rows `< lg`, no disclosure | option click calls `registry.markLocaleSwap()` then `router.replace(pathname + search + hash, {locale, scroll:false, transitionTypes:['locale-swap']})` (02 D-02.10, 05 §5.6, 06 D-06.9) | `<details>/<summary>` disclosure (works unscripted), **not** `role="menu"` — the options are links; `<ul>` of next-intl `Link`s with `hrefLang`, `aria-current="true"` on the current locale, `optionAriaLabel {locale}` per option; `Escape` / outside `pointerdown` close and restore focus to the `<summary>`; the option list is `routing.locales.map(...)`, so no locale id is written in the component (INV-02.9, INV-04.12) |
 | `BookTourButton` | S | `placement: 'nav' \| 'hero' \| 'sheet'` | `common.nav.bookTour` / `home.hero.ctaPrimary`; `site.nav.cta.href` (`/#visit`) | root README §1, §8 | nav pill 16px/12×24 vs 13px/10×16; hero full-width `< md` | hover lift (05 §5.10) | renders `TrackedLink event="cta_book_tour" params={{placement}}` (07 §4); the label and pill styling stay server-rendered children |
 | `TrackedLink` | C | `href`, `event: 'cta_book_tour' \| 'yelp_click'`, `params?: Record<string, string>`, `external?`, `children` | — (no copy: the label arrives as children) | — (behaviour only) | same | none | the only analytics `onClick` wrapper (07 §4's event list, via `src/lib/analytics.ts`); renders next-intl `Link`, or `<a target="_blank" rel="noopener noreferrer">` when `external`; used by `BookTourButton`, `YelpButton` and the home Yelp link; keyboard and focus behaviour are the underlying link's, so it adds no a11y surface |
 | `Hamburger` | C | `controlsId` | `common.nav.menuOpen\|menuClose` | mobile/README "Mobile-only behaviors" | `< lg` only | none | `<button aria-expanded aria-controls>`; hit area ≥ `--tap-min`; three bars are CSS |
-| `MobileMenu` | C | `links: {id, anchor, label, href}[]`, `contact: {href, label}`, `children` (LangSwitcher, BookTourButton nodes) | labels passed as props from `SiteHeader`; the sheet's link list is the third of 06 D-06.7's three `usePathname()` link lists and lives inside this already-client component | mobile/README "Hamburger opens nav menu (… Contact, EN·中文)" | sheet only `< lg`; desktop never mounts it | `fade` + `rise` open/close (05 OQ-05.3 default) | `role="dialog" aria-modal`, focus trap, `Escape` closes, background `inert`, scroll lock, focus returns to `Hamburger`; link hit areas ≥ 44px |
+| `MobileMenu` | C | `links: {id, anchor, label, href}[]`, `contact: {href, label}`, `children` (`LangSwitcher variant="sheet"`, BookTourButton nodes) | labels passed as props from `SiteHeader`; the sheet's link list is the third of 06 D-06.7's three `usePathname()` link lists and lives inside this already-client component | mobile/README "Hamburger opens nav menu (… Contact, EN·中文)" — that single language item is now three locale rows (D-04.8), one sheet row taller | sheet only `< lg`; desktop never mounts it | `fade` + `rise` open/close (05 OQ-05.3 default) | `role="dialog" aria-modal`, focus trap, `Escape` closes, background `inert`, scroll lock, focus returns to `Hamburger`; link hit areas ≥ 44px |
 | `SkipLink` | S | — | `common.a11y.skipToContent` | — (production a11y) | same | none | first focusable element; visible on focus; target `#main` |
 | `Section` | S | `id: SectionId`, `labelledBy`, `children`, `decor?` | `site.routes[].homeAnchor` for ids | root README "Section inventory", "Interactions & state" | padding `--section-py/--section-px` per view; gallery `px` bleed | none (shell is never transformed, INV-05.4) | `<section id aria-labelledby>`; `scroll-margin-top: var(--nav-h)`; `snap-start`; role variables (D-04.3) |
 | `SectionHeader` | S | `eyebrow?`, `title`, `intro?`, `introShort?`, `align`, `as: 'h1' \| 'h2'` | caller's keys | every section/subpage header | intro hidden `< md` where the key is desktop-only; gap 12px → 9–10px | wrapped in `Reveal variant="rise" id="<section>.header"` | heading element provided by `as`; one `h1` per page |
 | `SubpageBar` | S | `routeId` | `<page>.kicker`; `common.back.label\|labelShort` | desktop reference L350–352: tinted bar (the page's section colour at `.94`) + `backdrop-filter: blur(6px)` — the `--color-nav-bg` recipe (03 §2.4); `--shadow-subnav` on the bar, white pill + `--shadow-back` on `BackLink` (03 §5); token `--color-subnav-bg` requested, §10 | kicker always; back label ↔ `labelShort` via `md:` toggle | — | sticky under the header; `BackLink` first in tab order on detail pages |
 | `BackLink` | C | `homeAnchor`, `children` | — (label passed from `SubpageBar`) | root README "Detail subpages" | — | `router.replace('/#'+homeAnchor, {transitionTypes:['subpage-exit']})` (05 §5.7) | rendered as `Link` (works without JS); after navigation focus moves to the origin section heading |
-| `SiteFooter` | S | — | `common.nav.<id>` for `site.nav.footer[]` (six + contact), `common.footer.copyright` `{year, brandName, brandNameZh, license}`, `common.logo.alt`; `site.brand.*`, `site.license` | root README §8; desktop reference L336–342; mobile L245–249 | row `≥ lg` (logo card · links) vs centred column; license renders on both (D-02.13) | inside the Visit `fade` block | `<footer>` + `<nav aria-label>`; link colour `--color-link-visit`; contrast caveat 03 §10 |
+| `SiteFooter` | S | — | `common.nav.<id>` for `site.nav.footer[]` (six + contact), `common.footer.copyright` `{year, brandName, brandNameOther, license}`, `common.logo.alt`; `site.brand.name` (localized value) via `brandArgs(locale)`, `site.license` | root README §8; desktop reference L336–342; mobile L245–249 | row `≥ lg` (logo card · links) vs centred column; license renders on both (D-02.13) | inside the Visit `fade` block | `<footer>` + `<nav aria-label>`; link colour `--color-link-visit`; contrast caveat 03 §10 |
 | `LogoCard` / `FooterLinks` / `Copyright` | S / **C** / S | `height`, `items: {id, anchor, label, href}[]`, — | as `SiteFooter` | desktop/README §8 | logo 42px vs 34px | — | logo `alt` from `common.logo.alt`; copyright `<small>`; `FooterLinks` is client for the same reason as `PrimaryNav` — `usePathname()` per item (06 D-06.7) — and reads no messages, `SiteFooter` resolves the labels |
 | `SubpageHeader` | S | `page` | `<page>.eyebrow\|heading\|intro\|introShort` | desktop reference subpage headers | intro shortened `< md` | `Reveal rise` | `h1 tabIndex={-1}` focused after the slide (05 §5.7) |
 
@@ -288,18 +364,18 @@ loop table covers only the looping instances by design. A prop, not a new compon
 | `StonePath` | `items` | geometry from `programs/layout.ts` | row vs path | — | order = `site.programs[]` order on both views |
 | `MenuSection` | — | `home.menu.eyebrow\|title\|intro\|sampleLine\|link`; `menu.meals.<id>`; `collections.menu.week.<day>.<meal>`, `dietary.<id>.label\|labelShort`; `site.menu.days\|meals\|dietary[]`, `site.timeZone`; format `weekdayShort\|weekdayLong` | plate 230 → 190; chips 14 → 13px; sample line 15 → 13px; 2 dietary chips on home (`onHome`) | header `rise`; plate `roll`; chip row + sample line `drop`; chips/link row `rise` | plate dots are decorative with visible captions; see `MenuDayChips`; computes `defaultDay` server-side (D-04.10) |
 | `MenuDayChips` | C · `days: {id, label}[]`, `lines: Record<DayId, ReactNode>`, `defaultDay: DayId`, `groupLabel` | labels pre-formatted on the server (`weekdayShort`); `groupLabel` = `menu.dayChips.label` (requested, §10) | selected padding 8×20 / 9×16 (03 §4); hit area extended to 44px with `::before` inset, visual unchanged (03 §6) | `WordSwap` keyed by day (D-05.9) | `role="tablist"` with `role="tab" aria-selected`, arrow-key roving focus; the line is `role="tabpanel"`; `defaultDay` is server-computed so the selected chip is correct before hydration and without JS; `prefers-reduced-motion` → instant |
-| `SampleLine` | `day` | `home.menu.sampleLine` (`<day>{weekday}</day> — {breakfast} · {lunch} · {snack}`) with `weekdayLong` | max 580px | — | rendered five times on the server (D-04.10), one visible. **Menu-cell casing (02's "Flag for 04"):** the capitalised, comma-joined cells render **as written**, here and in `WeeklyMenuTable` / `DayCards` — no CSS `lowercase`, because `text-transform` does nothing to 中文 and would make the two locales disagree; casing stays 02's to edit |
+| `SampleLine` | `day` | `home.menu.sampleLine` (`<day>{weekday}</day> — {breakfast} · {lunch} · {snack}`) with `weekdayLong` | max 580px | — | rendered five times on the server (D-04.10), one visible. **Menu-cell casing (02's "Flag for 04"):** the capitalised, comma-joined cells render **as written**, here and in `WeeklyMenuTable` / `DayCards` — no CSS `lowercase`, because `text-transform` does nothing to Chinese text and would make `en` disagree with both Chinese locales; casing stays 02's to edit |
 | `DietaryChips` | `items: {id, label, labelShort}[]` | `collections.menu.dietary.<id>.label\|labelShort`; `site.menu.dietary[] {id, onHome}` | `label` ↔ `labelShort` toggle | `rise` | `<ul>`; the chip emoji is inline in the label string (02: `dietary[] {id, onHome}`, "chip emoji lives in the label text"), so there is no `icon` field and no `Emoji` child here |
-| `GallerySection` | — | `home.gallery.eyebrow\|title\|intro\|link`; `collections.gallery.photos.<id>.alt\|caption?`; `site.gallery.photos[] {id, src, width, height, category, wide, rotation?, onHome, onMobile}` | `≥ lg`: 980×410 field, 7 slots (`%` of the field, `aspect-ratio 980/410`); `< lg`: 420px-tall fluid field, 5 slots anchored left/right (reference L152–156); section `px` 10px `< md` | header `rise`; polaroids `polaroid` stagger, side by index parity; link `rise` | `<ul>`/`figure` per polaroid; `alt` per photo; `html { overflow-x: clip }` absorbs fly-in bleed (05 §5.8) |
+| `GallerySection` | — | `home.gallery.eyebrow\|title\|intro\|link` — `title` takes `{brandShortName}` from `brandArgs(locale)` (D-04.17: "Life at {brandShortName}" / "{brandShortName}的日常"; 绿茵园 is rejected copy and must never reappear); `collections.gallery.photos.<id>.alt\|caption?`; `site.gallery.photos[] {id, src, width, height, category, wide, rotation?, onHome, onMobile}` | `≥ lg`: 980×410 field, 7 slots (`%` of the field, `aspect-ratio 980/410`); `< lg`: 420px-tall fluid field, 5 slots anchored left/right (reference L152–156); section `px` 10px `< md` | header `rise`; polaroids `polaroid` stagger, side by index parity; link `rise` | `<ul>`/`figure` per polaroid; `alt` per photo; `html { overflow-x: clip }` absorbs fly-in bleed (05 §5.8) |
 | `PolaroidField` | `photos`, `slots` | geometry `gallery/layout.ts` (D-04.6) | 7 vs 5 slots; photos with `onMobile: false` hidden `< lg` | stagger container never transformed | — |
-| `TestimonialsSection` | — | `home.testimonials.title\|countLine\|link`; `common.brand.yelp`, `common.rating.ariaLabel`, `common.links.newTab`, `common.punctuation.quoteOpen\|quoteClose`; `collections.testimonials.<id>.quote\|author\|relation`; `site.yelp.rating\|reviewCount\|url`; `site.testimonials[] {id, rating, avatar?, onHome, onMobile}` | `≥ lg`: 3-col grid gap 24, middle pushed 30px, tails L/R/L; `< lg`: stacked, alternating tails, Karen T. hidden (`onMobile:false`) | header `rise` (contains both `CountUp`s); bubbles `bubble` stagger; link `rise` | `h2` title; count line `aria-live="off"` (count-up is decorative — the server HTML already holds the final number); link to Yelp via `TrackedLink external` → `target="_blank" rel="noopener noreferrer"` (§5.6) + `VisuallyHidden` `common.links.newTab` |
+| `TestimonialsSection` | — | `home.testimonials.title\|countLine\|link`; `common.brand.yelp`, `common.rating.ariaLabel`, `common.links.newTab`, `common.punctuation.quoteOpen\|quoteClose`; `collections.testimonials.<id>.quote\|author\|relation`; `site.yelp.rating\|reviewCount\|url`; `site.testimonials[] {id, rating, avatar?, onHome, onMobile}` | `≥ lg`: 3-col grid gap 24, middle pushed 30px, tails L/R/L; `< lg`: stacked, alternating tails, `karenT` hidden (`onMobile:false`) | header `rise` (contains both `CountUp`s); bubbles `bubble` stagger; link `rise` | `h2` title; count line `aria-live="off"` (count-up is decorative — the server HTML already holds the final number); link to Yelp via `TrackedLink external` → `target="_blank" rel="noopener noreferrer"` (§5.6) + `VisuallyHidden` `common.links.newTab` |
 | `ReviewsHeader` | `variant: 'home' \| 'page'` | `home.testimonials.countLine` / `reviews.countLine` with `<count>` → `CountUp`; rating via `{rating, number, rating}` | — | `rise` | `StarRow`; rating text visible |
 | `YelpBadge` | — | `common.brand.yelp` | 5×11 → 4×9 padding | — | `--color-yelp` fill, white text (AA) |
 | `SpeechBubble` | `item`, `tail` | `quote` (rich `em`), `author`, `relation`, quote marks from `common.punctuation.*` | avatar 44 → 38px (`PhotoSlot` circle when no `avatar`) | `Bubble` | `<figure><blockquote>` + `<figcaption>`; stars `aria-hidden` |
-| `TeachersSection` | — | `home.teachers.eyebrow\|title\|intro\|introShort\|link`; `team.roles.head\|assistant`; `collections.teachers.<id>.name\|credentials\|summary\|summaryShort\|photoAlt`; `site.teachers[] {id, head, icon, photo}` | `≥ lg`: Reyes 230px (offset 44) · Ping 300px · Chen 230px, gaps 40; `< lg`: Ping first (CSS `order`), assistants side-by-side 2-col | header `rise`; frames `swing` stagger; link `rise` | DOM order = `site.teachers[]` (desktop reading order); mobile reorder is visual only — cards hold no interactive content, so tab order is unaffected; `h3` names |
-| `HeadTeacherCard` | `teacher` | `name`, `credentials` (Eyebrow sm), `summary\|summaryShort`, `photoAlt`; `team.roles.head` badge | photo 196 → 150px, badge 5×13 | `TeacherFrame` | `Picture` circle + `Chip tone="sage"` badge (uppercase via `Eyebrow`) |
-| `AssistantCard` | `teacher`, `variant: 'home' \| 'page'` | `name`, `summary\|summaryShort` (home) / `bio\|bioShort` (page), `team.roles.assistant` | `IconDot` 56 → 48px | `TeacherFrame` | `Emoji aria-hidden` (name carries the meaning) |
-| `VisitSection` | — | `home.visit.title\|subtitle\|subtitleShort\|info.*\|map.alt`; `common.format.dayRange\|timeRange`; formats `weekdayLong`, `timeShort` over `site.hours`; `site.images.map`, `site.contact.mapsUrl\|email\|phone` | `≥ lg`: 1.2fr/1fr grid gap 30 max 1000; `< lg`: stacked; photo 150 → 120px; `--color-focus` = sun here (03 D-03.11) | three blocks `fade`; `Sun`, `Leaf` | `h2` title (rich, `\n`); `InfoPanel` is a `<dl>`; section is the `#visit` target (07 §6, 06) |
+| `TeachersSection` | — | `home.teachers.eyebrow\|title\|intro\|introShort\|link`; `team.roles.head\|assistant`; `collections.teachers.<id>.name\|credentials\|summary\|summaryShort\|photoAlt`; `site.teachers[] {id, head, icon, photo}` | `≥ lg`: triptych in `site.teachers[]` order — assistant 230px (offset 44) · `head` 300px · assistant 230px, gaps 40; `< lg`: `head` first (CSS `order`), assistants side-by-side 2-col. Geometry keys off the `head` flag and array position, never off a name (D-04.18) | header `rise`; frames `swing` stagger; link `rise` | DOM order = `site.teachers[]` (desktop reading order); mobile reorder is visual only — cards hold no interactive content, so tab order is unaffected; `h3` names, read from the collection (provisional per 02 D-02.20, but ordinary text to this component) |
+| `HeadTeacherCard` | `teacher` | `name`, `credentials` (Eyebrow sm), `summary\|summaryShort`, `photoAlt`; `team.roles.head` badge | photo 196 → 150px, badge 5×13 | `TeacherFrame` | `Picture` circle (→ `PhotoSlot` until the headshot exists, HD-12) + `Chip tone="sage"` badge (uppercase via `Eyebrow`); `name` and `credentials` are collection text — provisional sample defaults today (02 D-02.20), never literals here (D-04.18) |
+| `AssistantCard` | `teacher`, `variant: 'home' \| 'page'` | `name`, `summary\|summaryShort` (home) / `bio\|bioShort` (page), `team.roles.assistant` | `IconDot` 56 → 48px | `TeacherFrame` | `Emoji aria-hidden` (name carries the meaning); the icon is `site.teachers[].icon`, so which assistant gets which emoji is data, not a name test (D-04.18) |
+| `VisitSection` | — | `home.visit.title\|subtitle\|subtitleShort\|info.*\|map.alt`; `common.format.dayRange\|timeRange`; formats `weekdayLong`, `timeShort` over `site.hours`; `site.images.map`, `site.contact.mapsUrl\|email\|phone\|phoneDisplay` (`phone` is E.164 for `tel:`, `phoneDisplay` is what is printed — 02 §Shared config) | `≥ lg`: 1.2fr/1fr grid gap 30 max 1000; `< lg`: stacked; photo 150 → 120px; `--color-focus` = sun here (03 D-03.11) | three blocks `fade`; `Sun`, `Leaf` | `h2` title (rich, `\n`); `InfoPanel` is a `<dl>`; section is the `#visit` target (07 §6, 06) |
 | `InfoPanel` | `hours`, `city`, `languages` | `home.visit.info.visitLabel\|hoursLabel\|languagesLabel\|city\|languages\|mapsLink`; `common.links.newTab` | two-line hours `≥ md` (`dayRange` / `timeRange` as two values, 02), one line `< md` | `fade` | `<dl>`; labels via `Eyebrow size="panel"`; contrast caveat (03 §10 panel labels) |
 | `MapPhoto` | — | `home.visit.map.alt`; `site.images.map`, `site.contact.mapsUrl` | 150 → 120px, r16 → r14 | `fade` | `Picture` wrapped in a plain external `<a>` when `mapsUrl` exists (07 §6 — no embed, and 07 §4 defines no map event, so no `TrackedLink`) |
 | `InquiryForm` | C · `source: 'home' \| 'enroll'`, `contact: {email, phone?}`, `turnstileSiteKey`, `noscript: ReactNode` (the server-rendered `NoscriptFallback`) | `visit.form.*` (client namespace `visit`), `useLocale()` for the hidden `locale` field; `useFormatter` `dateMonth` for month options | 2-col field grid → stacked (age/start share a row on mobile); inputs 44 → 46px; submit full-width `< md` | in the Visit `fade` block | 07 §1 contract (labels bound, `aria-describedby`, `aria-invalid`, live region, focus management, `aria-busy` never `disabled`) plus `lang` on the `<form>` = the page locale (07 §1, so IMEs and screen readers switch); no `autoFocus` on arrival (07 §6) |
@@ -307,7 +383,7 @@ loop table covers only the looping instances by design. A prop, not a new compon
 | `FormField` | C · `name`, `label`, `control`, `error?`, `help?` | labels from props (`InquiryForm` resolves keys) | — | — | `<label htmlFor>`; error sibling with `id` |
 | `Turnstile` | C · `siteKey`, `onToken`, `locale` | — | reserved height; loads when the Visit section is in view or the form gains focus (07 §1) | — | reserved height so no shift; `aria-live` handled by the form |
 | `SuccessPanel` / `FormAlert` | C · `SuccessPanel {onReset}`, `FormAlert {messageKey}` — both rendered by `InquiryForm` from client state | `visit.form.status.success.*`, `visit.form.errors.<code>` via `useTranslations('visit.form')` (the `visit` namespace is already on the client, §5.2) | panel replaces the form in the same card (07 D-07.4); banner sits above the submit | — | success heading `tabIndex={-1}` receives focus; alert `role="alert"`; **client because the key is chosen at runtime** from the wire code the server never saw (D-04.14) |
-| `NoscriptFallback` | S — passed to `InquiryForm` as the `noscript` prop | `visit.form.noscript {email, phone}`; `site.contact.email\|phone` | replaces the submit button without JS (07 D-07.5) | — | plain `<noscript>` with `mailto:` / `tel:` links; no client code, so it survives the client-boundary lint (INV-04.1) |
+| `NoscriptFallback` | S — passed to `InquiryForm` as the `noscript` prop | `visit.form.noscript {email, phone}` and `visit.form.directContact {email, phone}`; `{phone}` is `site.contact.phoneDisplay` (the printed form) while the `tel:` href is `site.contact.phone` (E.164) — never the same field twice | replaces the submit button without JS (07 D-07.5) | — | plain `<noscript>` with `mailto:` / `tel:` links; no client code, so it survives the client-boundary lint (INV-04.1) |
 
 `InquiryForm` follows 07 D-07.4 exactly: **no toasts** (every outcome renders inline — `SuccessPanel` in the
 card, `FormAlert` above the submit), **no form library at launch** (`react-hook-form` only if every 07 §1
@@ -330,8 +406,8 @@ widget — with the disabled `Select…` placeholder option coming from JSON.
 | `GalleryFilters` / `GalleryGrid` / `Lightbox` | gallery | internal to `GalleryExplorer` | — | — | — | — |
 | `ReviewsList` / `ReviewCard` | reviews | — | `collections.testimonials.*` (4; `alanW` `onHome:false`, `karenT` `onMobile:false`), `common.punctuation.*`; `site.testimonials[]` | 2-col → stacked (3 cards) | `riseChild` stagger | `<ul>` of `<figure>`; `·` separator is punctuation |
 | `YelpButton` | reviews | — | `reviews.yelpCta`, `common.links.newTab`; `site.yelp.url` | centred | `rise` | `Button tone="yelp"` rendered through `TrackedLink external event="yelp_click"`; `↗` stays in the string |
-| `TeamBio` | team | — | `team.roles.*`, `team.footnote`; `collections.teachers.ping.bio\|bioShort\|tags[]`, assistants `bio`; `site.teachers[]` | head photo 160 → 120px; tags 3 → 2 (`tags[2]` hidden `< md`); assistants 2-col → stacked | head block `rise`; assistants `riseChild` | `h2` head name; DOM order head first on this page (different composition from home) |
-| `FaqList` | faq (optional) | — | `faq.*`, `collections.faq.<id>.question\|answer` | — | `riseChild` | `<details>/<summary>` per item — no custom accordion |
+| `TeamBio` | team | — | `team.roles.*`, `team.footnote`; the `head` teacher's `collections.teachers.<id>.bio\|bioShort\|tags[]`, assistants `bio`; `site.teachers[]` (ids are stable and outlive the provisional names — D-04.18) | head photo 160 → 120px (`PhotoSlot` until it exists); tags 3 → 2 (`tags[2]` hidden `< md`); assistants 2-col → stacked | head block `rise`; assistants `riseChild` | `h2` head name; DOM order head first on this page (different composition from home) |
+| `FaqList` | faq — **reserved, not built** (HD-5 / 02 D-02.17) | — | `faq.*`, `collections.faq.<id>.question\|answer` | — | `riseChild` | `<details>/<summary>` per item — no custom accordion. The row records the composition; the file is not created while `site.json.faq[]` is empty |
 | `ErrorPanel` | not-found / error | C · `kind`, `reset?` | `errors.notFound.*` / `errors.serverError.*` via `useTranslations('errors')` (client namespace `errors`, 02 D-02.16) | — | none | `h1`; CTA `Link` to `/`; client because `app/[locale]/error.tsx` imports it (06 §6.2) — `not-found.tsx` stays a server component and renders the same component |
 
 Component count: 14 (chrome) + 12 (ui, incl. the `richTags` helper) + 6 (motion) + 9 (decor) + 31 (home sections
@@ -342,6 +418,11 @@ The ADJ-11 flips (`PrimaryNav`, `FooterLinks`, `ErrorPanel`, and the sheet's lin
 `MobileMenu`) change kinds, not membership, so the named total stays 86; the client column moves 27 → 30. The two
 route-file boundaries `app/[locale]/error.tsx` and `app/[locale]/global-error.tsx` are 06's files, not components
 in this inventory, so they sit outside the 86 while counting toward the 32 `'use client'` files D-04.1 closes over.
+HD-5 and HD-10 leave every count intact. **HD-5**: one of the 86, `FaqList`, is reserved and not built while
+`site.json.faq[]` is empty, so **85 ship at launch**; Enrollment adds no component (it is `InquiryForm
+source="enroll"`), and Staff was never a component because Staff is Team. **HD-10**: the third locale changes
+no count either — `LangSwitcher` is one file whether it offers two options or three (D-04.16), so the client
+column stays 30.
 
 ### 4 · Section → key map
 
@@ -355,22 +436,22 @@ siblings, `views` become CSS toggles, and flags come from `site.json`.
 
 | Section (id) | Message keys (namespace.key) | Collections / shared data | Per-view and surface rules |
 |---|---|---|---|
-| Header (`SiteHeader`) | `common.logo.alt`, `common.nav.philosophy\|programs\|menu\|gallery\|reviews\|team\|contact\|bookTour\|menuOpen\|menuClose\|label*`, `common.localeSwitcher.label\|ariaLabel`, `common.a11y.skipToContent` | `site.nav.primary[]`, `site.nav.cta`, `site.routes[]`, `routing.locales`, `LOCALE_META[].shortLabel\|nativeName` (locale-invariant data, 02 rule 11) | `contact` only in the sheet and footer (R1: desktop-only surface → now data: `site.nav.footer[]` + sheet list). **`contact` target = `/#visit`**: there is no contact route and no `#contact` anchor in `site.routes[]`, and the Visit section is the address/hours/form surface, so `site.nav.footer[]`'s `contact` entry carries `href: "/#visit"` — the same href as `site.nav.cta` (02 §Shared config). `localeSwitcher.label` differs per locale by content ("EN · 中文" / "中文 · EN") |
+| Header (`SiteHeader`) | `common.logo.alt`, `common.nav.philosophy\|programs\|menu\|gallery\|reviews\|team\|contact\|bookTour\|menuOpen\|menuClose\|label*`, `common.localeSwitcher.ariaLabel\|optionAriaLabel`, `common.a11y.skipToContent` | `site.nav.primary[]`, `site.nav.cta`, `site.routes[]`, `routing.locales`, `LOCALE_META[].shortLabel\|nativeName` (locale-invariant data, 02 rule 11) | `contact` only in the sheet and footer (R1: desktop-only surface → now data: `site.nav.footer[]` + sheet list). **`contact` target = `/#visit`**: there is no contact route and no `#contact` anchor in `site.routes[]`, and the Visit section is the address/hours/form surface, so `site.nav.footer[]`'s `contact` entry carries `href: "/#visit"` — the same href as `site.nav.cta` (02 §Shared config). `common.localeSwitcher.label` — the two-name "{current} · {other}" template — is **retired** (02 rule 11, HD-10): a three-option menu has no two-name label, so the trigger's visible text is `LOCALE_META[current].shortLabel` (data) and the two accessible strings are `ariaLabel` ("Change language") and `optionAriaLabel` ("Switch to {locale}", one per option) |
 | Hero (`hero`) | `home.hero.badge\|title\|subtitle\|subtitleShort\|ctaPrimary\|ctaSecondary\|trust.yelp\|trust.ages\|trust.agesShort\|mealsCard.title\|mealsCard.subtitle\|mealsCard.subtitleShort\|scrollCue\|photo.alt`, `common.rating.ariaLabel` | `site.yelp.rating`, `site.images.hero`, `site.hero.mealsIcon*`, `site.nav.cta.href`, `site.routes[philosophy]` | three `*Short` toggles; `title` `\n` honoured `≥ md` only; rich `em` |
 | Philosophy (`philosophy`) | `home.philosophy.eyebrow\|quote\|attribution\|badgeCertified\|badgeBilingual\|link\|photo.alt` | `site.images.philosophy`, `site.routes[philosophy]` | `badgeCertified` R1 `var:wireframe` is ignored (wireframe copy is not a surface) |
 | Programs (`programs`) | `home.programs.eyebrow\|title\|intro\|link` | `collections.programs.<id>.name\|ageLabel\|summary\|summaryShort\|photoAlt`; `site.programs[] {id, ageMonths, ratio, photo, featured}` | `intro` desktop-only → hidden `< md`; `summaryShort` (infant) toggle; `featured` → raised stone |
 | Menu (`menu`) | `home.menu.eyebrow\|title\|intro\|sampleLine\|link`, `menu.meals.breakfast\|lunch\|snack`, `menu.dayChips.label*` | `collections.menu.week.<day>.<meal>` (15), `collections.menu.dietary.<id>.label\|labelShort`; `site.menu.days\|meals\|dietary[] {id, onHome}`, `site.timeZone`; formats `weekdayShort\|weekdayLong` | `intro` desktop-only; dietary chips: home shows `onHome` (2), page shows all (3); `labelShort` `< md`; weekday names are never stored (02 D-02.6) |
-| Gallery (`gallery`) | `home.gallery.eyebrow\|title\|intro\|link` | `collections.gallery.photos.<id>.alt\|caption?`; `site.gallery.photos[] {…, onHome, onMobile, rotation?}` | home = `onHome` photos; 7 `≥ lg` / 5 `< lg` via `onMobile`; slots from `layout.ts` |
+| Gallery (`gallery`) | `home.gallery.eyebrow\|title\|intro\|link` (`title` takes `{brandShortName}`, D-04.17) | `collections.gallery.photos.<id>.alt\|caption?`; `site.gallery.photos[] {…, onHome, onMobile, rotation?}` | home = `onHome` photos; 7 `≥ lg` / 5 `< lg` via `onMobile`; slots from `layout.ts` |
 | Testimonials (`testimonials`) | `home.testimonials.title\|countLine\|link`, `common.brand.yelp`, `common.rating.ariaLabel`, `common.links.newTab`, `common.punctuation.quoteOpen\|quoteClose` | `collections.testimonials.<id>.quote\|author\|relation`; `site.yelp.rating\|reviewCount\|url`; `site.testimonials[] {id, rating, avatar?*, onHome, onMobile}` | `meiL`, `davidPriya` everywhere; `karenT` `onMobile:false`; `alanW` `onHome:false`; `countLine` ICU plural + `<count>` |
 | Teachers (`teachers`) | `home.teachers.eyebrow\|title\|intro\|introShort\|link`, `team.roles.head\|assistant` | `collections.teachers.<id>.name\|credentials\|summary\|summaryShort\|photoAlt`; `site.teachers[] {id, head, icon, photo}` | `introShort`, `summaryShort` toggles; only `head` has `photo`/`credentials`; order = `site.teachers[]`, mobile `order` CSS |
-| Visit (`visit`) + footer | `home.visit.title\|subtitle\|subtitleShort\|info.visitLabel\|info.hoursLabel\|info.languagesLabel\|info.city\|info.languages\|info.mapsLink\|map.alt`, `common.format.dayRange\|timeRange`, `common.links.newTab`, `visit.form.*` (all of 02 §Key naming 8), `common.footer.copyright`, `common.nav.<id>` (footer), `common.logo.alt` | `site.hours`, `site.images.map`, `site.contact.mapsUrl\|email\|phone`, `site.nav.footer[]`, `site.brand.name\|nameZh`, `site.license`; formats `weekdayLong`, `timeShort` | hours = two formatted values (no `Short`); copyright + license on both views (D-02.13); `noscript` uses `{email}`/`{phone}` |
+| Visit (`visit`) + footer | `home.visit.title\|subtitle\|subtitleShort\|info.visitLabel\|info.hoursLabel\|info.languagesLabel\|info.city\|info.languages\|info.mapsLink\|map.alt`, `common.format.dayRange\|timeRange`, `common.links.newTab`, `visit.form.*` (all of 02 §Key naming 8), `common.footer.copyright`, `common.nav.<id>` (footer), `common.logo.alt` | `site.hours`, `site.images.map`, `site.contact.mapsUrl\|email\|phone\|phoneDisplay`, `site.nav.footer[]`, `site.brand.name` + `LOCALE_META[locale].brandPairLocale` through `brandArgs(locale)`, `site.license`; formats `weekdayLong`, `timeShort` | hours = two formatted values (no `Short`); copyright + license on both views (D-02.13); the copyright's arguments are `{year, brandName, brandNameOther, license}` — `{brandNameZh}` is retired (D-04.17); `noscript`/`directContact` use `{email}` and `{phone}` = `contact.phoneDisplay` |
 | Philosophy page | `philosophy.kicker\|eyebrow\|heading\|intro\|introShort\|dayTitle\|principles.<id>.title\|body\|day.<id>.title\|body\|badges.*\|meta.*`, `common.back.label\|labelShort` | `site.principles[] {id, icon}`, `site.dailyRhythm[] {id, time}` | badges `ams`/`bilingualDaily` desktop-only; R1 marks four timeline rows `var:mobile` — §10 asks 02 for `*Short` there |
 | Programs page | `programs.kicker\|eyebrow\|heading\|ratioLabel\|footnote\|meta.*` | `collections.programs.<id>.description\|highlights[]` + home fields; `site.programs[].ratio` | highlights index ≥ 1 hidden `< md` |
 | Menu page | `menu.kicker\|eyebrow\|heading\|intro\|note\|meals.*\|meta.*` | `collections.menu.*`; `site.menu.*` | `intro` desktop-only; table `≥ md` / cards `< md` |
 | Gallery page | `gallery.kicker\|heading\|hint\|filters.all\|meta.*`, `common.lightbox.close\|prev\|next` | `collections.gallery.categories.<id>`, `photos.<id>.alt\|caption?`; `site.gallery.categories[] {id, onMobile}`, `photos[] {…, wide, onMobile}` | `celebrations` `onMobile:false`; 8 → 6 photos via `onMobile`; `hint` R1 `var:wireframe` ignored |
 | Reviews page | `reviews.kicker\|heading\|countLine\|yelpCta\|meta.*`, `common.brand.yelp`, `common.links.newTab`, `common.punctuation.*` | all four testimonials; `site.yelp.*` | `karenT` hidden `< md` |
 | Team page | `team.kicker\|heading\|footnote\|roles.*\|meta.*` | `collections.teachers.<id>.bio\|bioShort\|tags[]`; `site.teachers[]` | `bioShort` toggle; `tags[2]` hidden `< md` |
-| Errors / optional pages | `errors.notFound.*`, `errors.serverError.*`, `faq.*`, `visit.kicker\|heading` (enroll) | `collections.faq.*`, `site.faq[]` | OQ-02.7 |
+| Errors / reserved pages | `errors.notFound.*`, `errors.serverError.*`, `faq.*`, `visit.kicker\|heading\|meta.*` (enroll) | `collections.faq.*`, `site.faq[]` | errors ship; FAQ and Enrollment are **reserved, not built** (HD-5, D-02.17) — their namespaces stay optional and out of parity, nav, sitemap and the Playwright matrix while `site.faq[]` is empty |
 
 `*` = key or field requested from 02 in §10 (not yet in the contract).
 
@@ -379,13 +460,15 @@ siblings, `views` become CSS toggles, and flags come from `site.json`.
 **5.1 Server side.** Sections call `getTranslations('<namespace>.<section>')` (or `useTranslations` when
 synchronous) and the collection loaders; they never receive copy as props. Formatting (`weekday*`,
 `timeShort`, `rating`, `dateMonth`) happens on the server wherever the result is static. The `t.rich` tag
-mapping is `richTags()` (D-04.13). `year` for the copyright is computed at build (02 §Plurals).
+mapping is `richTags()` (D-04.13). `year` for the copyright is computed at build (02 §Plurals). Brand-name ICU
+arguments come from one server helper, `brandArgs(locale)` → `{ brandName, brandShortName, brandNameOther }`
+(D-04.17); a component never reads `site.brand.name[...]` itself and never writes a locale id to index it.
 
 **5.2 Client namespaces per component** (02 D-02.16; `NextIntlClientProvider` receives the union):
 
 | Client component | Namespaces read on the client | Formats | Everything else arrives as |
 |---|---|---|---|
-| `LangSwitcher` | `common` (`localeSwitcher.*`) | — | `routing.locales` and `LOCALE_META` endonyms (config, not content — 02 rule 11) |
+| `LangSwitcher` | `common` (`localeSwitcher.ariaLabel\|optionAriaLabel`) | — | `routing.locales` (the option list and its order) and `LOCALE_META` `shortLabel`/`nativeName`/`hreflang` — config, not content (02 rule 11); the retired `localeSwitcher.label` is read by nothing |
 | `PrimaryNav`, `FooterLinks` | — | — | resolved `{id, anchor, label, href}[]` as props; only `usePathname()` is read on the client (06 D-06.7) |
 | `ErrorPanel` | `errors` (`notFound.*`, `serverError.*`) | — | `kind` and `reset` from the route boundary |
 | `MobileMenu`, `Hamburger` | `common` (`nav.menuOpen\|menuClose`) | — | link labels/hrefs as props |
@@ -414,13 +497,17 @@ hero photo only. No `<img>` outside `Picture`/`PhotoSlot`; the logo is `Picture`
 
 **5.4 Emoji and glyphs.** Icon emoji come from `site.json` `icon` fields and render through `Emoji` (D-03.8);
 sentence emoji stay in the string. `→ ↗ ← ★ ⌄` stay inside strings or `StarRow` and never inside tracked
-uppercase text (03 §3.1).
+uppercase text (03 §3.1). `⌄` occurs in exactly one place — inside `home.hero.scrollCue` — and the language
+switcher adds none: its trigger renders `LOCALE_META[current].shortLabel` and nothing else (D-04.16, ADJ-20),
+so no component invents punctuation of its own and 08's `allowedStrings` list needs no new entry.
 
 **5.5 Hit targets, uppercase, min-height.** Every interactive element ≥ `--tap-min` (day chips and filter chips
 extend their hit area with padding/pseudo-element, visual unchanged — 03 §6). `uppercase` is applied only by
-`Eyebrow` (never on `badgeBilingual`, `contact.languages`, tags with `中文`). Where 08's en/zh height snapshot
-shows a section differing by more than one text line (03 §3.3), 04 requests a `--section-minh-<id>` token from
-03 and applies it on the `Section` — no raw px.
+`Eyebrow` (never on `badgeBilingual`, `contact.languages`, tags with `中文`). Where 08's per-locale height
+snapshot (`en` vs `zh-Hans` vs `zh-Hant`) shows a section differing by more than one text line (03 §3.3), 04
+requests a `--section-minh-<id>` token from 03 and applies it on the `Section` — no raw px. Three locales make
+this more likely, not less: `zh-Hant` is routinely a character or two longer than `zh-Hans` for the same
+sentence, so the snapshot compares all three against `en`, not a single 中文 column.
 
 **5.6 Links.** All internal links use `Link` from `src/i18n/navigation.ts` (INV-02.7); home-section links
 resolve per 06 D-06.7 — a plain `<a href="#<homeAnchor>">` when `usePathname()` reports `'/'`, next-intl
@@ -438,14 +525,14 @@ at `md`; 04's layout switches are:
 
 | Component | `< md` (390 spec) | `md`–`lg` | `≥ lg` (1280 spec) |
 |---|---|---|---|
-| `SiteHeader` | logo 38, pill 13px, hamburger | md tokens (logo 50, pill 16) + hamburger (D-04.9) | full row: links · divider · toggle · pill |
+| `SiteHeader` | logo 38, pill 13px, hamburger (the three locale rows live in the sheet) | md tokens (logo 50, pill 16) + hamburger (D-04.9) | full row: links · divider · switcher trigger (`EN`, no chevron) · pill |
 | `HeroSection` | stacked, full-width CTA, `agesShort`, `subtitleShort`, no `\n`, 1 leaf | desktop type, single column, `\n` honoured | 3 leaves, photo 1040×380 |
 | `PhilosophySection` | badges stacked, photo 190px | desktop type | photo 560×260 |
 | `ProgramsSection` | alternating path (stones 104/122) | path with desktop type | 3-col row 200/236/200, featured raised |
 | `MenuSection` | plate 190, chips 13px, `labelShort` | desktop sizes, chip row wraps | — |
 | `GallerySection` | 5 slots, 420px field, `px` 10px | 5 slots, desktop frame | 7 slots, 980×410 field |
 | `TestimonialsSection` | 2 stacked bubbles, alternating tails | stacked | 3-col grid, middle +30px |
-| `TeachersSection` | Ping first, assistants 2-col, names 22/17 | Ping first, desktop type | triptych, assistants offset 44px |
+| `TeachersSection` | `head` first, assistants 2-col, names 22/17 | `head` first, desktop type | triptych, assistants offset 44px |
 | `VisitSection` | stacked, inputs 46px, photo 120 | stacked, inputs 44px | 1.2fr/1fr grid gap 30 |
 | `SiteFooter` | centred column, copyright 10px | column | row, 14px links |
 | Subpages | single column; `DayCards`; 2-col gallery grid; 3 reviews | desktop type; `WeeklyMenuTable`; 3-col grid | as designed (desktop reference) |
@@ -459,11 +546,19 @@ invented.
   each home section `<section aria-labelledby>`; one `h1` per page (hero title / subpage heading); `h2` per
   section; `h3` for items. The Philosophy section's visible heading is the pull-quote, so its `h2` is a
   visually-hidden eyebrow text (§3.5).
-- **Focus order.** Skip link → header (logo, links, toggle, CTA / hamburger) → main content in DOM order →
+- **Focus order.** Skip link → header (logo, links, switcher, CTA / hamburger) → main content in DOM order →
   footer. `MobileMenu`: focus trapped, `Escape` closes, focus returns to the button, rest of page `inert`.
   `GalleryExplorer` lightbox: native modal `<dialog>` (built-in trap), focus returns to the opening thumbnail.
   Subpage navigation: `h1` receives focus after the slide; Back focuses the origin section heading (05 §5.7;
   OQ-05.2 e).
+- **Language switcher** (D-04.16). A `<details>` disclosure, not a menu widget and not a modal: `Tab` moves
+  through the three option links in `routing.locales` order once the panel is open, `Escape` closes it and
+  returns focus to the `<summary>`, and focus is **not** trapped — a disclosure over three links has no reason
+  to hold it. The current locale is `aria-current="true"`, not `disabled` (a disabled control is unreachable
+  and tells a screen-reader user nothing about which language they are on). Each option's accessible name is
+  `common.localeSwitcher.optionAriaLabel` with the target's `nativeName`, so "Switch to 简体中文" is announced
+  in full even though the trigger shows only `简`. In the mobile sheet there is no disclosure: the three links
+  are ordinary rows inside the already-trapped `MobileMenu`, which is one row taller than the design's list.
 - **Sticky nav.** Never transformed; `--nav-h` keeps anchor targets visible (`scroll-margin-top`); focus rings
   per 03 D-03.11 (`--color-focus`, sun on the forest section).
 - **Reduced motion** is 05's (`MotionConfig reducedMotion="user"`, media query); 04 adds nothing and removes
@@ -471,17 +566,22 @@ invented.
   failing pairs (body on tinted sections, eyebrows, muted text, selected chip, copyright) pending OQ-03.2 —
   components use tokens only so the fix is a token change.
 - **Text and language.** Quote marks, separators and arrows come from content/tokens; `white-space: pre-line`
-  only where a message carries `\n`; `<html lang>` from 02; zh typography via `:lang(zh)` (03 §3.3) — no
-  component reads `locale` for layout.
+  only where a message carries `\n`; `<html lang>` = `LOCALE_META[locale].htmlLang` (02 D-02.9); Chinese
+  typography via `:lang(zh)` (03 §3.3), which matches **both** Chinese locales by CSS language-range rules,
+  while 03 D-03.14 resolves the *glyph forms* with two further rules, `:root:lang(zh-Hans)` and
+  `:root:lang(zh-Hant)`, switching `--font-cjk` between an SC and a TC stack. All of it is CSS: no
+  component reads `locale` for layout, and the switcher is the only component that renders a locale at all —
+  as `LOCALE_META` data, never as a comparison (INV-02.9, INV-04.12).
 - **Images.** `alt` from per-locale JSON for every photo; decorative SVG/emoji `aria-hidden`; `PhotoSlot`
   carries the future photo's `alt` so the accessible name is stable before photography lands.
 - **Count-up.** Server HTML holds the final number; the animation is `aria-hidden`-safe (no live region).
 
 ### 8 · Testing requirements (what; 08 owns how)
 
-- Every component in §3 has an RTL test rendering in `en` and `zh` with a real messages tree, asserting no
-  `⟦` marker, no literal English in `zh`, and the documented landmarks/roles (`aria-labelledby`, `tablist`,
-  `dialog`, `<table>` headers).
+- Every component in §3 has an RTL test rendering in **every id in `routing.locales`** (`en`, `zh-Hans`,
+  `zh-Hant`) with a real messages tree, asserting no `⟦` marker, no untranslated English in either Chinese
+  locale, and the documented landmarks/roles (`aria-labelledby`, `tablist`, `dialog`, `<table>` headers). The
+  test iterates `routing.locales`; a fourth locale must not require a new test file.
 - A key-usage test per section/page: render with a recording messages proxy and compare the set of keys read
   against §4 (machine-readable copy of the table lives next to the tests); a key read that is not in the map, or
   a mapped key never read, fails.
@@ -498,15 +598,26 @@ invented.
 - Hit targets (INV-04.7): a Playwright pass measuring every focusable element's bounding box at 390 and 1280 —
   each must be ≥ 44px in both axes, including the day chips and gallery filter chips that extend theirs with a
   pseudo-element.
-- Glyph fallback: visual snapshots at 390 and 1280 in both locales covering `StarRow`'s `★`, the `→ ↗ ← ⌄`
+- Glyph fallback: visual snapshots at 390 and 1280 in all three locales (6 shots per surface) covering `StarRow`'s `★`, the `→ ↗ ← ⌄`
   glyphs in links and the scroll cue, and the emoji chips — the snapshot is what catches a font-stack change
   turning a glyph into a box or a colour-emoji `★` (03 §3.1, D-03.8).
 - `*Short` and surface flags: for each documented toggle, both elements exist in the DOM and exactly one is
   visible at 390 and 1280; `onMobile:false` items exist and are hidden at 390.
-- Playwright per route × locale (INV-02.5) plus: hamburger open/close with focus trap and `Escape`; day-chip
-  tablist keyboard; gallery filter + lightbox keyboard; form flows (07 §8); section heights en vs zh and CLS
-  on toggle (03 §3.3); skip link; one `h1` per page; axe clean on every route in both locales.
+- Playwright per route × locale (INV-02.5 — 7 routes × 3 locales) plus: hamburger open/close with focus trap
+  and `Escape`; day-chip tablist keyboard; gallery filter + lightbox keyboard; form flows (07 §8); section
+  heights `en` vs `zh-Hans` vs `zh-Hant` and CLS on a locale switch (03 §3.3); skip link; one `h1` per page;
+  axe clean on every route in all three locales.
 - Decorations: each has a stable `id`/`data-deco` and the two-layer structure (INV-04.5) — a DOM test.
+- Language switcher (D-04.16, INV-04.12): the rendered option count equals `routing.locales.length` and the
+  order matches it; exactly one option carries `aria-current="true"` and it is the current locale; each option's
+  `href` is the same pathname under its locale, preserving query and hash; with JavaScript disabled the
+  `<details>` still opens and each option still navigates; `Escape` closes and restores focus to the `<summary>`.
+  A grep gate backs this up: no file under `src/components/**` contains the string `zh-Hans`, `zh-Hant` or `'en'`
+  as a locale literal (INV-02.9), and none reads the retired `common.localeSwitcher.label`.
+- Owner facts (INV-04.11): a grep gate over `src/**` for the shipped provisional strings — the three teacher
+  names, `優朵`/`优朵`/`绿茵园`, `Green Pastures` as a bare literal, `(510) 555-0142`, `000000000`. A hit is a
+  component that hard-coded a value the owner is about to change. The rendered pages still show these strings —
+  they come from `content/`, which is exactly the point.
 
 ### 9 · Invariants
 
@@ -520,8 +631,9 @@ invented.
 - **INV-04.3** Components use tokens/utilities only — no hex, px, ms, bezier, and only `md:`/`lg:` variants
   (cites INV-03.1–3); section colours reach primitives through the `Section` role variables (D-04.3).
 - **INV-04.4** Every user-visible string comes from messages or collections (INV-02.1); no `locale ===`
-  branching (INV-02.9); per-view copy only via `*Short` + CSS, per-surface membership only via `site.json`
-  flags (D-04.5); no per-view files, no view props.
+  branching (INV-02.9) and no locale id written as a literal anywhere in `src/components/**`; per-view copy
+  only via `*Short` + CSS, per-surface membership only via `site.json` flags (D-04.5); no per-view files, no
+  view props.
 - **INV-04.5** `Sun`, `Leaf`, `ScrollCue`, `Plate`, `Polaroid`, `SteppingStone`, `Bubble`, `TeacherFrame` are
   discrete components with a stable `id`, `data-deco`, a forwarded `ref` and the two-layer structure (INV-05.5);
   layout geometry lives in `layout.ts`, never in `site.json` (D-04.6).
@@ -534,6 +646,17 @@ invented.
   locale cascade (05 §5.6); nav items use `variant="none"`.
 - **INV-04.10** Form components implement 07 §1's accessibility contract and D-04.14's code record; no copy in
   form code (INV-07.1).
+- **INV-04.11** No component contains an owner fact as a literal — no brand name, teacher name, credential,
+  phone number, address, licence number or Yelp figure. Brand names arrive as the ICU arguments `{brandName}` /
+  `{brandShortName}` / `{brandNameOther}` from `brandArgs(locale)` (D-04.17); everything else is `site.json` or
+  a collection field (D-04.18). No component knows a value is provisional: `site.json.provisional` is the
+  validator's, and 04 ships no provisional-aware UI (02 D-02.20, INV-02.10).
+- **INV-04.12** The language switcher renders exactly one option per `routing.locales` entry, in that order,
+  with labels from `LOCALE_META`; nothing in 04 assumes a locale count, names a locale, or pairs one locale
+  against "the other". Adding a locale is a `routing.locales` entry plus a `LOCALE_META` row — no component
+  edit (D-04.16). The same invariant is what lets `zh-Hant` ship late: while it is held out of `routing.locales`
+  pending review (02 INV-02.11, HD-12), the switcher simply renders two options and every other component is
+  unaffected — no build flag, no dead branch, no "coming soon" state.
 
 ### 10 · Requirements this doc places on other docs
 
@@ -542,11 +665,20 @@ invented.
   optional `site.testimonials[].avatar {src,width,height}` (design avatar slots, README
   "optional testimonial avatars"), optional `blurDataURL` on image objects; `*Short` siblings for the four
   daily-rhythm rows R1 marks `var:mobile` (`philosophy.day.arrival.title|body`, `outdoor.body`, `lunch.body`) or a
-  ruling that one copy serves both; confirm `philosophy.badges.certified|ams|bilingualDaily` ids; align the
+  ruling that one copy serves both; state the `en` value of `home.gallery.title` as "Life at {brandShortName}"
+  so the argument is declared in the reference locale (the new subset ICU-argument rule makes an argument used
+  only in a translation an error); confirm that `brandArgs(locale)` — the one helper returning `{brandName,
+  brandShortName, brandNameOther}` from `brand.name`/`brand.shortName` and `LOCALE_META[].brandPairLocale`
+  (D-04.17) — lives in 02's `src/content/site.ts`; confirm `philosophy.badges.certified|ams|bilingualDaily` ids; align the
   "wrap the element in `<WordSwap>`" wording (02 §Checklists, D-02.10) with 05 D-05.9 (`Reveal` carries the
   cascade; `WordSwap` is the keyed swap) — 04 builds on 05's reading; record that `site.nav.footer[]`'s
   `contact` entry carries `href: "/#visit"` (§4) so the footer and sheet link resolves.
-- **03** — mint `--section-minh-<id>` tokens on 04's measured request (§5.5); mint `--radius-hero` for the 26px
+- **03** — the language switcher needs **no new token**: the trigger reuses the design's lang-toggle recipe
+  (Nunito 700 14px on `--color-muted`, or 03 §10's `#7a7160` if OQ-03.2 takes the contrast fix — the toggle is
+  one of the failing pairs 03 lists) and the panel reuses `--color-nav-bg` + `--shadow-nav` + `--radius-card`;
+  03 need only confirm that reuse. The Traditional-glyph request is **adopted, nothing outstanding**: 03 D-03.14
+  splits `--font-cjk` into `--font-cjk-sc` / `--font-cjk-tc` under `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)`,
+  which is entirely a CSS change and moves no component. Mint `--section-minh-<id>` tokens on 04's measured request (§5.5); mint `--radius-hero` for the 26px
   hero photo (03 §5 states the value but has no step for it — §5.3 uses the name `hero`) and `--color-subnav-bg`
   for the subpage bar's tinted `.94` background (§3.1, desktop reference L350); note D-04.9 (nav row at `lg`)
   against §8's nav row. Until 03 mints them, 04 treats all three as requested names, not shipped tokens.
@@ -557,30 +689,50 @@ invented.
   two static suns. Still outstanding: `AmbientScope` — 04's name for the single `useInView` that toggles
   `data-ambient="paused"` (05 §5.4) — lives in `components/motion/` and is never named in 05, so 05 should
   adopt or rename it.
-- **06** — `app/[locale]/layout.tsx` renders what §1 lists; `page.tsx` files wrap in `PageTransition`; `#visit`
+- **06** — D-06.9's three-option menu is **adopted, nothing outstanding**: 04 supplies the primitive 06 assigns
+  it (trigger semantics, `aria-current`, focus handling, no-JavaScript fallback, `routing.locales` iteration)
+  as D-04.16, keeps 06's `LangSwitcher` name, and has dropped `common.localeSwitcher.label` from every list
+  here (§3.1, §4, §5.2) along with the "differs per locale by content" description. Two clarifications back to
+  06: its sketch's `<Menu>` is `LangSwitcher`'s own inlined `<details>`, not a separate exported primitive (so
+  04's component counts do not move); and 06's grep gate for `localeSwitcher.label` now passes over 04's
+  surface. `app/[locale]/layout.tsx` renders what §1 lists; `page.tsx` files wrap in `PageTransition`; `#visit`
   and `homeAnchor` ids as in D-04.3; next-intl `Link`/`useRouter` pass `transitionTypes` through; `h1` focus
   after slide (OQ-05.2 e). 06 §6.12's request is **adopted, nothing outstanding**: `PrimaryNav`, `FooterLinks`
   and the sheet's link list are client (D-04.1, D-06.7), `SiteHeader` / `SiteFooter` stay server, and 06's
   `error.tsx` / `global-error.tsx` boundaries are counted in D-04.1's 32 `'use client'` files.
 - **07** — `InquiryForm` props (including the `noscript` node) and placement as §3.5; `source` values; the code
   record in D-04.14; `SuccessPanel` / `FormAlert` are client components (07 §9 assigns them to 04); §4's link
-  events fire from the one `TrackedLink` wrapper, so no other component gets a handler.
-- **08** — §8 as gates; the `'use client'` allowlist lint; the key-usage test harness.
+  events fire from the one `TrackedLink` wrapper, so no other component gets a handler. Two three-locale
+  consequences, neither needing a 07 change: the `locale_toggle { to }` event already carries the target, so a
+  three-option menu fires it unchanged; and `NoscriptFallback`/`directContact` print `{phone}` from
+  `site.contact.phoneDisplay` while the `tel:` href uses `site.contact.phone` (§3.5).
+- **08** — §8 as gates; the `'use client'` allowlist lint; the key-usage test harness. Every route × locale
+  matrix in 08 grows from two rows to three (`en`, `zh-Hans`, `zh-Hant`), including the visual-regression
+  matrix; the switcher trigger renders `LOCALE_META` data and no glyph (D-04.16, ADJ-20), so it needs no
+  `allowedStrings` exception at all — `⌄` stays on the list for the hero scroll cue; add the
+  two grep gates §8 now names (no locale literal in `src/components/**`, no owner fact literal in `src/**`).
 - **10** — the View Transitions spike (OQ-05.2) precedes subpage work; the hamburger sheet and lightbox are
-  separate beads; photo placeholders ship first, `Picture` swap is content-only.
+  separate beads; photo placeholders ship first, `Picture` swap is content-only. Two scope changes: the
+  switcher is no longer a one-line toggle but a disclosure with keyboard and no-JS behaviour, so it deserves
+  its own bead rather than a line in the header bead; and no bead builds an FAQ or Enrollment page, or a
+  `staff` anything (HD-5).
 
 ## Open questions
 
-- **OQ-04.1** · answerer: design owner — Hamburger sheet: full-screen cream sheet with links, Contact, toggle and
-  CTA (D-04.8) — approve or supply a design. Default: ship D-04.8.
+- **OQ-04.1** · answerer: design owner — Hamburger sheet: full-screen cream sheet with the six links, Contact,
+  the **three locale rows** (HD-10 turned the design's one "EN·中文" item into three) and the CTA (D-04.8) —
+  approve or supply a design. Default: ship D-04.8.
 - **OQ-04.2** · answerer: human (Hanyi) — Gallery lightbox at launch (D-04.7: yes, native `<dialog>`) and
   client-side filters vs URL-backed filters. Default: D-04.7.
 - **OQ-04.3** · answerer: design owner (with 05 OQ-05.3) — `gpdevelop` (photo "develop" filter) is unused in the
   references; 04 plans no component for it. Confirm drop.
-- **OQ-04.4** · answerer: human (Hanyi) — Photo placeholder strategy until photography lands: `PhotoSlot` colour
-  fill with no visible text (D-04.12) vs temporary stock imagery. Default: `PhotoSlot`.
-- **OQ-04.5** · answerer: human (Hanyi), bead gp-dln.6 — FAQ / Enrollment pages (OQ-02.7): 04 reserves `FaqList`
-  and `InquiryForm source="enroll"`; nothing is built until answered.
+- **OQ-04.4** · **ANSWERED 2026-08-22 (human, HD-12)** — Photography stays a placeholder: `PhotoSlot` colour
+  fill with no visible text, no temporary stock imagery. D-04.12 records it; `Picture` falls back to
+  `PhotoSlot` whenever `site.json` carries no `image`, so the eventual swap is a content edit.
+- **OQ-04.5** · **ANSWERED 2026-08-22 (human, HD-5)** — Six subpages: Philosophy, Programs, Menu, Gallery,
+  Reviews, **Team** — and "Staff" is Team, so there is no `staff` component or namespace. FAQ and Enrollment
+  are **reserved, not built**: `FaqList` and `InquiryForm source="enroll"` stay documented compositions, no
+  file, no route, no nav entry, no test row (02 D-02.17, §1, §3.6). Closes bead gp-dln.6.
 - **OQ-04.6** · answerer: design owner — Footer on mobile: the prototype omits "Contact"; 04 renders
   `site.nav.footer[]` (six + contact) on both views (same reasoning as the license, D-02.13). Confirm.
 - **OQ-04.7** · answerer: design owner — Nav row switch at `lg` (D-04.9) rather than `md`: confirm, or
@@ -589,14 +741,33 @@ invented.
   already carries the `invalid_email` row and maps it to `visit.form.fields.email.errors.invalid`, exactly what
   D-04.14 records; the remaining key/field additions and the `WordSwap`-vs-`Reveal` wording are §10 requirements
   on 02, tracked there, not open questions.
-- **OQ-04.9** · answerer: human (Hanyi), carried from **OQ-03.4** — the CJK typeface. 04's typography PR is the
-  deadline 03 names ("decide before the 04 typography PR"): every component here styles text through 03's
-  families, so the answer changes no component, only `--font-cjk`. If unanswered when the PR lands, 04 ships on
-  D-03.5's system stack and the question stays open for a post-launch review.
+- **OQ-04.9** · **answered 2026-08-22 (HD-14): the system CJK stack ships, no webfont at launch.** Answerer was
+  the human (Hanyi); carried from **OQ-03.4**, narrowed twice — the CJK typeface. HD-11 first recorded that the
+  premise of "the typeface used in the designs" was false: the design names Fredoka and Nunito and no CJK face,
+  so the prototypes' 中文 renders in whatever the reader's OS substitutes. HD-14 then closed the corrected
+  question in favour of 03 D-03.5's system stack for both Chinese scripts. HD-10's Traditional half was already
+  handled: 03 D-03.14 splits the stack into `--font-cjk-sc` / `--font-cjk-tc` under `:root:lang(zh-Hans)` /
+  `:root:lang(zh-Hant)`, so `zh-Hant` no longer renders Simplified glyph forms. 04's typography PR is
+  unblocked and ships on the system stack; naming a Chinese face later stays a two-token change that moves no
+  component in this document.
 - **OQ-04.10** · answerer: owner, carried from **OQ-07.10** — the shipped option sets. 04 renders whatever ids
   02/07 declare (`childAge`'s canonical five, `desiredStart`'s months + `asap`/`flexible`) through native
-  `<select>`s, and the Enrollment page reuses `InquiryForm source="enroll"` with the five-field superset; a trim
-  or relabel is JSON + enum only and moves nothing in §3.5. Answer before the enrollment bead (OQ-04.5).
+  `<select>`s; a trim or relabel is JSON + enum only and moves nothing in §3.5. No longer blocking anything at
+  launch: HD-5 reserved the Enrollment page, so the only surface reading these options today is the home Visit
+  form. `visit.form.fields.preferredLanguage`-style copy that names a language takes it from `LOCALE_META`
+  endonyms, so three locales change no option set here (07 owns the e-mail side).
+- **OQ-04.11** · answerer: design owner (via Hanyi), **the markup half of OQ-06.10 — one question, answered
+  once** — the switcher's appearance is OQ-06.10's and 04 does not restate its defaults. What 04 adds, because
+  only the markup owner can see it: (a) **the chevron — answered 2026-08-22 (ADJ-20): none.** 02 D-02.10 wrote
+  the trigger as `shortLabel` + `⌄` from an unverified premise; 06 checked the handoff and found its only `⌄`
+  is the hero scroll cue's, with `[data-langtoggle]` a bare nav item, so D-04.16 now ships a trigger with no
+  disclosure glyph. Should the design owner want one, it arrives as part of 06 OQ-06.10's open-state answer and
+  is a class change inside one component. (b) **How the current locale is
+  marked**: 04's default is weight plus `aria-current="true"` and no tick glyph, because a tick would be the
+  only one on the site — but a marked row is the whole point of a three-option list, so if the design owner
+  wants a visible marker, name it. (c) **The mobile sheet rows** are plain rows like the nav links, one row
+  taller than the design's list (D-04.8) — confirm, or supply a grouped treatment. Default until answered: ship
+  (a)–(c) as described. Nothing here blocks build: every answer is a class change inside one component.
 
 ## Cross-references
 
@@ -606,7 +777,8 @@ invented.
   L349–581), `docs/design/mobile/Green Pastures - Homepage Mobile.dc.html` (nav L42–46, gallery slots
   L151–156, subpages L257–473).
 - `docs/technical/01-stack-decisions.md` — ADR-001/004/005 (Next 16.x, Tailwind v4, Motion).
-- `docs/technical/02-i18n-content-contract.md` — D-02.4/5/6/10/11/12/13/16/17, INV-02.1/7/9, key names.
+- `docs/technical/02-i18n-content-contract.md` — D-02.4/5/6/10/11/12/13/16/17/18/19/20, INV-02.1/7/9/10/11,
+  key naming rules 11 and 13, *Locales* (`LOCALE_META`), *Brand names*, *Provisional values*.
 - `docs/technical/03-design-system-tokens.md` — D-03.3/5/6/8/9/11/12, §2.3 role tokens, §4–6, §8, §10,
   INV-03.1–3.
 - `docs/technical/05-animation-system.md` — D-05.2/5/6/7/9/10/11, §5.1–5.8, INV-05.1–10.

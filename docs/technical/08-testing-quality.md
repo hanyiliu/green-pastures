@@ -4,12 +4,16 @@
 
 This document is the *how* behind every invariant the other plan documents declare: which check enforces it,
 where that check runs (editor, `pnpm ci`, GitHub Actions, a Vercel preview, production), and what "green"
-means per PR, per phase and at launch. It defines the test pyramid for this specific site — a bilingual,
-heavily animated content site with one form — the CI pipeline, the local quality loop, the flake policy, the
-coverage policy and the Definition of Done. It restates no contract: `INV-02.n`, `INV-03.n`, `INV-05.n`,
-`INV-07.n` and `INV-11.n` are cited and mapped to named checks in §9; their meaning lives in 02/03/05/07/11.
+means per PR, per phase and at launch. It defines the test pyramid for this specific site — a three-locale
+(`en`, `zh-Hans`, `zh-Hant`), heavily animated content site with one form — the CI pipeline, the local quality
+loop, the flake policy, the coverage policy and the Definition of Done. It also owns the wiring of the content
+gate that stops a plausible sample default from shipping as if it were the owner's real phone number (§3). It
+restates no contract: `INV-02.n`, `INV-03.n`, `INV-05.n`, `INV-07.n` and `INV-11.n` are cited and mapped to
+named checks in §9; their meaning lives in 02/03/05/07/11.
 
-Status: draft · seat writer-testing · 2026-08-22
+Status: draft · seat writer-testing · 2026-08-22 · revised 2026-08-22 for HD-2 (repo protection), HD-9
+(provisional-value gate) and HD-10 (three locales); revised 2026-08-23 for ADJ-24 — the sending-identity
+samples moved onto the real domain, which the release gate did not see (§3 R4, D-08.17)
 
 ## Decisions
 
@@ -18,7 +22,7 @@ Status: draft · seat writer-testing · 2026-08-22
   CI) → visual regression (Playwright screenshots). Plus security and process gates. Every invariant declared
   by the contract documents 02, 03, 05, 07 and 11 maps to one named check and one CI job (§9, INV-08.1);
   04/06/09/10's invariants are mapped as their phases land (§9 closing note). Six required checks protect
-  `main` (D-08.12).
+  `main` (D-08.12) — once the repository ruleset actually targets it (D-08.19).
 - **D-08.2 Literal-text rule, corrected configuration.** INV-02.1 is enforced with `react/jsx-no-literals`
   (eslint-plugin-react ≥ 7.37.0) configured `noStrings: true`, `ignoreProps: true`,
   `restrictedAttributes: ['alt','aria-label','aria-description','aria-roledescription','aria-valuetext','title',
@@ -26,7 +30,7 @@ Status: draft · seat writer-testing · 2026-08-22
   source: `allowedStrings` is trimmed exact-match (no patterns); `noStrings` with `ignoreProps: false` reports
   *every* plain attribute string (`className`, `href`, `type` …), so 02's phrase "`noAttributeStrings: true`
   for `alt`, `aria-label`, `title`, `placeholder`" must read `restrictedAttributes: [...]` — a one-line fix
-  requested of 02 (§10). The allowlist is closed: the design's separators and symbols (`·`, `—`, `–`, `→`,
+  requested of 02 (OQ-08.8). The allowlist is closed: the design's separators and symbols (`·`, `—`, `–`, `→`,
   `↗`, `←`, `⌄`, `★`, `½`, `*`, `/`, `:`, `|`, `%`, `(`, `)`, `,`, `.`, `&`), the ten single digits, and the
   design's emoji (🌿 🌱 🍎 🥦 🌾 🧸 🎨 🏡 🌟 ✋ 🍚 📚). Anything else is a lint error; a runtime twin
   (the DOM-literal unit test, §4) catches concatenated or computed literals the parser cannot see.
@@ -39,9 +43,12 @@ Status: draft · seat writer-testing · 2026-08-22
   `@variant`) on `src/**/*.css`; `src/styles/tokens.css` is the **only** file exempt from the colour/px/ms
   bans, by an `overrides` block, because it *declares* the tokens.
 - **D-08.5 Content gates are one script.** `pnpm validate:content` (`scripts/validate-content.ts`, D-02.7/
-  D-02.8) with flags `--report` (writes `reports/content-coverage.md`, INV-02.6) and `--release` (fails on any
-  `"TODO"` owner value, 02 §Shared config). The same checks run in the message loader so `next build` fails on
-  invalid content; the script exists so the failure is readable and two minutes earlier.
+  D-02.8) with three flags: `--report` (writes `reports/content-coverage.md`, INV-02.6), `--warn-locale <id>`
+  (demotes one locale's parity failures to warnings while it is being translated — `--warn-locale zh-Hans`,
+  `--warn-locale zh-Hant`) and `--release` (the launch gate; `--accept-sample <path>` is a `--release`-only
+  modifier of it, not a fourth mode — §3 R4). The same checks run in the message loader so
+  `next build` fails on invalid content; the script exists so the failure is readable and two minutes earlier.
+  What `--release` actually asserts is D-08.17 (it is no longer a `"TODO"` grep).
 - **D-08.6 Unit.** Vitest (jsdom, `@testing-library/react`, `@testing-library/jest-dom`,
   `@testing-library/user-event`). Network is mocked at the fetch layer with MSW (`msw/node`) — Turnstile
   `siteverify` and the Resend API — so the inquiry handler is tested through its real SDK path with no
@@ -96,7 +103,8 @@ Status: draft · seat writer-testing · 2026-08-22
   headers and the third-party request allowlist are asserted by e2e (`@headers`, `@thirdparty`).
 - **D-08.12 CI.** GitHub Actions, Node 24, pnpm (version from `packageManager`). Required checks on `main`:
   **`static`, `content`, `unit`, `build`, `e2e-ok`, `bead-trailer`** — exactly these names (09 sets branch
-  protection; OQ-11.3). PR workflows receive **no secrets** (only `GITHUB_TOKEN`): Turnstile test keys and
+  protection; OQ-11.3), and they stand unchanged after HD-2; when they start *enforcing* is D-08.19.
+  PR workflows receive **no secrets** (only `GITHUB_TOKEN`): Turnstile test keys and
   `INQUIRY_TRANSPORT=log` are enough (INV-08.7).
 - **D-08.13 Flake policy.** `retries: 0`. A test may carry `@flaky-known(gp-<id>)` naming an **open** bead;
   only those run in the `flaky-known` project with `retries: 1`; a lint step fails the PR if the tag lacks an
@@ -116,6 +124,44 @@ Status: draft · seat writer-testing · 2026-08-22
   `variants.ts` and the reveal registry, both asserted in §4 — at 90 % statements / 85 % branches;
   the `src/components/motion` **components** (`MotionProvider`, `Reveal`, `CountUp`, `WordSwap`), other
   components and `src/app/**` have no floor (they are covered by RTL render tests and e2e).
+- **D-08.17 The release gate is the provisional registry, not a `TODO` grep (HD-9, 2026-08-22; R4 added
+  2026-08-23 for ADJ-24).** HD-4/HD-7 ship the sending domain, the inbox, the address, the phone, the licence
+  number, the Yelp figures and the teacher names as plausible **sample defaults** — precisely the thing a
+  `TODO` scan cannot see. 02 answered with a registry: `content/site.json` carries `provisional: string[]`,
+  dotted paths naming every sample default (D-02.20, INV-02.10). `pnpm validate:content` resolves the registry
+  and *reports* it, exit 0; `pnpm validate:content --release` **fails while the array is non-empty**. **Four**
+  release checks run independently, specified to the character in §3: **R1** registry non-empty; **R2** a
+  literal `TODO`/`TBD`/`FIXME`/`XXX` string *value* under `content/`; **R3** a value from a range that can
+  never be real (`.example` host, `555-01xx` number, licence `000000000`) surviving the deletion of its
+  marker; **R4** one of the three ADJ-24 sending-identity samples — `mail.greenpasturesdaycare.com`,
+  `no-reply@mail.greenpasturesdaycare.com`, `hello@greenpasturesdaycare.com` — surviving the deletion of its
+  marker, matched as exact strings. R1 trusts the owner's assertion that a value is now real — 02 is right
+  that nothing can verify that in general — and R3/R4 are the backstop for that assertion being wrong about
+  the values *we* invented. They are two rules and not one because ADJ-24 split those values into two kinds:
+  R3's cannot be real, so it has no false positives and needs no override; R4's are ordinary addresses on the
+  domain the owner holds, so it has one of each (§3). Before R4 the sending domain and the inbox — the two
+  values this decision's own first sentence names — were covered by R1 alone, which is the regression ADJ-24
+  introduced and this bullet closes. The old rule (`--release` greps five required `site.json` fields for
+  `"TODO"`) is **deleted**: it would have passed the entire Phase 3 seed, licence `000000000` included
+  (09 §4.11 already said so).
+- **D-08.18 Every matrix is three locales, and the bill steps when `zh-Hant` is enabled (HD-10, 2026-08-22).**
+  Smoke, a11y, visual regression, Lighthouse, the unit render loop and the section-height snapshot all read
+  `routing.locales` (INV-08.4), so HD-10 changes no test code — it changes the width of every loop, from 2 to
+  3, and the runner bill with it (§10: ≈ 30 → ≈ 38–40 runner-minutes per PR; §8: 68 → 102 baseline images;
+  §7: the production Lighthouse matrix no longer fits its timeout and is re-cut). The step happens on the
+  commit that adds `zh-Hant` to `routing.locales`, **not** on the commit that creates `content/zh-Hant/`:
+  INV-02.11 lets an unreviewed locale sit in the tree outside `routing.locales`, and while it does, every
+  matrix here is still two wide. That commit is also the named reason INV-08.8 requires for regenerating the
+  34 new `zh-Hant` baselines — it is a locale launch, not a flake.
+- **D-08.19 Required-check names are fixed; enforcement waits on the ruleset (HD-2, 2026-08-22).** The six
+  names in D-08.12 do not change. Ground truth checked 2026-08-22: the repository's "Main Protection" ruleset
+  is active but its ref-name include list is **empty**, so it targets no branch and *nothing* is required on
+  `main` today. The names take effect when the human adds the default branch (`~DEFAULT_BRANCH`) to that
+  include list and lists the six as required status checks; repo settings are the human's (HD-2, OQ-11.3, 09).
+  Ordering matters for one of them: `bead-trailer` can only be listed once its workflow has reported that
+  check name at least once on the default branch, because GitHub's required-checks picker searches names it
+  has already seen [assumed — confirm at setup]. That is Phase 2's scaffold PR, which is why the Phase 2 gate
+  (§12.2) owns the item and INV-08.2 is documented intent until then.
 
 ## Design
 
@@ -124,12 +170,12 @@ Status: draft · seat writer-testing · 2026-08-22
 | Layer | Tool | What it proves here | Where it runs | Gate |
 |---|---|---|---|---|
 | Static | `tsc --noEmit` (strict), ESLint, Stylelint, Prettier | no literal copy in JSX (INV-02.1), no locale branching (INV-02.9), i18n navigation only (INV-02.7), token discipline (INV-03.1–3, INV-05.3/6/11) | editor · `pnpm ci` · `static` | required |
-| Content | `pnpm validate:content` | parity, ICU args/tags, arrays, empty/HTML, data-in-locale, Zod, ids, images, alt (INV-02.2/3/4/8), coverage report (INV-02.6) | `pnpm ci` · `content` · loader in `build` | required |
-| Unit | Vitest + RTL + MSW | components render in `en` and `zh` with no DOM literal; CSS↔TS token parity (INV-03.4); variants catalogue; schemas; inquiry handler; templates; utilities | `pnpm test` · `unit` | required |
+| Content | `pnpm validate:content` | three-way parity, ICU args (subset) / tags / arrays, empty/HTML, data-in-locale, Zod, ids, images, alt (INV-02.2/3/4/8), provisional registry (INV-02.10), coverage report (INV-02.6) | `pnpm ci` · `content` · loader in `build` | required |
+| Unit | Vitest + RTL + MSW | components render in every locale in `routing.locales` with no DOM literal; CSS↔TS token parity (INV-03.4); variants catalogue; schemas; inquiry handler; templates; utilities | `pnpm test` · `unit` | required |
 | E2E | Playwright (2 PR projects, 4 on `main`) | every route × locale (INV-02.5), switcher, slide, form (INV-07.4), reduced motion (INV-05.8), CLS, fonts, no-JS (INV-05.10), SEO, headers | `e2e` (shards) · `e2e-full` | required (`e2e-ok`) |
 | A11y | axe-core + keyboard scripts | 0 WCAG 2.2 AA violations per route × locale × state; focus order/trap/return | inside `e2e` (`@a11y`) | required |
 | Performance | Lighthouse CI | budgets on preview (advisory) and production (gate) | `lighthouse-preview` · `lighthouse-prod` | advisory / launch |
-| Visual | Playwright screenshots | sections look like the design at 390/1280 in both locales | inside `e2e` (`@visual`) | required from 04's phase |
+| Visual | Playwright screenshots | sections look like the design at 390/1280 in every enabled locale | inside `e2e` (`@visual`) | required from 04's phase |
 | Security | grep, audit, gitleaks, headers | no secret in client output (INV-07.3), env documented, deps, headers | `build` · `audit` · `e2e` | `build` required; `audit` advisory |
 | Process | `bead-trailer`, TODO grep, PR template | INV-11.1/11.3, TRAP-11.9, DoD checklist | `bead-trailer` · `static` | required |
 
@@ -169,7 +215,7 @@ Status: draft · seat writer-testing · 2026-08-22
     message: 'no scroll listeners outside src/components/motion (INV-05.9)' } ]
 ```
 
-  Two further entries do not fit the excerpt's 25 lines. (a) **Inline-style colour**, the other half of
+  Three further entries do not fit the excerpt's 25 lines. (a) **Inline-style colour**, the other half of
   INV-03.1 (03 §11 requires the ban in `style={}` *and* `className`): `no-restricted-syntax` selector
   `JSXAttribute[name.name='style'] Literal[value=/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(|color-mix\(/]`
   plus the matching `TemplateElement[value.raw=…]`, so `style={{ color: '#fff' }}` and
@@ -180,6 +226,18 @@ Status: draft · seat writer-testing · 2026-08-22
   imports `LazyMotion`/`domAnimation`) and `src/components/motion/WordSwap.tsx` (which needs `AnimatePresence`,
   D-05.9). Every motion path here is 04 §2's tree — `src/components/motion/**`, not `src/motion/**`, which does
   not exist (memo ADJ-15); a path that matches nothing silently disables the override it was written for.
+  (c) **Script-stack utilities**, the check 03 INV-03.6 asks 08 for: `--font-cjk-sc` and `--font-cjk-tc` exist
+  only to be selected by the two `:lang()` rules in `src/styles/tokens.css` (03 D-03.14), so a component that
+  reaches for either — as the Tailwind utilities `font-cjk-sc` / `font-cjk-tc` or as `var(--font-cjk-tc)` —
+  is choosing a script by hand, which is the TypeScript locale branch INV-03.6 forbids wearing a CSS hat.
+  `no-restricted-syntax` on `JSXAttribute[name.name='className'] Literal[value=/\bfont-cjk-(sc|tc)\b/]` plus
+  the `TemplateElement` twin, and `check-tokens.ts` fails on any `--font-cjk-(sc|tc)` reference in
+  `src/**/*.css` outside `src/styles/tokens.css`. Components use `font-display`/`font-body`, which resolve
+  through `--font-cjk` per `<html lang>` without knowing which script is in force.
+  The locale-comparison selector's `/^(en|zh)/` covers all three ids as written — `'zh-Hans'` and `'zh-Hant'`
+  both start `zh` — and it also still catches the retired `'zh'`, which INV-02.9 now forbids outright because
+  it names nothing. No edit is needed for HD-10; the one thing that would break the rule is a locale id
+  starting with neither `en` nor `zh`, which the add-a-locale checklist (02) is where it gets noticed.
   Overrides: `src/i18n/**` may import `next/navigation` and compare locales; `src/components/motion/**` may
   register scroll listeners (05 §5.12) and is where `ease`/`duration` literals are *defined*, so the
   motion-value ban excludes `src/design/tokens.ts` and `src/components/motion/variants.ts` (the catalogue is
@@ -206,32 +264,146 @@ Status: draft · seat writer-testing · 2026-08-22
 - **Prettier** with `prettier-plugin-tailwindcss` (class order) over `src`, `tests`, `scripts`, `content/**/*.json`
   (02 requires stable JSON formatting so diffs show copy only). `pnpm format:check` is part of `static`.
 - **TODO grep** (TRAP-11.9): `git grep -nE '\b(TODO|FIXME|HACK)\b' -- 'src/**' 'tests/**' 'scripts/**'
-  'content/**'` must be empty (`"TODO"` as a JSON *value* is the `--release` gate's business, D-08.5, so
-  `content/**` is grepped for comments-in-disguise keys only: any key named `_comment|todo`).
+  'content/**'` must be empty (`"TODO"` as a JSON *value* is the `--release` gate's business — §3 R2,
+  D-08.17 — so `content/**` is grepped for comments-in-disguise keys only: any key named `_comment|todo`).
+  The two do not overlap and neither replaces the other: this grep is a required PR check over source text,
+  R2 runs only at release and only over parsed JSON values.
 
 ### 3 · Content gates (`content` job, and the loader inside `build`)
 
-`pnpm validate:content --report` performs, per locale, the checks 02 lists (§Loading, typing, validation):
-key-set parity with `en` for messages and collections; ICU argument set and rich-tag set per key; equal
-array lengths; no empty string, no `'{`, no HTML tag; no URL / `/images/` / phone / e-mail / license pattern in
-`content/<locale>/**` (INV-02.4); Zod parse of `site.json` and every collection; id cross-references both
-ways; every `photo`/`image` path exists under `public/` and has an `alt` in every locale; and it writes
-`reports/content-coverage.md`. CI uploads the report as an artifact, appends it to the job summary, and
-posts it as one sticky PR comment (`marocchino/sticky-pull-request-comment`, pinned by SHA) so an editor
-sees missing `zh` keys on the PR (INV-02.6; 09 explains it to editors). Exit code is non-zero on any finding
-(OQ-02.2 may later flip `zh` gaps from fail to warn — that is one flag in the script, `--warn-locale zh`).
-`--release` additionally fails on any `"TODO"` value in `site.json` required owner fields; it is not in the PR
-pipeline — it is the launch gate (§12.3) and runs in `lighthouse-prod`'s preflight. The validator's functions
-are unit-tested against fixture trees (missing key, extra key, ICU mismatch, tag mismatch, array length,
-empty string, HTML, URL in a locale file, `'{`, missing image, missing alt) so the gate itself is trusted.
+`pnpm validate:content --report` performs, for each non-reference locale in `routing.locales` — `zh-Hans`, and
+`zh-Hant` once it is enabled (INV-02.11) — the checks 02 lists (§Loading, typing, validation): key-set parity
+with `en` for messages and collections; rich-tag set and array lengths equal to `en`'s; key shape (camelCase
+segments, depth ≤ 6 — 02 *Key naming* rule 2); no empty string, no `'{`, no HTML tag; no URL / `/images/` / phone / e-mail / license / **brand-name** pattern in
+`content/<locale>/**` (INV-02.4 — the brand-name pattern includes the rejected 绿茵园, D-02.19); Zod parse of
+`site.json` and every collection, including completeness of every localized value across `routing.locales`;
+id cross-references both ways; every `photo`/`image` path exists under `public/` and has an `alt` in every
+locale; the **provisional registry** (below); and it writes `reports/content-coverage.md`. CI uploads the
+report as an artifact, appends it to the job summary, and posts it as one sticky PR comment
+(`marocchino/sticky-pull-request-comment`, pinned by SHA) so an editor sees missing `zh-Hans` / `zh-Hant` keys
+and the shrinking provisional list on the PR (INV-02.6; 09 explains it to editors). Exit code is non-zero on
+any finding.
+
+**Parity is three-way and ICU arguments are a subset** (02 amended INV-02.2 on 2026-08-22; this is the rule
+text 08 owed it). `en` is compared against `zh-Hans` and `zh-Hant` **independently**, so a key missing from
+both is two findings, not one. Key sets, rich-tag sets and array lengths stay equalities. ICU arguments do
+not: a translation may use only a **subset** of the arguments `en` declares. An argument that appears in a
+locale and not in `en` is an **error** (it can only ever render as literal braces); an argument `en` declares
+that a locale omits is a **warning**, listed in the coverage report and never a gate failure. The concrete
+case is the bilingual footer — `common.footer.copyright` takes `{brandName}` and `{brandNameOther}`, and a
+locale that renders one name is legitimate (D-02.19). Under the old equality rule the three-locale footer was
+unshippable, which is why the rule changed.
+
+**Lagging locales** use `--warn-locale <id>`: `--warn-locale zh-Hans`, `--warn-locale zh-Hant` (the old
+`--warn-locale zh` names nothing). It demotes *that locale's parity findings* to warnings while its tree is
+being filled in (HD-12; 10's translation lane), and it affects nothing else — never the Zod checks, never
+INV-02.4, never the provisional gate. `--release` **ignores it entirely** and fails on any parity gap in any
+locale in `routing.locales` (INV-02.11): a locale that is not finished is removed from `routing.locales`, not
+warned through. A `content/<locale>/` directory that is not in `routing.locales` (an unreviewed `zh-Hant`) is
+scanned in a **reporting-only** pass — its parity percentage appears in the report so the reviewer has a
+number — and nothing in that pass can fail a job.
+
+**The provisional gate (INV-02.10, HD-9, D-08.17).** `content/site.json` carries `provisional: string[]`.
+Resolution, in every mode:
+
+1. Entries are unique; a duplicate is an error.
+2. First segment decides the form. `collections.<name>.<id>.<field>` → `<id>.<field>` inside
+   `content/<locale>/collections/<name>.json`, resolved **in every locale in `routing.locales`** (one entry,
+   one value per locale). `messages.<namespace>.<key…>` → the dotted key inside
+   `content/<locale>/messages/<namespace>.json`, likewise per locale. Anything else → a dotted path into
+   `content/site.json`, where a **final segment that is a locale id** addresses one entry of a localized value
+   (`brand.name.zh-Hans`) rather than a nested field.
+3. `collections.` and `messages.` are **reserved prefixes**: the validator errors if `site.json` ever grows a
+   top-level key with either name, because the grammar would become ambiguous. Neither exists today
+   (02 §Shared config) and this check keeps it that way.
+4. A path that resolves to nothing — in any locale it addresses — is an **error in every mode**, including the
+   `content` job on a PR. This is the rule that stops a deleted value from leaving a stale marker and a
+   mistyped path from silently disabling the gate for one field.
+5. Values of any JSON type resolve. `yelp.rating` is a number and `yelp.reviewCount` an integer; the report
+   prints values with `JSON.stringify`, so `5.0` and `"hello@greenpasturesdaycare.com"` are distinguishable.
+6. **Pending-locale entries.** A locale-suffixed path whose locale id is *not* in `routing.locales` —
+   `brand.name.zh-Hant` while `zh-Hant` is under review — is neither resolved nor an error: it is listed as
+   *pending locale* and it still blocks `--release` under R1. Without this rule 02's 23-entry Phase 3 seed
+   reds the `content` job the moment INV-02.11 is used, because INV-02.3 forbids `brand.name` from carrying an
+   entry for a locale that is not enabled. One line for 02 to adopt (OQ-08.10).
+
+Reporting is the whole PR-time surface: `validate:content` prints a **provisional values** block and writes
+the same table into `reports/content-coverage.md` — one row per entry (per locale where the path is
+per-locale) with columns *path · current value · file* — then exits 0. Provisional values are normal during
+development; there is no runtime or UI marker, so no component is provisional-aware (02).
+
+`pnpm validate:content --release` adds four independent failures, any of which fails the launch gate:
+
+| Id | Fails on | Detail |
+|---|---|---|
+| **R1** | `provisional` is non-empty | lists every remaining path with its current value and file, including pending-locale entries |
+| **R2** | a literal sentinel *value* | any parsed JSON **string value** under `content/**` matching `/\b(TODO\|TBD\|FIXME\|XXX)\b/i`; keys and raw file text are §2's grep, not this |
+| **R3** | an unreal placeholder that outlived its marker | any string value under `content/**` matching `/[a-z0-9-]+\.example\b/i` (RFC 2606 host or e-mail domain), `/\+1\d{3}55501\d{2}\b/` (the E.164 form of `contact.phone`), `/\b555-01\d{2}\b/` (the printed form), or a `license` value of exactly `000000000` |
+| **R4** | a **sending-identity sample** that outlived its marker (ADJ-24) | any string value under `content/**` **exactly equal** (trimmed, ASCII-case-insensitive) to `mail.greenpasturesdaycare.com`, `no-reply@mail.greenpasturesdaycare.com` or `hello@greenpasturesdaycare.com` — the three literals 02's *Provisional values* table ships at `email.sendingDomain`, `email.fromAddress` and `contact.email`. Exact equality only: no pattern over `greenpasturesdaycare.com`, which would flag the real inbox the day it is typed. Overridable per path by `--release --accept-sample <path>` (below) |
+
+R3 and R4 exist because R1 believes the owner: deleting a line from `provisional` is an assertion that the
+value is now real, and 02 is right that nothing can verify that in general. Neither tries to. They re-check
+the handful of values *we* invented, and ADJ-24 split those into two kinds that need two rules.
+
+**R3's kind cannot be real.** `.example` is RFC 2606's reserved TLD and cannot resolve, `555-01xx` is the
+reserved fictional range, `000000000` is the design mock's licence number. A real value can never match, so
+R3 has no false positives and needs no override. `brand.url`'s `https://greenpastures.example` is the sample
+that keeps it load-bearing — ADJ-24 explicitly left that field where it was (OQ-09.10 decides its fate).
+
+**R4's kind is syntactically ordinary, which is exactly why R3 cannot see it.** ADJ-24 moved the sending
+identity onto the domain the owner holds: `email.sendingDomain`, `email.fromAddress` and `contact.email` now
+ship as `mail.greenpasturesdaycare.com`, `no-reply@mail.greenpasturesdaycare.com` and
+`hello@greenpasturesdaycare.com`. None of them matches `.example`, `555-01xx` or `000000000`, so between
+ADJ-24 and this revision those three fields were guarded by R1 alone: delete the three paths from
+`provisional` without doing the edit they stand for, and `--release` went green with the placeholder live —
+the site launching, and mailing parents, from an address nobody had verified. R4 closes that by matching the
+three shipped strings exactly. 02 writes of these samples that "what keeps them from shipping silently is the
+registry, not their spelling"; R4 does not contradict it — R1 is still the gate, and R4 only checks that the
+registry was cleared by an edit rather than by a deletion.
+
+**R4's false positive, and the one override on this page.** An owner may adopt a sample verbatim — `hello@`
+on one's own domain is a perfectly reasonable real inbox, and being paste-able is the whole point ADJ-24 was
+arguing. R4 is then wrong, and is overridden once, by a human at the launch gate:
+`--release --accept-sample contact.email` (repeatable, `--release`-only) exempts that **one path** from R4,
+prints the acceptance into the launch summary and `reports/content-coverage.md`, and touches no other rule.
+A path, never a rule, is what the flag takes; §12.3 records which paths it was used for.
+
+**R4 is coupled to 02's spelling, and the coupling is mechanical.** R4 hard-codes three literals 02 owns; if
+02 respells a sample and nobody updates R4, R4 matches nothing and fails open — the same failure mode in a
+new place. So the validator's unit suite carries the one test on this page that reads the real
+`content/site.json` instead of a fixture, deliberately: for each of the three paths, **if** it is still
+listed in `provisional`, its current value must be one of R4's literals. A respelt sample reds the `unit`
+job on the PR that respells it, and a replaced value passes vacuously once its path leaves the registry (§4).
+
+**Residual risk, stated once:** R4 recognises only the exact strings we shipped, so an owner who edits
+`email.fromAddress` to a *different* address that is still unverified — a typo, or a mailbox that does not
+exist yet — clears R1, R3 and R4 alike, and is caught only downstream, by Resend refusing an unverified
+sender, by the Phase 7 gate's DKIM/SPF item (OQ-07.6, 09) and by §12.3's manual real-key submission, which
+passes only if the message actually arrives.
+
+`--release` is not in the PR pipeline; it is the launch gate (§12.3) and runs as `lighthouse-prod`'s
+preflight.
+
+The validator's functions are unit-tested against fixture trees so the gate itself is trusted: missing key,
+extra key, ICU argument undeclared in `en` (error) vs omitted in a locale (warning), tag mismatch, array
+length, empty string, HTML, URL in a locale file, brand name in a locale file, `'{`, missing image, missing
+alt — and, for the registry: unresolvable path, duplicate entry, a `collections.` path whose id is missing in
+one locale only, a number-valued path, a pending-locale path, `--release` with a non-empty registry, and a
+`"TBD"` value (R2). The R3/R4 fixtures are deliberately-invalid strings, not assertions about the real tree:
+`--release` with an **empty** registry but `brand.url` still `https://greenpastures.example` fails on R3; the
+same run with `contact.email` still `hello@greenpasturesdaycare.com` fails on R4; the same again with
+`--accept-sample contact.email` exits 0 with the acceptance printed, while `--accept-sample brand.url` does
+**not** silence the R3 finding (the flag is R4-only). Beside them sits the spelling-drift test above, which
+reads the real `content/site.json`: every one of the three ADJ-24 paths still in `provisional` holds one of
+R4's three literals.
 
 ### 4 · Unit tests (Vitest + RTL)
 
 | Area | Tests | Enforces |
 |---|---|---|
 | Components | every section/component renders under `renderWithIntl(ui, { locale })` for each locale in `routing.locales` with `MotionProvider reducedMotion="always"`; no `⟦` marker; headings equal the JSON values; **DOM-literal test**: every non-whitespace text node and every `alt`/`aria-label`/`title`/`placeholder` equals a message value, an `Intl`-derived value (weekday/time/month/rating formats from `src/i18n/formats.ts`) or the D-08.2 allowlist | INV-02.1, INV-07.1 |
-| i18n | `LOCALE_META` complete per locale; `loadMessages` deep-merge in prod, marker in dev; named formats; `getPathname`/`Link` keep path+query+hash on locale change | D-02.1/7/8/10 |
-| Content | Zod schemas accept fixtures and reject each invalid shape with a readable issue; `collections.ts` joins keep `site.json` order and honour `onHome`/`onMobile`/`featured`; validator functions (§3) | INV-02.3, D-02.13 |
+| i18n | `LOCALE_META` has an entry for every id in `routing.locales` and no others; for each, `htmlLang` and `hreflang` are **identical to the id** (HD-10's one-string rule — a mapping table is exactly what this test forbids), `nativeName`s are pairwise distinct (简体中文 ≠ 繁體中文 ≠ English), `shortLabel` is non-empty, and `brandPairLocale` names a different enabled locale; `brand.name[locale]` and `brand.name[brandPairLocale]` both resolve, so `common.footer.copyright` gets `{brandName}` + `{brandNameOther}` in every locale with no branch; `loadMessages` deep-merge in prod, marker in dev; named formats; `getPathname`/`Link` keep path+query+hash on locale change | D-02.1/7/8/10/19, INV-02.9 |
+| Content | Zod schemas accept fixtures and reject each invalid shape with a readable issue; `collections.ts` joins keep `site.json` order and honour `onHome`/`onMobile`/`featured`; validator functions (§3); **R4 spelling drift** — the one test here that reads the real `content/site.json` rather than a fixture: each of `email.sendingDomain`, `email.fromAddress`, `contact.email` that is still in `provisional` holds one of R4's three literals, so a respelt sample cannot leave the release gate matching nothing (§3) | INV-02.3, D-02.13, INV-02.10 |
 | Design tokens | `tokens.css` parsed (postcss) vs `src/design/tokens.ts`: every `dur.*` = `--dur-*`/1000, `ease.*` = bezier numbers, `stagger.*`, `rise.*`, `breakpoints` = rem×16 — and the reverse (every motion custom property has a TS twin; `REVEAL_THRESHOLD` exempt); parsed tokens `toMatchFileSnapshot` so any value change is an explicit diff beside the 03 edit | INV-03.4, INV-03.5 |
 | Motion | `variants.ts` catalogue equals 05 §5.2 (keys ⊆ x/y/rotate/scale/opacity/filter(ink only)/transition/transformOrigin, durations/easings reference tokens); **index alternation** is a pure function of `custom`: `polaroid` even index → `x −150, rotate −10`, odd → `+150, +10`; `bubble` `tail: 'left'` → `transformOrigin '12% 100%'`, `'right'` → `'88% 100%'` (05 §5.2); Reveal registry: one pooled observer per options set, reveal-once across remounts; decorations (`Sun`…`TeacherFrame`) expose `id="deco-*"`, forwarded ref, outer/inner layers | INV-05.1/5/6/9/10 |
 | Motion runtime | `MotionProvider` renders `LazyMotion features={domAnimation} strict` (D-05.5) — snapshot of the rendered provider props — and under `strict` a `motion.div` from `motion/react` throws while `m.div` from `motion/react-m` renders, so the `m`-only rule has a runtime twin beside the §2 import ban | INV-05.11 |
@@ -253,11 +425,14 @@ always-pass test pair (07 §5) — site key `1x00000000000000000000AA`, secret
 English literals, INV-08.5) or ARIA roles/test-ids.
 
 Three properties of this rig decide what some tags can and cannot prove, so they are stated once here.
-**(a) The `⟦` marker is dev-only.** `pnpm start` serves the production loader, where a missing `zh` key
-deep-merges to the `en` value and renders English (02 §Loading, D-02.8) — it never emits `⟦namespace.key⟧`.
-The `@smoke` marker assertion is therefore a check that no key is missing from **`en` as well**; `zh` gaps are
-caught earlier and better by `validate:content` key parity in the `content` job (INV-02.2), which is the
-required check for that property. We do not add a dev-mode smoke run: it would duplicate a stronger gate.
+**(a) The `⟦` marker is dev-only.** `pnpm start` serves the production loader, where a key missing from
+`zh-Hans` or `zh-Hant` deep-merges to the `en` value and renders English (02 §Loading, D-02.8) — it never
+emits `⟦namespace.key⟧`. The `@smoke` marker assertion is therefore a check that no key is missing from **`en`
+as well**; Chinese gaps are caught earlier and better by `validate:content` three-way key parity in the
+`content` job (INV-02.2), which is the required check for that property. This matters more with three locales
+than it did with two: an untranslated `zh-Hant` page renders as fluent English and passes every e2e assertion
+in this table, so the *only* gate that sees it is the `content` job. We do not add a dev-mode smoke run: it
+would duplicate a stronger gate.
 **(b) Three tags are Chromium-only, for three different reasons.** The `LayoutShift` interface — and therefore
 `PerformanceObserver('layout-shift')` — exists only in Chromium, so a `@perf` run in `webkit-mobile` would
 observe nothing at all and report a pass; `@motion-vt` asserts the *typed* View-Transition behaviour 05 §5.7
@@ -281,8 +456,8 @@ the row below states three rather than two.
 
 | Tag | Suite (per locale unless noted) | Asserts |
 |---|---|---|
-| `@smoke` | every route (`/`, `routes[].path` — six detail pages at launch, plus the optional `faq` when OQ-02.7 adds it; `visit`) × locale; not-found URL | 200 (404 for not-found, localized `errors.notFound`); `<html lang>` = `LOCALE_META.htmlLang`; no `⟦` (scope: note (a) above); `hreflang` set = locales + `x-default`→`en`; canonical = self; no `Link` header with `hreflang` (D-02.9) |
-| `@i18n` | switcher from `/en/programs?x=1#sectionId`; root `/` with and without `Accept-Language: zh-CN` | URL `/zh/programs?x=1#sectionId`, `scrollY` unchanged, `NEXT_LOCALE` cookie, `lang` updated; **cascade**: every `[data-reveal]` in the new tree plays `swap` — opacity 0→1 with `min(index × 14 ms, 300 ms)` delays read from `data-reveal-index` (D-05.9; `[data-wordswap]` does not exist — `WordSwap` is only the menu sample line, checked in `@motion`); under reduced motion the cascade **still plays**, opacity-only with the `y` track dropped and the 14 ms delays kept, and only the root View-Transition crossfade is instant (05 §5.9) — a no-cascade instant swap fails; root redirects to `/zh` / `/en` (D-02.9) |
+| `@smoke` | every route × locale — `/` plus the six detail pages in `site.json.routes[]`, so **7 routes × 3 locales = 21 page URLs** at launch (14 while `zh-Hant` is out of `routing.locales`, INV-02.11); the reserved `faq` and `enroll` pages are **not** built (HD-5 answered OQ-02.7) and enter the matrix only if a `routes[]` entry ever appears; plus a not-found URL per locale | 200 (404 for not-found, localized `errors.notFound`); `<html lang>` = `LOCALE_META.htmlLang`, which for every locale **equals the URL segment** (`/zh-Hant/…` → `lang="zh-Hant"`); no `⟦` (scope: note (a) above); `hreflang` set = every enabled locale + `x-default`→`en`; canonical = self, in canonical BCP 47 casing; no `Link` header with `hreflang` (D-02.9) |
+| `@i18n` | the three-option switcher from `/en/programs?x=1#sectionId`; root `/` with `Accept-Language:` unset, `zh-CN`, `zh-TW` and `en-GB`; the lower-cased path `/zh-hans/programs` | the trigger shows `LOCALE_META[current].shortLabel` (`EN`/`简`/`繁`) and the menu lists the endonyms in `routing.locales` order with `aria-current` on the current one (D-02.10 — a two-name toggle fails); choosing 简体中文 gives URL `/zh-Hans/programs?x=1#sectionId`, `scrollY` unchanged, `NEXT_LOCALE` cookie, `lang` updated; **cascade**: every `[data-reveal]` in the new tree plays `swap` — opacity 0→1 with `min(index × 14 ms, 300 ms)` delays read from `data-reveal-index` (D-05.9; `[data-wordswap]` does not exist — `WordSwap` is only the menu sample line, checked in `@motion`); under reduced motion the cascade **still plays**, opacity-only with the `y` track dropped and the 14 ms delays kept, and only the root View-Transition crossfade is instant (05 §5.9) — a no-cascade instant swap fails; negotiation lands `zh-CN`→`/zh-Hans`, `zh-TW`→`/zh-Hant`, `en-GB` and unset→`/en` (02's table, 06 implements — the expectations are read from that table intersected with `routing.locales`, because the `zh-TW` row has no enabled target while `zh-Hant` is held out — OQ-08.11); `/zh-hans/programs` 308s to `/zh-Hans/programs` |
 | `@seo` | `sitemap.xml`, `robots.txt`, `/api/inquiry` | sitemap = every route × locale with alternates, no `/api/`; robots `Disallow: /api/`; `GET /api/inquiry` → 405 |
 | `@form` | fill → submit → success panel (focus on its heading); blank required → inline errors, `aria-invalid`, focus on first invalid; `page.route` forces 502 → `emailFailed` banner; forces 429 → `rateLimited`; forces `turnstile_failed` → its banner; honeypot filled → success panel (no-send proven in unit); pending state `aria-busy`, never `disabled`; 390 px: full-width submit, controls ≥ 44 px; keyboard-only completion. A *real* Turnstile rejection needs a different server env, so it is unit-only by design (MSW against `siteverify`, §4); Cloudflare's always-fail pair — site key `2x00000000000000000000AB`, secret `2x0000000000000000000000000000000AA` — is wired into a `workflow_dispatch` variant of `e2e` that boots a second `next start`, kept out of the PR matrix for the runner budget (OQ-08.3) | INV-07.4, D-07.4 |
 | `@nojs` | `javaScriptEnabled: false` project on `/` and the form | all section text visible (no opacity 0), count-up final values, `<noscript>` fallback visible, native validation, switcher anchor `href` = other-locale path | INV-05.10, D-07.5 |
@@ -291,7 +466,7 @@ the row below states three rather than two.
 | `@hover` | pointer gating (D-05.12, 05 §5.10). In the `webkit-mobile` project, `matchMedia('(hover: none) and (pointer: coarse)').matches` is the precondition, then `hover` on every button, nav link, polaroid and card leaves computed `transform`, `translate`, `scale` and `box-shadow` unchanged. In `chromium-desktop` with `reducedMotion: 'reduce'`, the same hovers change only colour/shadow — computed `transform` stays `none` on the inner layer (05 §5.10). If OQ-08.3 moves `webkit-mobile` to `main`-only, the touch half moves with it and the reduced-motion half still runs on every PR | D-05.12 |
 | `@motion-vt` (chromium) | init-script spies `document.startViewTransition`; "learn more →" → URL change with type `subpage-enter`, scroll top, `h1` focused; "← Back" → `/en#<homeAnchor>` via replace (history length unchanged), type `subpage-exit`, section heading focused; reduced motion / untyped nav → no typed transition. **Values** (05 §5.7, the numbers 05 fixes): during the transition, `document.getAnimations()` contains `gp-slide-in`/`gp-slide-out` on the `.gp-page` view-transition pseudo-elements with `getTiming().duration === 500`, `easing` equal to the resolved `--ease-soft` bezier, and a keyframe `translate: 103% 0`; the root groups are `animation: none` | D-05.10, OQ-05.2 |
 | `@nav-instant` (every project) | the unsupported-browser path 05 §5.7 requires, which a chromium-only suite cannot reach: an init script deletes `document.startViewTransition` before any bundle runs, then "learn more →" and "← Back" are exercised — URL, scroll-to-top, hash landing and `h1` / section-heading focus all still correct, `document.getAnimations()` holds no `::view-transition` animation, and nothing is left mid-slide. Deliberately **not** tagged `@motion-vt`, so the `grepInvert` above does not exclude it: in `firefox-desktop` and `webkit-mobile` the deletion is a no-op and the same assertions then cover engines that genuinely lack the API | D-05.10, 05 §5.7 |
-| `@perf` (chromium-desktop, both viewports) | `PerformanceObserver('layout-shift')` buffered during load + reveals + count-up + loops + locale toggle → CLS ≤ **0.02** per phase, at 1280×800 **and** 390×844 via `test.use` (03 §3.3 asks for 390; the LayoutShift API is Chromium-only, note (b) above, so this tag never runs in `webkit-mobile` where it would observe nothing); LCP element (hero image) has computed `opacity: 1` in SSR HTML; **no** request matching `fonts.gstatic\|_next/static/media/.*\.woff2` during the toggle; section-height snapshot: nav height and each `section[id]` height at 390 and 1280 in `en` vs `zh` written to `reports/section-heights.json` and compared to the committed baseline — a delta > one line-height of that section fails (04 adds `min-height`, 03 §3.3) | INV-05.7, 03 §3.3 |
+| `@perf` (chromium-desktop, both viewports) | `PerformanceObserver('layout-shift')` buffered during load + reveals + count-up + loops + locale toggle → CLS ≤ **0.02** per phase, at 1280×800 **and** 390×844 via `test.use` (03 §3.3 asks for 390; the LayoutShift API is Chromium-only, note (b) above, so this tag never runs in `webkit-mobile` where it would observe nothing); LCP element (hero image) has computed `opacity: 1` in SSR HTML; **no** request matching `fonts.gstatic\|_next/static/media/.*\.woff2` during the toggle; section-height snapshot: nav height and each `section[id]` height at 390 and 1280 for **every locale in `routing.locales`** written to `reports/section-heights.json` and compared to the committed baseline — a delta > one line-height of that section fails (04 adds `min-height`, 03 §3.3). Three locales make this snapshot more valuable, not just wider: Traditional glyphs are on average wider than Simplified at the same size, so `zh-Hant` is the locale most likely to overflow a fixed-height section, and it is the row that would otherwise only be caught by eye | INV-05.7, 03 §3.3 |
 | `@thirdparty` | all request hosts on `/` ∈ {self, `challenges.cloudflare.com`, `va.vercel-scripts.com`, `vitals.vercel-insights.com`} [last two appear only on Vercel — assumed] | INV-07.8 |
 | `@headers` | response headers on `/en` equal the set 06/09 declare (`x-content-type-options`, `referrer-policy`, `permissions-policy`, CSP incl. Turnstile hosts, HSTS on Vercel) | 06/09 |
 | `@a11y` | §6 | |
@@ -318,9 +493,15 @@ at 1280 shows no horizontal scroll (INV-05.2's `overflow-x: clip` on `html`).
 ### 7 · Performance budgets (Lighthouse CI)
 
 `lighthouserc.cjs`: `collect.url` from the event payload (`github.event.deployment_status.target_url`,
-D-08.9), mobile preset (LHCI's
-simulated throttling), `numberOfRuns: 3`, `aggregationMethod: median`; preview run = `/en`, `/zh`,
-`/zh/programs` (CJK-heavy); production run = every route × locale, mobile **and** desktop presets.
+D-08.9), mobile preset (LHCI's simulated throttling), `aggregationMethod: median`; preview run = `/en`,
+`/zh-Hans`, `/zh-Hans/programs` (CJK-heavy), plus `/zh-Hant` once that locale is in `routing.locales` — four
+URLs, `numberOfRuns: 3`, advisory. Production run = every route × locale, mobile **and** desktop presets,
+which at three locales is 7 × 3 × 2 = **42 collections**; at `numberOfRuns: 3` that is 126 Lighthouse runs and
+does **not** fit the job's 40-minute timeout (it barely fit at two locales). So the production matrix is
+re-cut rather than trimmed: `numberOfRuns: 3` on the three home URLs (`/{locale}`), where LCP and CLS are the
+numbers that matter and run-to-run variance is worst, `numberOfRuns: 1` on the eighteen detail-page URLs, and
+the `lighthouse-prod` timeout goes to **60 min** (§10). Every URL is still measured on both presets; only the
+sampling depth differs, and the launch checklist reads the same assertions either way.
 Assertions (`error` unless noted; our numbers — OQ-08.2): `categories:performance ≥ 0.90`,
 `categories:accessibility = 1`, `categories:best-practices ≥ 0.95`, `categories:seo = 1`;
 `largest-contentful-paint ≤ 2500`, `cumulative-layout-shift ≤ 0.05` — this is Lighthouse's whole-page,
@@ -344,9 +525,12 @@ summary for eyeballing. Field vitals (INP, p75) are read in Speed Insights after
 `tests/e2e/visual.spec.ts` (`@visual`, chromium-desktop only, D-08.10): for each locale and each viewport
 (1280×800, 390×844 via `test.use`), `/` scrolled section by section (`section[id]` → `toHaveScreenshot`,
 `animations: 'disabled'`, reduced motion on, `mask` for the count-up and the menu's "today" chip, wait
-`document.fonts.ready`), the top fold of each detail page in `site.json.routes[]` (six at launch; a seventh
-if OQ-02.7 adds `faq`), the hamburger sheet (390), the lightbox, the form
-success panel. ≈ 2 × 2 × (8 + 6 + 3) = 68 images. The `e2e` job runs inside
+`document.fonts.ready`), the top fold of each detail page in `site.json.routes[]` (six — `faq` and `enroll`
+are reserved and not built, HD-5), the hamburger sheet (390), the lightbox, the form
+success panel. That is 2 viewports × L locales × (8 + 6 + 3) shots: **68 images at two locales, 102 at
+three**. The 34 `zh-Hant` images are generated by the PR that adds `zh-Hant` to `routing.locales` and nowhere
+else — that commit is the named reason INV-08.8 demands (D-08.18), and the Traditional glyph forms it pins are
+the whole point of having the row. The `e2e` job runs inside
 `mcr.microsoft.com/playwright:v<version>-noble` (§10), the same image `pnpm test:e2e:update` uses, so the
 screenshots under comparison and the baselines share one font set. Baselines are regenerated only with
 `pnpm test:e2e:update` (runs the same command inside the Playwright image with the repo mounted) in a PR that
@@ -358,30 +542,40 @@ baselines are regenerated once.
 stack no visitor has. 03 §5 accepts that `→` `↗` `←` `★` fall out of the `latin` subset and render from the
 next face in the stack, differing per OS. That is not machine-checkable on GitHub's runners, so it is a
 **named manual check, `MC-08.1 per-OS glyph render`**, run at the phase gate that ships the sections and again
-at launch: open `/en` and `/zh` at 390 and 1280 on **macOS** (Safari + Chrome) and **Windows 11** (Edge +
-Chrome) and confirm, in the "learn more →" links, the hero CTA, the Yelp button and the star rows, that
-`→ ★ ↗` render as glyphs (no tofu, no emoji-style colour substitution) and sit on the text baseline at the
-same size. Owner: the 04 implementer, with the design owner; evidence is four screenshots attached to the
-phase-gate bead (11 W-11.6). It is a §12.2 gate item, not a CI job — no runner can produce it.
+at launch: open `/en`, `/zh-Hans` and `/zh-Hant` at 390 and 1280 on **macOS** (Safari + Chrome) and
+**Windows 11** (Edge + Chrome) and confirm, in the "learn more →" links, the hero CTA, the Yelp button and the
+star rows, that `→ ★ ↗` render as glyphs (no tofu, no emoji-style colour substitution) and sit on the text
+baseline at the same size. HD-10 adds a second thing to look at on the Chinese pages, and it is the reason
+`zh-Hant` cannot be waved through as "same as `zh-Hans` with different characters": confirm the CJK text
+renders in a **Traditional** face and not in Simplified glyph forms. 03 D-03.14 answers this with two script
+stacks (`--font-cjk-sc` / `--font-cjk-tc`) selected by `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)`; what no
+runner can confirm is that the TC stack actually resolves to a Traditional face on a real macOS and a real
+Windows box, and a machine that falls through to an SC face renders `zh-Hant` in Simplified glyph forms while
+passing every automated check on this page. Owner: the 04 implementer, with the design owner; evidence is
+four screenshots attached to the phase-gate bead (11 W-11.6). It is a §12.2 gate item, not a CI job — no
+runner can produce it.
 
 ### 9 · Invariant → check → job mapping
 
 | INV | Check (named) | Job | Mode |
 |---|---|---|---|
 | INV-02.1 | `react/jsx-no-literals` (D-08.2) · DOM-literal unit test | `static` · `unit` | CI |
-| INV-02.2 | `validate:content` parity/ICU/tags/arrays | `content` | CI |
+| INV-02.2 | `validate:content` three-way parity · ICU arguments as a **subset** (undeclared-in-`en` = error, omitted-in-locale = warning) · tags/arrays as equalities (§3) | `content` | CI |
 | INV-02.3 | `validate:content` Zod + ids + images + alt · loader in `next build` · schema unit tests | `content` · `build` · `unit` | CI |
 | INV-02.4 | `validate:content` data-pattern scan | `content` | CI |
-| INV-02.5 | `@smoke` route × locale | `e2e` | CI |
-| INV-02.6 | `validate:content --report` → artifact + sticky comment | `content` | CI |
+| INV-02.5 | `@smoke` route × locale — 21 page URLs at three locales, read from `routing.locales` × `routes[]` | `e2e` | CI |
+| INV-02.6 | `validate:content --report` → artifact + sticky comment; one column per locale plus the provisional-values block | `content` | CI |
 | INV-02.7 | `no-restricted-imports` next/link, next/navigation · `@i18n` switcher/URL tests | `static` · `e2e` | CI |
 | INV-02.8 | `validate:content` empty/HTML | `content` | CI |
-| INV-02.9 | `no-restricted-syntax` locale comparisons/switch | `static` | CI |
+| INV-02.9 | `no-restricted-syntax` locale comparisons/switch (the `/^(en\|zh)/` selector covers all three ids and the retired `'zh'`, §2) | `static` | CI |
+| INV-02.10 | `validate:content` registry resolution — unresolvable/duplicate path fails in **every** mode · `--release` R1 (registry non-empty), R2 (`TODO`/`TBD`/`FIXME`/`XXX` values), R3 (can-never-be-real backstop), R4 (the three ADJ-24 sending-identity literals, exact match) · registry fixtures **and** the R4 spelling-drift test in the validator's own unit tests (§3, §4) | `content` · `lighthouse-prod` preflight · `unit` | CI / launch |
+| INV-02.11 | `validate:content --release` requires every locale in `routing.locales` complete and **ignores** `--warn-locale`; a held-out locale's tree is scanned reporting-only (§3) | `lighthouse-prod` preflight · `content` | launch / CI |
 | INV-03.1 | Stylelint `color-no-hex` + function list · ESLint hex/rgb regex on `className` **and** on `style={}` (both selectors, §2) | `static` | CI |
 | INV-03.2 | Stylelint px/ms/bezier disallowed values · ESLint arbitrary-value regex | `static` | CI |
 | INV-03.3 | ESLint breakpoint-variant regex · `check-tokens.ts` CSS `@media`/`@variant` scan | `static` | CI |
 | INV-03.4 | tokens parity test (both directions) | `unit` | CI |
 | INV-03.5 | tokens file-snapshot test · PR template "03 updated" box | `unit` · process | both |
+| INV-03.6 | ESLint `font-cjk-(sc\|tc)` className ban · `check-tokens.ts` `--font-cjk-(sc\|tc)` scan outside `src/styles/tokens.css` (§2 (c)) · INV-02.9's locale-comparison rule covers the TypeScript half · `MC-08.1` confirms the TC stack resolves on real machines | `static` · phase gate | CI + manual |
 | INV-05.1 | Stylelint `property-allowed-list` on keyframe files · variants catalogue test | `static` · `unit` | CI |
 | INV-05.2 | Stylelint overflow/contain/content-visibility ban · `@motion` computed-style scan | `static` · `e2e` | CI |
 | INV-05.3 | Stylelint `will-change` ban · ESLint `willChange` ban · `@motion` rest scan | `static` · `e2e` | CI |
@@ -403,14 +597,19 @@ phase-gate bead (11 W-11.6). It is a §12.2 gate item, not a CI job — no runne
 | INV-07.6 | handler decoy/turnstile/fail-closed/no-bypass tests · `@form` honeypot | `unit` · `e2e` | CI |
 | INV-07.7 | idempotency-key tests (MSW asserts header) | `unit` | CI |
 | INV-07.8 | `@thirdparty` host allowlist · Lighthouse `third-party-summary` | `e2e` · `lighthouse-*` | CI / advisory |
+| INV-07.9 | `validate:content` INV-02.4 data-pattern scan (no address/phone/licence/Yelp literal in a locale file) · `react/jsx-no-literals` + the DOM-literal unit test (none in code) · `--release` R1/R3/**R4** (none still a sample default at launch — R4 is the rule that covers the sending domain, the from-address and the inbox, which R3's ranges do not reach, §3) | `content` · `static` · `unit` · `lighthouse-prod` preflight | CI / launch |
 | INV-11.1 | `bead-trailer` gate (11 §6, items 1–3) | `bead-trailer` | CI |
 | INV-11.2 | `bead-trailer` item 2 (commit ↔ committed projection agree) · W-11.10 review | `bead-trailer` · process | both |
 | INV-11.3 | `bead-trailer` item 2 (assignee ∉ ORCH_WORD) · PR template names verifier ≠ implementer | `bead-trailer` · process | both |
 | INV-11.4 | process only (seats never run `bd`); no CI surface | — | process |
 | INV-11.5 | branch protection: no force-push, admins included, required checks (09) | settings | process |
 
-38 invariants from the five contract documents (02, 03, 05, 07, 11): 34 fully mechanical,
-3 mechanical-plus-process (INV-03.5, INV-11.2, INV-11.3), 1 process-only (INV-11.4). Two rows — `D-05.12` and
+**42** invariants from the five contract documents (02: 11, 03: 6, 05: 11, 07: 9, 11: 5): 38 fully mechanical,
+3 mechanical-plus-process (INV-03.5, INV-11.2, INV-11.3), 1 process-only (INV-11.4). The count was 38 before
+2026-08-22; the four added by the HD-4…HD-10 round — INV-02.10 (provisional registry), INV-02.11 (a locale is
+complete before it launches), INV-03.6 (typography never branches on locale) and INV-07.9 (no owner fact is a
+literal or an invention) — are mapped above in the same pass that created them, which is what INV-08.1
+requires. Two rows — `D-05.12` and
 `03 §5 glyph fallback` — are keyed on a decision rather than an invariant, because 05 §5.14 and 03 §5 each
 require a check their own document declares no `INV-*` for; the table is a coverage list, so they belong here.
 
@@ -443,7 +642,7 @@ flowchart LR
 | `e2e-ok` | — | `e2e` | `if: always()` — fails unless every shard succeeded (single name for branch protection) | 2 min | — | **yes** |
 | `bead-trailer` | PR (opened, synchronize, reopened, edited) | — | `scripts/ci/bead-trailer.sh origin/$base $head` with `PR_BODY`, `jq` (11 §6) | 5 min | — | yes |
 | `lighthouse-preview` | `deployment_status` (state `success`, preview environment) | — | `lhci autorun --collect.url=$URL/en …` · `@smoke` + `@form` subset against `$URL` (with `x-vercel-protection-bypass` — previews are protected, 09 D-09.4) · check-run on `github.event.deployment.sha` via `actions/github-script` · summary | 15 min | `lhci/` | advisory |
-| `lighthouse-prod` | `deployment_status` (state `success`, production environment) · `workflow_dispatch` | — | `validate:content --release` · full LHCI matrix · `seo-smoke.ts` (sitemap/hreflang/robots on the real domain) · `@headers` | 40 min | `lhci/` | launch gate (§12.3) |
+| `lighthouse-prod` | `deployment_status` (state `success`, production environment) · `workflow_dispatch` | — | `validate:content --release` (R1–R4 + locale completeness, §3) · full LHCI matrix, 42 collections at three locales · `seo-smoke.ts` (sitemap/hreflang/robots on the real domain) · `@headers` | **60 min** (was 40; §7's re-cut matrix still needs the headroom at three locales) | `lhci/` | launch gate (§12.3) |
 | `e2e-full` | push `main` · nightly `schedule` · `workflow_dispatch` | `build` | same `container:` as `e2e`; all 4 projects, `retries: 0`; failure opens a bead via the orchestrator (no auto-issue) | 40 min | report | advisory |
 | `audit` | PR · weekly `schedule` | — | `pnpm audit --prod --audit-level=high` · `gitleaks` (PR diff) [gitleaks-action licence for orgs — assumed free for a personal repo] | 10 min | — | advisory |
 
@@ -458,8 +657,32 @@ its version from `packageManager`; `setup-node` takes Node from `.nvmrc` = `24`.
 store (`setup-node` `cache: pnpm`), Next (`.next/cache` keyed on lockfile + hash of `src/** content/**
 public/**`, restore-keys on the lockfile). No Playwright browser cache: the image carries them, and its tag
 is bumped with `@playwright/test` in the same Renovate PR (a mismatch between image and package is a
-`playwright test` startup error, not a silent skew). Estimated wall time per PR ≈ 12–15 min, ≈ 30
-runner-minutes (OQ-08.3). `deployment_status` workflows, like `repository_dispatch` ones, exist only on the
+`playwright test` startup error, not a silent skew).
+
+**What three locales cost (HD-10; the figure OQ-08.3 asks about).** Nothing in the matrix is hard-coded
+(INV-08.4), so HD-10 buys no test edits — it widens every loop from two locales to three and the bill with it.
+Per PR, per job, rounded to the minute GitHub bills:
+
+| Job | Two locales | Three locales | Why it moves |
+|---|---|---|---|
+| `static` | 4 | 4 | source-only; locale-independent |
+| `content` | 1 | 1–2 | one more tree to parse and diff against `en` |
+| `unit` | 3 | 3–4 | the render loop and `CountUp`/template tests run once per locale |
+| `build` | 6 | 6–7 | `generateStaticParams` emits 21 pages instead of 14; compile dominates |
+| `e2e` (2 shards) | 14 | 19 | ≈ 75 % of the suite is per-locale (`@smoke`, `@a11y`, `@visual`, `@form`, `@nojs`); `@headers`, `@thirdparty`, `@motion-obs`, `@nav-instant` are not |
+| `bead-trailer` · `audit` | 2 | 2 | unchanged |
+| **total** | **≈ 30** | **≈ 38–40** | wall time ≈ 12–15 min → **≈ 15–18 min** (critical path `build` + one `e2e` shard) |
+
+At the build's PR rate that moves the monthly estimate from ≈ 1,000–1,500 to **≈ 1,300–2,000 runner-minutes**,
+which reaches the 2,000 free minutes a private repo gets — the reason OQ-08.3 stays open with a sharper
+number rather than being closed. Two levers are already costed: moving `webkit-mobile` from PR to `main`-only
+returns ≈ 6 min/PR, and holding `@visual` at `en` + `zh-Hans` returns ≈ 2 min/PR and 34 baseline images.
+Neither is taken unilaterally. The step is the commit that adds `zh-Hant` to `routing.locales` (D-08.18):
+until then every number in the middle column still applies, however much Traditional content sits in the tree.
+The nightly `e2e-full` (4 projects) and `lighthouse-prod` grow on the same ratio; `lighthouse-prod` is the one
+job where the growth broke a limit rather than a budget, and §7 re-cuts its sampling depth to fit 60 minutes.
+
+`deployment_status` workflows, like `repository_dispatch` ones, exist only on the
 default branch and run on the default branch's SHA [verified: GitHub Actions "Events that trigger workflows",
 2026-08-22]: they attach to the PR by creating a check run on `github.event.deployment.sha`;
 until that workflow is on `main` (10 schedules it with the scaffold PR) the preview run is manual. Nothing
@@ -475,7 +698,7 @@ may re-run once only for an infrastructure failure — runner lost, cache 5xx �
 | `pnpm dev` / `build` / `start` | Next | `.env.local` from `.env.example` (07 §5); `INQUIRY_TRANSPORT=log` prints emails |
 | `pnpm typecheck` | `next typegen && tsc --noEmit` | §2 |
 | `pnpm lint` / `lint:css` / `format` / `format:check` | ESLint · Stylelint · Prettier | `lint:fix` variants exist |
-| `pnpm validate:content [--report] [--release]` | `tsx scripts/validate-content.ts` | §3 |
+| `pnpm validate:content [--report] [--warn-locale <id>] [--release [--accept-sample <path>]]` | `tsx scripts/validate-content.ts` | §3. `--warn-locale zh-Hans` / `zh-Hant` while a tree is being translated; `--release` is the launch gate and ignores it. `--accept-sample` is R4-only, repeatable, names one path, and is typed by a human at the launch gate — never baked into a workflow without §12.3 recording why |
 | `pnpm check:tokens` | `tsx scripts/ci/check-tokens.ts` + `vitest run tests/unit/design` | CSS scans + parity/snapshot |
 | `pnpm check:secrets` / `check:env` / `check:todo` | `scripts/ci/bundle-secrets.sh` (needs a build) · `env-example.ts` · `todo-grep.sh` | |
 | `pnpm test` / `test:watch` / `test:coverage` | Vitest | |
@@ -494,9 +717,14 @@ Vitest). `.nvmrc` = `24`; `engines.node = "24.x"`; `packageManager = "pnpm@<pinn
 ### 12 · Definition of Done
 
 **12.1 Per PR** (all mechanical unless marked ☐ = PR-template checkbox, verified by the verifier seat, W-11.11):
-the six required checks green; no new `@flaky-known` without an open bead; coverage report shows no missing
-key in any locale (or OQ-02.2 has been answered); ☐ visual change → Playwright diff images attached and the
-design file/line cited; ☐ token change → 03 edited in the same PR (INV-03.5); ☐ new/changed INV in
+the six required checks green — green *and required*, which as of 2026-08-22 they are not yet (D-08.19);
+no new `@flaky-known` without an open bead; coverage report shows no missing
+key in any enabled locale (or the PR names the `--warn-locale` it is running under); a PR that adds a
+provisional sample default adds its path to `site.json.provisional` in the same PR, and a PR that replaces a
+real value deletes the path (§3, INV-02.10); a PR that **respells** one of the three ADJ-24 sending-identity
+samples updates R4's literal list in the same PR — the §4 spelling-drift test reds `unit` if it does not;
+☐ visual change → Playwright diff images attached and the design file/line cited; ☐ token change → 03
+edited in the same PR (INV-03.5); ☐ new/changed INV in
 02/03/05/07/11, or in a wave-2 document already mapped → row in §9 (INV-08.1);
 ☐ new env var → `.env.example` + 07 §5/09; ☐ PR body ends with the single `Bead:` trailer (11 §5);
 ☐ implementer and verifier named and different (INV-11.3). `.github/PULL_REQUEST_TEMPLATE.md` carries the
@@ -505,42 +733,71 @@ boxes and ends with the `Bead:` placeholder paragraph.
 **12.2 Per phase gate** (10 schedules, 11 W-11.6 closes): every bead of the phase has a verifier report;
 `e2e-full` green on `main` (4 projects); `@a11y` 0 violations across the matrix; `lighthouse-preview` meets
 §7 on the phase's last preview; `@visual` baselines current (from 04's phase); content coverage 100 % in
-both locales for the namespaces the phase shipped; no open `@flaky-known` older than one phase; **`MC-08.1`
+every locale in `routing.locales` for the namespaces the phase shipped — a locale that is not there yet is
+either finished or removed from `routing.locales`, never warned through the gate (INV-02.11); the phase's
+provisional block in `reports/content-coverage.md` reviewed, so the list the owner has to clear at launch is
+never a surprise; no open `@flaky-known` older than one phase; **`MC-08.1`
 per-OS glyph render run and its four screenshots attached to the phase-gate bead** (§8 — macOS Safari/Chrome
-and Windows 11 Edge/Chrome, `/en` and `/zh` at 390 and 1280, `→ ★ ↗` present and baseline-aligned; owner: the
+and Windows 11 Edge/Chrome, `/en`, `/zh-Hans` and `/zh-Hant` at 390 and 1280, `→ ★ ↗` present and
+baseline-aligned and the Traditional pages rendering in a TC face; owner: the
 04 implementer with the design owner) — from the phase that ships the sections onward, because 03 §5 hands
 this glyph question to 08 and no runner can answer it; **every invariant the phase's documents declare has a
 §9 row** (the wave-2 backlog named in §9's scope note — INV-04.*, INV-06.*, INV-09.*, INV-10.* — is drained
 this way rather than in one sweep); any `axe-exceptions.json` entry whose `expires` is this gate is either
-removed or re-dated with the design owner (§6, OQ-03.2).
+removed or re-dated with the design owner (§6, OQ-03.2). **At the Phase 2 gate specifically** (D-08.19,
+HD-2): the repository ruleset's ref-name include list names the default branch and the six check names of
+D-08.12 are listed as required — until it does, "the required checks are green" is a habit, not a gate, and
+nothing mechanically prevents a merge with `content` red (OQ-11.3, 09).
 
 **12.3 Launch checklist** (the `lighthouse-prod` workflow runs the mechanical part; 09 owns the operational
-items): `pnpm validate:content --release` passes (no `"TODO"` owner value); LHCI on the production domain,
-every route × locale, mobile + desktop, meets §7; `@a11y` matrix against production = 0; `@headers`,
+items): **`pnpm validate:content --release` passes** — which now means all five of: `site.json.provisional`
+is empty (R1), no `TODO`/`TBD`/`FIXME`/`XXX` value survives anywhere under `content/` (R2), no unreal
+placeholder survives its deleted marker — no `.example` host, no `555-01xx` number, no licence `000000000`
+(R3) — **no ADJ-24 sending-identity sample survives its deleted marker** — not
+`mail.greenpasturesdaycare.com`, `no-reply@mail.greenpasturesdaycare.com` or
+`hello@greenpasturesdaycare.com` (R4), and if the owner has genuinely adopted one of those addresses, the
+run carries `--accept-sample <path>` for it and **this checklist names the path and who accepted it**, so an
+override is a recorded decision and not a quiet flag — and every locale in `routing.locales` has full parity
+with `--warn-locale` ignored (INV-02.11); the
+23 Phase 3 paths (02 *Provisional values*) are the list the owner works down, and 09's launch checklist reads
+the same block out of `reports/content-coverage.md`; LHCI on the production domain,
+every route × locale — 21 URLs at three locales — mobile + desktop, meets §7; `@a11y` matrix against production = 0; `@headers`,
 `seo-smoke.ts` (sitemap, `hreflang`, canonical, robots, 404 per locale) on the real domain; **one manual
 real-key Turnstile submission in production** reaches the inbox (07 §5 — previews use test keys), then
-`INQUIRY_TO_EMAIL` production scope is confirmed; **`MC-08.1` re-run against the production domain** (§8 —
-the glyph fallback is the one rendering question no runner answers); WAF rule live (09); branch protection
-shows exactly the six
-required checks, squash-only, "PR title and description" (OQ-11.3); `e2e-full` green on the release SHA;
+`INQUIRY_TO_EMAIL` production scope is confirmed — this is the item that catches the residual risk R4 cannot
+(§3: a sending address edited to something *different* and still unverified), so "the mail was accepted" is
+not evidence, only "the mail arrived" is; **`MC-08.1` re-run against the production domain** (§8 —
+the glyph fallback is the one rendering question no runner answers); WAF rule live (09); **the ruleset
+targets the default branch** and shows exactly the six required checks, squash-only, "PR title and
+description" (D-08.19, OQ-11.3 — checked 2026-08-22, the ruleset's include list is still empty, so this is a
+real line item and not a formality); `e2e-full` green on the release SHA;
 Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the first week).
 
 ### 13 · Invariants
 
 - **INV-08.1 Complete mapping of the contract documents.** Every `INV-*` declared by 02, 03, 05, 07 and 11 has
   a row in §9 naming a check and a job, and a PR that adds or changes one of those invariants changes §9 in
-  the same PR. The 32 wave-2 invariants (04, 06, 09, 10) are outside this invariant today and are mapped at
+  the same PR — the four added on 2026-08-22 (INV-02.10, INV-02.11, INV-03.6, INV-07.9) were mapped in this
+  same revision, which is the rule applied to itself. The 32 wave-2 invariants (04, 06, 09, 10) are outside this invariant today and are mapped at
   the phase gate that implements them (§9 scope note, §12.2); once a wave-2 document's invariants are mapped,
   the same same-PR rule applies to them. Scoping it this way keeps the invariant true as written — the earlier
   unrestricted wording was false on the day it was written, and an invariant nobody can satisfy gates nothing.
 - **INV-08.2 Exactly six required checks** on `main` — `static`, `content`, `unit`, `build`, `e2e-ok`,
   `bead-trailer`; nothing merges with one red; admins are not exempt; only the human may change the set
-  (09, INV-11.5).
+  (09, INV-11.5). **Not yet enforced, and knowingly so:** as checked on 2026-08-22 the repository's ruleset
+  includes no ref pattern, so it protects no branch and none of the six is required (HD-2, D-08.19). The
+  names are unaffected — the workflows are written to them and this document does not restate them
+  conditionally — but until the human adds the default branch to the ruleset's include list, this invariant
+  describes an intent rather than a setting. The Phase 2 gate (§12.2) is where it becomes true.
 - **INV-08.3 No retries by default.** `retries: 0`; the only retried tests carry `@flaky-known(gp-<id>)` with
   an open bead; raising timeouts, `waitForTimeout`, `networkidle` and `force` are lint errors.
-- **INV-08.4 Matrix is data.** E2E, a11y, visual and Lighthouse loops read `routing.locales` and
-  `site.json.routes[]`; no test hard-codes `['en', 'zh']` or a route list; adding a locale (02 checklist)
-  extends every matrix with no test change.
+- **INV-08.4 Matrix is data.** E2E, a11y, visual, Lighthouse, the unit render loop and the section-height
+  snapshot read `routing.locales` and `site.json.routes[]`; no test hard-codes a locale array
+  (`['en', 'zh-Hans']` is as wrong as the retired `['en', 'zh']`) or a route list; adding a locale (02
+  checklist) extends every matrix with no test change, and *removing* one — which INV-02.11 does to an
+  unfinished locale — narrows every matrix the same way. The corollary is a budget fact, not just a coding
+  rule: the runner bill steps when a locale enters `routing.locales`, so §10's two-column table is the whole
+  story and no PR needs to be re-costed by hand.
 - **INV-08.5 Tests carry no copy.** Assertions compare against values loaded from `content/<locale>/**` or
   use roles/test-ids; a translator's edit never breaks a test and a test never documents English.
 - **INV-08.6 One command set.** `pnpm ci` runs the same scripts, versions and flags as CI (`--frozen-lockfile`,
@@ -557,12 +814,23 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
 
 - **OQ-08.1** · answerer: 04 implementer with the design owner, at the first sections PR — Visual regression
   tolerance (`maxDiffPixelRatio 0.01`, `threshold 0.2`) and chromium-only scope: accept, or widen to webkit
-  (iOS-heavy audience) at ~2× CI time?
+  (iOS-heavy audience) at ~2× CI time? The locale dimension is part of the same answer now: three locales make
+  the suite 102 images rather than 68 (§8), and `zh-Hant` differs from `zh-Hans` only in glyph forms and line
+  wrapping — which is either exactly what a screenshot is for or 34 images of near-duplicate, depending on how
+  much the TC font stack is trusted. Default: all three locales in, per INV-08.4.
 - **OQ-08.2** · answerer: human (Hanyi) with 09, calibrated at the first preview with real photography —
   Lighthouse thresholds and resource budgets in §7 are plan values; confirm or reset after the calibration run.
-- **OQ-08.3** · answerer: human (Hanyi) — CI minutes: is the repo private (2,000 free GitHub minutes/month)
-  and is ≈ 30 runner-minutes per PR (≈ 1,000–1,500/month during the build) acceptable, or should `webkit-mobile`
-  move from PR to `main`-only?
+- **OQ-08.3** · answerer: human (Hanyi) — **restated 2026-08-22 for HD-10, still open.** CI minutes: is the
+  repo private (2,000 free GitHub minutes/month), and is the three-locale figure acceptable? The number the
+  question originally carried — ≈ 30 runner-minutes per PR, ≈ 1,000–1,500/month during the build — was for two
+  locales. With `zh-Hant` in `routing.locales` the same pipeline is **≈ 38–40 runner-minutes per PR and
+  ≈ 15–18 min wall**, i.e. **≈ 1,300–2,000 minutes/month**, which reaches the free ceiling instead of sitting
+  under it (§10 breaks the increase down job by job). Levers, costed: `webkit-mobile` from PR to `main`-only
+  returns ≈ 6 min/PR; holding `@visual` at `en` + `zh-Hans` returns ≈ 2 min/PR and 34 baseline images;
+  dropping the third locale from the *PR* e2e matrix and running it only in `e2e-full` returns ≈ 5 min/PR but
+  lets a `zh-Hant` regression reach `main`. Default until answered: change nothing — the estimate is an
+  estimate, and the honest first measurement is the scaffold PR's own run. Timing note: nothing needs deciding
+  until `zh-Hant` joins `routing.locales` (D-08.18); while it is held out for review the bill stays at ≈ 30.
 - **OQ-08.4** · **closed** — answered by 09 `D-09.4`: previews are behind Standard Protection with Vercel
   Authentication, production is public. So `lighthouse-preview` gets Protection Bypass for Automation —
   `VERCEL_AUTOMATION_BYPASS_SECRET` as a repository secret (the one exception to INV-08.7, scoped to that
@@ -583,16 +851,39 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   to one Linux font stack (D-08.10), and GitHub's hosted macOS/Windows runners would each need their own
   baseline set. What 08 provides instead is `MC-08.1`, the named manual per-OS glyph check (§8, gated in
   §12.2). Reword 03 §5 to point at `MC-08.1` — one line, no change to 03's glyph decision itself.
+- **OQ-08.10** · answerer: 02 (writer-contracts) — **pending-locale provisional paths.** 02's 23-entry Phase 3
+  seed contains `brand.name.zh-Hant` and `brand.shortName.zh-Hant`; INV-02.3 says a localized value carries an
+  entry for every id in `routing.locales` **and no others**; INV-02.11 and OQ-02.8's stated default keep
+  `zh-Hant` out of `routing.locales` until a human has reviewed it. Those three together make two seeded paths
+  unresolvable, and 02 says an unresolvable path fails `validate:content` **in every mode** — so the `content`
+  job goes red on the day the escape hatch is used. §3 rule 6 is 08's resolution (a locale-suffixed path whose
+  locale is not enabled is *pending locale*: reported, still blocking `--release` under R1, never an error).
+  Confirm it as one line in 02's *Provisional values* rules, or name a different fix — dropping the two paths
+  from the seed until the locale is enabled would also work and is 02's call, not 08's.
+- **OQ-08.11** · answerer: 06 (writer-routing) — **negotiation with a disabled locale.** 02's Accept-Language
+  table maps `zh-TW`/`zh-HK`/`zh-MO`/`zh-Hant-*` → `zh-Hant` unconditionally, but INV-02.11 allows `zh-Hant`
+  to be absent from `routing.locales`. What does the proxy do with a `zh-TW` visitor while that row has no
+  enabled target — fall back to `zh-Hans` (same language, wrong script) or to `en` (the default)? 08's `@i18n`
+  test reads the table intersected with `routing.locales` and asserts whichever 06 decides; it cannot assert
+  both. Not urgent — it only matters in the window where `zh-Hant` exists in the tree and not in the routing
+  config — but that window is the plan's stated default, so it will happen.
 
 ## Cross-references
 
 - `docs/design/README.md` — motion system, section inventory, "recreate pixel-perfectly" (visual scope);
   `docs/design/desktop/README.md`, `docs/design/mobile/README.md` — viewports 1280 / 390, 44 px targets.
 - `docs/technical/01-stack-decisions.md` — ADR-001 (Next 16, Node 24, no `next lint`), ADR-007 (Vercel).
-- `docs/technical/02-i18n-content-contract.md` — INV-02.1…9, D-02.7/D-02.8/D-02.9 (root redirect, `<html lang>`),
-  §Loading (production deep-merge, so the `⟦` marker is dev-only), `--release`, `routing.locales`,
-  `site.json.routes[]`, OQ-02.2, OQ-02.7 (optional `faq`).
-- `docs/technical/03-design-system-tokens.md` — INV-03.1…5, D-03.3, D-03.12, §3.3 toggle measurements,
+- `docs/technical/02-i18n-content-contract.md` — INV-02.1…11 (INV-02.2 three-way parity with ICU arguments as
+  a subset; INV-02.10 the provisional registry; INV-02.11 a locale is complete before it launches),
+  D-02.1 (the three locale ids), D-02.7/D-02.8/D-02.9 (root redirect, `<html lang>`, negotiation table),
+  D-02.10 (three-option switcher), D-02.17 (six subpages, `faq`/`enroll` reserved), D-02.19 (brand names),
+  D-02.20 + §Provisional values (the registry, the path grammar, the 23-entry Phase 3 set, and the ADJ-24
+  note whose three sending-identity samples §3 R4 hard-codes — respelling one there changes R4 here), D-02.21
+  (`zh-Hant` seeded then reviewed); §Loading (production deep-merge, so the `⟦` marker is dev-only),
+  the `--report` / `--warn-locale <id>` / `--release` flags, `routing.locales`, `site.json.routes[]`,
+  §Retiring the `zh` identifier, OQ-02.2, OQ-02.8.
+- `docs/technical/03-design-system-tokens.md` — INV-03.1…6 (INV-03.6 asks 08 for the `font-cjk-sc`/`-tc`
+  utility check, §2 (c)), D-03.14 (`--font-cjk` resolves per script), D-03.3, D-03.12, §3.3 toggle measurements,
   §5 glyph fallback (→ `MC-08.1`, OQ-08.9), §10 AA list, OQ-03.2; `src/styles/tokens.css`,
   `src/design/tokens.ts` (memo ADJ-8).
 - `docs/technical/04-components-sections.md` — §2 the source tree (`src/components/motion/**`, memo ADJ-15),
@@ -600,7 +891,10 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
 - `docs/technical/05-animation-system.md` — INV-05.1…11, D-05.5 (`LazyMotion strict`), D-05.9 (locale cascade
   is `Reveal variant="swap"`; `WordSwap` is the menu line), D-05.12 (hover gating), §5.7 slide values,
   §5.9 reduced motion, §5.14 test list, OQ-05.2.
-- `docs/technical/07-forms-integrations.md` — INV-07.1…8, §5 env and test keys, §8 testing requirements.
+- `docs/technical/07-forms-integrations.md` — INV-07.1…9 (INV-07.9: owner facts are content, never literals,
+  and the unreal ones are provisional paths), D-07.10 (the sending identity and its three samples — ADJ-24's
+  spelling, which §3 R4 matches literally), §5 env and test keys, §8 testing requirements, OQ-07.6 (a named
+  sending domain is not a verified one — the downstream half of R4's residual risk).
 - `docs/technical/11-work-tracking.md` — INV-11.1…5, W-11.3/W-11.6/W-11.11, §6 `bead-trailer`, TRAP-11.5/11.9.
 - `docs/technical/06-routing-pages-seo.md` — route list, `hreflang`, sitemap, headers asserted by `@headers`.
 - `docs/technical/09-deployment-operations.md` — branch protection, secrets scopes, WAF, Speed Insights, editor
@@ -608,7 +902,7 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   memo ADJ-17), Vercel Git settings (`deployment_status` events on — the D-08.9 trigger).
   `docs/technical/10-work-breakdown.md` — phase gates, scaffold PR (CI
   workflows, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json`), View Transitions spike.
-- `docs/technical/12-open-questions.md` — OQ-08.1…9 roll-up.
+- `docs/technical/12-open-questions.md` — OQ-08.1…11 roll-up (OQ-08.3 restated, OQ-08.10 and OQ-08.11 new).
 - Files this document names: `eslint.config.mjs`, `stylelint.config.mjs`, `prettier.config.mjs`,
   `vitest.config.ts`, `tests/unit/**`, `tests/e2e/playwright.config.ts`, `tests/e2e/**`,
   `tests/e2e/__screenshots__/`, `tests/e2e/visual.spec.ts`, `tests/e2e/axe-exceptions.json`,
@@ -616,4 +910,6 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   todo-grep.sh, bundle-secrets.sh, env-example.ts, check-tokens.ts, deps-allowlist.sh, seo-smoke.ts}`,
   `.github/workflows/{ci.yml, bead-trailer.yml, preview.yml, production.yml, nightly.yml, audit.yml}`,
   `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json` (09 D-09.17, shipped by 10's PR-2.9),
-  `reports/content-coverage.md`, `reports/section-heights.json`.
+  `reports/content-coverage.md`, `reports/section-heights.json`. Content files it reads but never owns:
+  `content/site.json` (`routes[]`, `provisional`, the localized `brand.*` values) and `content/<locale>/**`
+  for `en`, `zh-Hans` and `zh-Hant` — every assertion's expected text comes from there (INV-08.5).

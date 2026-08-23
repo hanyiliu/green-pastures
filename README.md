@@ -1,70 +1,53 @@
-# Getting Started with Create React App
+# Green Pastures Montessori Daycare — website
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This repository holds the website for Green Pastures Montessori Daycare in Fremont, California: a marketing
+site for a childcare centre, published in English and Chinese, whose job is to let parents read about the
+programs and request a tour. It is in planning — the designs and the technical plan are finished, the site
+itself is not built yet.
 
-## Available Scripts
+## Status
 
-In the project directory, you can run:
+- **Designs — complete.** `docs/design/` is the handoff: the shared design system, per-view desktop and mobile
+  specs, and the `.dc.html` hi-fi references that carry the prototype copy.
+- **Technical plan — complete and merged.** `docs/technical/` holds thirteen documents (`00`–`12`) covering the
+  stack, the content contract, components, animation, routing and SEO, forms, testing, operations, the work
+  breakdown and the open questions.
+- **Application code — none.** There is no `package.json`, no dev server, no build, and no test suite, so this
+  README documents no commands. Implementation begins when the Phase 1 gate (bead `gp-dln.4`) closes; the first
+  scaffold PR adds the toolchain, and the commands belong in this file only once they exist.
 
-### `npm start`
+## Stack (planned, not installed)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Next.js 16 App Router with TypeScript `strict` and React 19.2, pnpm on Node 24, Tailwind CSS v4 with the design
+tokens as CSS custom properties, next-intl for locale routing and messages, Motion for in-page animation, and
+Vercel for hosting. Each choice — with its alternatives, costs and recorded dissent — is an ADR in
+[docs/technical/01-stack-decisions.md](docs/technical/01-stack-decisions.md).
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## How the content works
 
-### `npm test`
+All user-visible text lives in editable JSON, one folder per locale under `content/` (`en` is the reference
+locale, alongside Simplified and Traditional Chinese), while every locale-agnostic fact — phone, hours, URLs,
+image paths, licence number — lives once in `content/site.json`.
+[docs/technical/02-i18n-content-contract.md](docs/technical/02-i18n-content-contract.md) is the binding
+contract for that tree, §4 of
+[docs/technical/09-deployment-operations.md](docs/technical/09-deployment-operations.md) is the editing
+workflow written for a non-developer, and a shorter day-to-day guide will ship at `content/README.md` with the
+content tree itself.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Where to start reading
 
-### `npm run build`
+[docs/technical/00-README.md](docs/technical/00-README.md) — the index of the plan, with a reading order for
+building the site, one for editing its words, and one for reviewing the gate.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Repository layout today
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```text
+docs/design/      design handoff — shared system, desktop and mobile specs, .dc.html references
+docs/technical/   the technical plan, 13 documents; 00-README.md is the index
+.beads/           issue-tracker state (Beads); see docs/technical/11-work-tracking.md
+.claude/          agent configuration and skills for this repository
+README.md         this file
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+There is no `src/`, `content/`, `public/` or `package.json` yet. The plan creates them, in the order set out in
+[docs/technical/10-work-breakdown.md](docs/technical/10-work-breakdown.md).
