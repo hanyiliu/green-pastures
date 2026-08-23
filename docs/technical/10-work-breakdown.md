@@ -103,14 +103,18 @@ a half-answered row that keeps its whole question is how a settled fact gets ask
 
 | Phase | PRs | S / M / L | ≈ days | ≈ weeks at two implementers |
 |---|---|---|---|---|
-| 2 Foundation | 8 (+2 ops) | 6 / 2 / 0 | 10 | 1 |
+| 2 Foundation | 9 (+2 ops) | 7 / 2 / 0 | 11 | 1 |
 | 3 Content & i18n | 9 | 5 / 3 / 1 | 16 | 1.5–2 |
 | 4 Design system & motion | 7 | 0 / 6 / 1 | 20 | 2 |
-| 5 Homepage (+ forms lane) | 10 | 0 / 7 / 3 | 33 | 3 |
+| 5 Homepage (+ forms lane) | 11 | 1 / 7 / 3 | 34 | 3 |
 | 6 Subpages & SEO | 11 (1 conditional) | 5 / 5 / 1 | 21 | 2 |
 | 7 Integrations | 2 (+3 ops) | 2 / 0 / 0 | 2 + owner lead time | 1 |
 | 8 Hardening & launch | 8 (+2 ops) | 4 / 4 / 1 (translator) | 13 + translation | 2 |
-| **Total** | **≈ 55** | | **≈ 115** | **≈ 12–13** |
+| **Total** | **≈ 57** | | **≈ 117** | **≈ 12–13** |
+
+The two S rows D-10.15 added — PR-2.10 (`audit.yml`) and PR-5.11 (`nightly.yml`) — are the whole difference
+from the previous count of ≈ 55. Neither is on the critical path, neither adds a dependency edge, and the
+weeks column does not move: both are quality-lane workflow files that run beside the phase they sit in.
 
 **Does HD-10 change the roadmap's shape or only its size?** Only its size, with one exception. The phase set,
 their order, the gates and the critical path are untouched: a third locale is a third column in matrices that
@@ -226,6 +230,68 @@ Phase 8 gate alone (D-10.11).
   Two consequences this decision deliberately does *not* claim: the `provisional` registry is untouched —
   `brand.url` remains a registered provisional entry that PR-8.2 clears (D-10.11), and HD-13 only tells PR-8.2
   which string to type; and whether `brand.url` survives at all is still OQ-09.10's, not this document's.
+- **D-10.15 The two out-of-band workflows are scheduled: `audit.yml` in Phase 2, `nightly.yml` in Phase 5
+  (raised by 08 §10).** 08's job table carried `e2e-full` and `audit` as `no · unscheduled` and said so in
+  prose, because §12.2 makes "`e2e-full` green on `main` (4 projects)" a condition of *every* phase gate and
+  §12.3 repeats it at launch, while no row here created either workflow. A gate condition nothing builds does
+  not in practice block a phase — it gets waived, and a waived item teaches the next one that gates are
+  waivable. So the two rows land here rather than the condition being softened by habit. Verified against the
+  tree on 2026-08-23: `.github/workflows/` holds `ci.yml` and `bead-trailer.yml` only, and
+  `playwright.config.ts` already carries `firefox-desktop` and `chromium-mobile` behind `E2E_FULL === "1"`,
+  so 08 is right that the config half is done and only the workflows are missing.
+
+  **(a) `audit.yml` is Phase 2 (PR-2.10).** `pnpm audit --prod --audit-level=high` has something real to
+  protect from the day `package.json` exists: PR-2.4's tree is Next 16 + React 19 + Tailwind v4 + next-intl +
+  Motion + Zod and its transitive closure. The same phase turns Renovate on (PR-2.9, and `renovate.json` is
+  already in the tree), and a bot that opens dependency PRs weekly with nothing scanning what it proposes is
+  the wrong way round — the scanner belongs in the phase that ships the bot, not five phases after it. The
+  gitleaks half is the second reason: INV-07.3 names `audit` as one of the three jobs enforcing "no secret
+  reaches the bundle or the repo", and gitleaks scans the **PR diff**, so its value is catching the first
+  accidental paste, which can happen in any phase — including this one, where `.env.example` and the preview
+  bypass secret both appear. Cost is not an argument for waiting: 08 §10's two-column table already bills
+  `bead-trailer · audit` at 2 minutes per PR in *both* columns, so the ≈ 1,200–1,900 runner-minutes a month
+  OQ-08.3 is weighing already assumes this job runs on every PR from the start. Scheduling it in Phase 2 makes
+  that estimate true; scheduling it later means the published figure has been counting a job that does not
+  exist. The weekly cron adds ≈ 8 minutes a month. It ships **advisory** — the six required checks are
+  INV-08.2's set and only the human changes it — which is also OQ-08.7's stated default, now with a row that
+  ships it instead of a default that ships nothing.
+
+  **(b) `nightly.yml` is Phase 5 (PR-5.11).** `e2e-full`'s entire content is the two projects PRs do not run,
+  `firefox-desktop` and `chromium-mobile` (D-08.7). Before Phase 5, `main` is a blank page (Phase 2), a content
+  tree with `e2e/smoke*` (Phase 3) and layout primitives (Phase 4); running Gecko and a Pixel 7 over a smoke
+  spec doubles the bill to re-assert `200`, `<html lang>` and `hreflang`, none of which vary by engine. Phase 5
+  is the first phase whose gate a second engine can falsify: the whole homepage lands, and with it `@motion`,
+  `@nojs`, `@form` and `@hover`'s touch half — the tags whose expected values are engine- and
+  device-dependent — and it is where `main` starts changing fast enough for a cross-engine break to sit
+  unnoticed, since Phases 6, 7 and 8 all build on the homepage. Phase 6 was the other candidate, because
+  `@nav-instant` under `firefox-desktop` — an engine that genuinely lacks `startViewTransition` — is the single
+  most valuable assertion in the extra matrix and does not exist until PR-6.10. That argues for Phase 5 rather
+  than against it: the workflow should be running and trusted **before** the phase whose findings need it, not
+  stood up in the same PR that first depends on it.
+
+  **(c) The trigger set is what the budget decides, and it is `workflow_dispatch` first.** At three locales
+  `e2e` costs 19 runner-minutes for two projects (08 §10), so four cost ≈ 35–40. A true nightly is ≈ 1,140
+  minutes a month; a `push: main` trigger at 33–50 merges a month is ≈ 1,250–1,900. Either one, on top of the
+  ≈ 1,200–1,900 already spent on PRs, is a multiple of the 2,000 free minutes a private repo gets — and
+  OQ-08.3 is open precisely because the PR figure alone lands within about a hundred minutes of that limit.
+  Neither fits. What §12.2 actually asks for is narrower than what 08 §10's trigger cell specifies: **one green
+  `e2e-full` run against the tip of `main` at gate time**. That is four gates from Phase 5 on, plus the release
+  SHA — ≈ 200 minutes for the whole remaining build. So PR-5.11 ships the workflow with `workflow_dispatch`
+  live, the orchestrator dispatches it when it opens the gate bead and pastes the run URL onto that bead
+  (which is what makes the gate item checkable rather than asserted), and the `schedule` and `push: main`
+  triggers are written but guarded at job level on a repository variable defaulting to off — so turning the
+  nightly on when OQ-08.3 closes is a settings flip, not a second PR. This is a scheduling choice and not an
+  amendment to 08: the job still runs all four projects with `retries: 0` in the same Playwright container,
+  and a failure still opens a bead rather than an auto-issue.
+
+  **(d) What this asks of 08.** §12.2's `e2e-full` clause needs the scope 08 already gives two of its
+  neighbours — `@visual` carries "(from 04's phase)" and `MC-08.1` carries "from the phase that ships the
+  sections onward". Without one, the Phase 2, 3 and 4 gates carry a condition whose workflow does not exist,
+  which is the same defect in a smaller font. It should read: *from the Phase 5 gate onward, `e2e-full` green
+  on the gate's `main` SHA (4 projects), dispatched at the gate with its run linked from the gate bead.*
+  Three neighbouring clauses in the same paragraph have the same shape and are named in §14's note below;
+  none of them is 10's to edit. Both new rows also flip their `Built?` cell in 08 §10 in the same PR, per that
+  section's own convention.
 
 ## Design
 
@@ -290,12 +356,13 @@ scheduled — the row is written to work either way, because INV-10.1 keeps ever
 | PR-2.6 | CI: `ci.yml` — install, typecheck, lint (ESLint + Stylelint + Prettier), unit, build, e2e smoke, `TODO\|FIXME\|HACK` grep over `src/**` (TRAP-11.9); concurrency; required-checks list for 09 | new: *Phase 2 · CI pipeline* | `.github/workflows/ci.yml` | PR-2.4, PR-2.5 | S | 2.3 | Workflow green on the PR; a seeded `TODO` fails it; job names match 08's gate inventory |
 | PR-2.8 | Skill sync: `super-orchestrator` SKILL.md ids → 11 (§9 table), W-11.2 unclaim recipe, `board.py` path notes | `gp-dln.5` | `.claude/skills/super-orchestrator/SKILL.md` (+ `scripts/board.py` comments) | — | S | all | Every row of 11 §9 applied; no `13-work-tracking`, `W1`–`W7`, `PRO-*` left outside the history note |
 | PR-2.9 | Repo governance (09): `CODEOWNERS` (`content/** public/images/**` → owner + developer, everything else → developer, D-09.19), `.github/PULL_REQUEST_TEMPLATE.md` whose last line is the `Bead:` trailer (D-09.11), `renovate.json` (weekly grouped minors, majors singly, automerge off, `commitTrailers`/`prFooter` carrying the standing dependency bead, D-09.17) | new: *Phase 2 · repo governance* | `.github/CODEOWNERS`, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json` | PR-2.3 (`scripts/ci/bead-trailer.sh` defines the trailer the template must satisfy) | S | 2.4–2.6, 2.8 | Template's trailer passes the PR-2.3 script unedited; `CODEOWNERS` parses in the GitHub UI and covers `content/**`; Renovate's dry run opens one grouped PR carrying the bead trailer; the two standing beads exist (OQ-09.5) |
+| PR-2.10 | CI: `audit.yml` (D-10.15 (a)) — `pnpm audit --prod --audit-level=high` plus `gitleaks` over the PR diff, on `pull_request` and a weekly `schedule`, `permissions: contents: read`, no repository secret; **advisory**, deliberately not added to INV-08.2's six required checks (OQ-08.7's default, now shipped rather than assumed); its own workflow file because the weekly cron is a different `on:` block from `ci.yml`'s | new: *Phase 2 · dependency & secret audit* (label `ci`) | `.github/workflows/audit.yml`, `docs/technical/08-testing-quality.md` (§10's `Built?` cell for the `audit` row only) | PR-2.4 (`package.json` + `pnpm-lock.yaml` — `pnpm audit` resolves from the lockfile) | S | 2.1–2.3, 2.6, 2.8, 2.9 | A fixture branch pinning a dependency with a known **high** advisory fails the job and one with a **moderate** advisory does not, so `--audit-level` is proven rather than assumed; a seeded fake key in the diff fails gitleaks and the same string already present on the base branch does not, which is the diff scope INV-07.3 relies on; the run carries no secret but `GITHUB_TOKEN` (INV-08.7); `GET /repos/…/rules/branches/main` still lists exactly the six names of INV-08.2, so an advisory job cannot drift into being a seventh required check; a Renovate PR is scanned by it |
 | OPS-2.1 | Vercel project linked on the **Hobby** tier (HD-3, D-10.13; D-09.3 settings otherwise: framework Next.js, Node 24.x, pnpm, region `sfo1`, Fluid, Ignored Build Step skipping `docs/**` + `.beads/**` + root-doc-only commits), preview per PR, production from `main`, `NEXT_PUBLIC_SITE_URL` per scope, Deployment Protection on previews with a bypass secret for CI (D-09.4, OQ-09.3, OQ-08.4) | new chore: *Phase 2 · Vercel project* | dashboard (no code) | PR-2.4 | S | all | Preview URL on PR-2.5; production deploy of `main` succeeds; a docs-only commit produces no build; the bypass secret is stored as a GitHub Actions secret and nowhere else; the bead records which tier the project is on and which of D-09.3's settings Hobby does not offer, so Phase 7 knows what the upgrade buys |
 | OPS-2.2 | Tracker relocation before this plan's worktree is removed (TRAP-11.6): export, then move `.beads/embeddeddolt/` and `.beads/backup/` into the main checkout, re-point `BEADS_DIR`, confirm one database | new chore: *Phase 2 · tracker relocation* | `.beads/` outside the worktree (no code) | PR-2.1 (the export it protects) | S | all | The orchestrator's shell reports one database at the main checkout; `git worktree remove` afterwards deletes no tracker data; `issues.jsonl` at `main` still lists every claimed bead |
 
 **Seats** (`writer-<topic>` / `check-<topic>`): 2.1 `tracker-snapshot` · 2.2 `repo-hygiene` · 2.3 `trailer-gate` ·
 2.4 `scaffold` · 2.5 `lint-tooling` · 2.6 `ci-pipeline` · 2.8 `skill-sync` · 2.9 `governance` ·
-OPS-2.1 `vercel-project` · OPS-2.2 `tracker-relocation`. The id PR-2.7 is retired — the stack deliberately
+2.10 `dep-audit` · OPS-2.1 `vercel-project` · OPS-2.2 `tracker-relocation`. The id PR-2.7 is retired — the stack deliberately
 jumps 2.6 → 2.8 — and is never reused, so a plan row's id always means the same work on the board.
 
 **Exit gate.** `Phase 2 gate · Foundation accepted`: CI and `bead-trailer` **required on `main`** — which means
@@ -443,13 +510,18 @@ serialisation point; the component files are disjoint, so the rows below are oth
 | PR-5.9 | `InquiryForm` + `Turnstile` wrapper + success panel + alert banner + `noscript` fallback (07 §1, D-07.4/07.5): shared schema, blur/submit validation, `aria-*` contract, lazy script on view/focus, error-code → key record (02 §Forms), `visit` namespace to the client; RTL tests | new: *Phase 5 · InquiryForm* | `src/components/forms/**` (04 §2's tree: `InquiryForm`, `FormField`, `Turnstile`, `SuccessPanel`, `FormAlert`, `NoscriptFallback`, `inquiry-codes.ts`) | PR-4.2, PR-5.8 | L | 5.1–5.6 | Codes map to keys with a type error on a missing key; focus to first invalid / success heading; button never `disabled`; widget height reserved |
 | PR-5.10 | Form e2e per locale on preview (test keys, `log` transport): success, inline errors, forced 502 banner, honeypot decoy, 390 px layout, keyboard-only, axe on idle/error/success, no-JS fallback visible | new: *Phase 5 · form e2e* (label `ci`) | `e2e/form*` | PR-5.7 (the Visit section that renders `InquiryForm` on `/{locale}`), PR-5.8 (`/api/inquiry` in `log` transport) | M | 5.1–5.6 | 07 §8 e2e list green in `en` and `zh-Hans` — the full form journey runs on the two launch locales, not all three, because `zh-Hant` differs from `zh-Hans` only in glyphs at this point; `zh-Hant`'s form is covered by PR-3.6's smoke and PR-8.6's visual matrix, and by one manual pass at PR-8.8 |
 
+| PR-5.11 | CI: `nightly.yml` — the `e2e-full` job 08 §10 specifies (same Playwright `container:` as `e2e`, `needs: build`, all four projects via `E2E_FULL=1` which `playwright.config.ts` already switches on, `retries: 0`, 40 min, report artifact, a failure opening a bead and never an auto-issue). **`workflow_dispatch` is the live trigger**, so the orchestrator runs it against the tip of `main` when it opens a gate bead; `schedule` and `push: main` are written but job-level guarded on a repository variable defaulting to off until OQ-08.3 closes, because neither fits the free tier as costed (D-10.15 (c)) | new: *Phase 5 · nightly cross-engine e2e* (label `ci`) | `.github/workflows/nightly.yml`, `docs/technical/08-testing-quality.md` (§10's `Built?` cell for the `e2e-full` row only) | PR-2.6 (the `build` job whose `.next` artifact it downloads), PR-5.10 (the last Phase 5 spec family — the suite it runs four ways is complete at this row) | S | 5.1–5.9 (it adds no dependency, touches no `src/` file and does not edit `ci.yml`) | A dispatched run on `main` is green in all four projects and its URL is on the Phase 5 gate bead; a fixture that passes in `chromium-desktop` and fails in `firefox-desktop` reds the run, proving the two extra projects execute rather than being silently `grepInvert`ed away; `@nojs` and `@hover`'s touch half are reported from `chromium-mobile`; with the variable off a scheduled run bills no runner minutes, and flipping it on once then off again exercises that path; `e2e` on PRs is untouched — same two projects, same shards, same wall time |
+
 **Seats** (`writer-<topic>` / `check-<topic>`): 5.1 `philosophy` · 5.2 `programs` · 5.3 `menu` · 5.4 `gallery` ·
 5.5 `testimonials` · 5.6 `teachers` · 5.7 `visit` · 5.8 `inquiry-handler` · 5.9 `inquiry-form` ·
-5.10 `form-e2e`.
+5.10 `form-e2e` · 5.11 `nightly-e2e`.
 
 **Exit gate.** `Phase 5 gate · M2 homepage complete`: all eight sections at 1280/390 match the references (snapshot
 baseline), motion per 05 §5.3, reduced-motion parity, toggle CLS ≤ 0.02, form submits on preview and the rendered
-e-mails (log output) read correctly in `en` and `zh-Hans`, axe clean, Lighthouse baseline recorded for 09's budgets.
+e-mails (log output) read correctly in `en` and `zh-Hans`, axe clean, Lighthouse baseline recorded for 09's budgets;
+**and the first dispatched `e2e-full` run green on the gate's `main` SHA, all four projects, its run URL on the
+gate bead** — this is the gate where 08 §12.2's `e2e-full` condition first has a workflow behind it (PR-5.11,
+D-10.15 (b)–(d)), and it repeats at every gate from here.
 **Risks.** Section PRs diverging from one another in spacing (mitigation: `Section` shell + token lint; the
 verifier compares against the per-view READMEs line by line); Chinese heights differing from `en` (03 §3.3:
 `min-height` per section where more than one line differs — measured at this gate against `zh-Hans`, whose
@@ -662,7 +734,7 @@ flowchart LR
 | Content | `content/**` only | everything from Phase 3 on | `en` authoring (PR-3.2), the editor guide (PR-3.8), the Chinese trickle, owner facts and the `provisional` array, `en` alt keys; `content/zh-Hans/**` and `content/zh-Hant/**` each have exactly one writer per phase (PR-3.5/PR-8.1 and PR-3.9/PR-8.8); never touches `src/` except for the one `routing.ts` line that adds or removes a locale id |
 | Forms | `src/lib/inquiry/**`, `src/app/api/inquiry/**`, `src/components/forms/**`, `e2e/form*` | Phases 4–5 | Reads keys 02 already defines; no content edits |
 | Design tokens / motion | `src/styles/**`, `src/design/**`, `src/components/motion/**` and `src/components/decor/**` (04 §2's tree), `src/app/globals.css` (PR-4.1 only, which is why the App lane excludes it) | Phase 3 (early-start) | Lands after Phase 3 gate (D-10.2) |
-| Quality | `.github/**`, `scripts/**`, `lighthouserc*`, test configs, `e2e/**` except `e2e/form*` (`e2e/smoke*` PR-3.6, `e2e/routes*` PR-6.10, `e2e/a11y*` PR-8.4, `e2e/visual*` PR-8.6) | everything | e2e scaffolding and gates grow with each phase; each family has one owning PR |
+| Quality | `.github/**`, `scripts/**`, `lighthouserc*`, test configs, `e2e/**` except `e2e/form*` (`e2e/smoke*` PR-3.6, `e2e/routes*` PR-6.10, `e2e/a11y*` PR-8.4, `e2e/visual*` PR-8.6) | everything | e2e scaffolding and gates grow with each phase; each family has one owning PR. **One owning PR per workflow file too**, which is what keeps four `.github/workflows/**` files out of each other's way: `bead-trailer.yml` PR-2.3, `ci.yml` PR-2.6 (the one shared file, rule below), `audit.yml` PR-2.10, `nightly.yml` PR-5.11 |
 | Ops | Vercel / Resend / Cloudflare / DNS | Phases 2, 6–8 | Beads without PRs; owner-paced |
 | Tracker / skill | `.beads/**`, `.claude/skills/**`, `.gitattributes` | Phase 2 | `issues.jsonl` conflicts between parallel PRs are regenerated, never hand-merged (11 §5) |
 
@@ -677,7 +749,9 @@ Three files sit outside every lane because more than one lane must edit them; ea
   jobs, never edits to an existing job, so two lanes never touch the same lines. One exception, named because
   it is unavoidable: the `--warn-locale` flags on PR-3.4's content job are turned on by PR-3.9 and off again by
   PR-8.1 (`zh-Hans`) and PR-8.8 (`zh-Hant`). Those are one-token edits to a single line, they are serialised by
-  phase, and no other PR may touch that line.
+  phase, and no other PR may touch that line. `audit.yml` (PR-2.10) and `nightly.yml` (PR-5.11) are
+  deliberately **not** jobs inside this file: each carries a `schedule`/`workflow_dispatch` trigger `ci.yml`
+  does not have, and a single-owner file needs no serialisation rule at all (D-10.15).
 
 ### 11 · Roadmap
 
@@ -793,6 +867,29 @@ that HD-4 made it content). None of the six is answered *by this document*; each
 owns it, and where that owner has since answered — OQ-08.11, by 06 `D-06.15(a)` — the row records the answer
 in place rather than a default.
 
+**Gate-condition sweep (2026-08-23), the general form of the `e2e-full` gap.** D-10.15 fixed one gate item
+whose workflow nothing scheduled. Since one instance of that is rarely alone, every clause of 08 §12.2 and
+§12.3 was read against these tables to see whether a job, script or spec family stands behind it. Two rows
+were genuinely unscheduled and are now PR-2.10 and PR-5.11. **Four more clauses are scheduled but
+mis-scoped**, and all four are 08's to fix, not 10's — 10 records them here so the next reader does not
+re-derive them:
+(i) §12.2's `lighthouse-preview` clause applies to every phase gate, but PR-8.5 builds that workflow in
+**Phase 8**, so gates 2–7 carry a condition with no runner behind it;
+(ii) §12.2's `@a11y` "0 violations across the matrix" likewise — `e2e/a11y*` is PR-8.4, and the axe coverage
+before it is the form's (PR-5.10) and PR-6.5's, not the route × locale × viewport matrix;
+(iii) §12.2's `@visual` clause carries a scope note that is **wrong rather than missing**: it says "from 04's
+phase", but `e2e/visual*` is PR-8.6, and §14's own OQ-08.9 row already says "the baselines it describes are
+PR-8.6's";
+(iv) §12.3's `seo-smoke.ts` and `@headers` "on the real domain" are satisfied in substance (PR-6.10's
+assertions and PR-6.11's headers, executed by `lighthouse-prod`), but no row names either file, so the
+launch checklist's spelling and the plan's are not the same words.
+Two further items are named by 08 and scheduled by nobody, though neither is a gate condition, so neither
+got a row here: `scripts/ci/bundle-secrets.sh` and `env-example.ts` — D-08.11 sits in Phase 2's **Scope**
+line and INV-07.3 maps to both, yet no row's *Files* column carries either path — and
+`scripts/ci/todo-grep.sh`, which INV-08.6 names as a knowingly open CI-versus-`pnpm verify` divergence that
+"closes when that script is written". PR-2.6 ships the greps inlined, which is the divergence, not its close.
+All of this is reported to 08's seat rather than acted on unilaterally.
+
 **Answered at the Phase 1 gate (2026-08-22).** Rows below marked **answered** keep their id and their place so
 that nothing is silently dropped, and record the answer instead of a default. A block closed at once:
 OQ-02.1 / OQ-03.3 (HD-10, three locales), OQ-02.4 / `gp-dln.12` (HD-6, provisionally), OQ-02.7 / OQ-04.5 /
@@ -827,7 +924,7 @@ mailbox names plus DKIM/SPF publication are still owed. HD-15 changes no row her
 | 2 | OQ-09.5 | orchestrator (11) | PR-2.3, PR-2.9 | the two standing beads are created at kickoff; editors paste the trailer into every commit |
 | 2 | OQ-08.5 | scaffold PR implementer (verify) | PR-2.5 | the 20-line local ESLint rule replaces whichever plugin fails; gates unchanged |
 | 2 | OQ-08.8 | 02 (writer-contracts) | PR-2.5 | INV-02.1 ships as written; the wording fix is a docs PR |
-| 2 | OQ-08.3 | human | PR-2.6 | `webkit-mobile` stays on PRs; it moves to `main`-only if minutes bite |
+| 2 | OQ-08.3 | human | PR-2.6, then PR-5.11 | `webkit-mobile` stays on PRs; it moves to `main`-only if minutes bite. PR-5.11 needs the same answer for the other half of the bill: `e2e-full`'s `schedule` and `push: main` triggers ship guarded-off, because at ≈ 35–40 runner-minutes a run neither fits the free tier (D-10.15 (c)); if unanswered the workflow stays dispatch-only, which is all §12.2 actually requires |
 | 2 | OQ-01.3, OQ-05.1 | scaffold + spike (this doc) | PR-2.4, PR-4.4 | if `ViewTransition` is absent, F1 (05 §5.7) ships and 01 is amended |
 | 3 | OQ-02.1 | human | PR-3.5, PR-3.9 | **answered 2026-08-22 (HD-10)** — three locales: `en`, `zh-Hans` (launch Chinese), `zh-Hant` (additional, D-02.21). Follow-up: OQ-02.8 |
 | 3 | OQ-03.3 | orchestrator / 02 | PR-4.1 | **answered by HD-10, implemented by 03 D-03.14** — `--font-cjk` resolves per script into `--font-cjk-sc` and `--font-cjk-tc` under `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)`, rather than one stack listing both, because both Chinese locales ship; the shared `:lang(zh)` typography rules are *not* split and still match both |
@@ -894,7 +991,7 @@ mailbox names plus DKIM/SPF publication are still owed. HD-15 changes no row her
 | post | OQ-01.5 | human with 05 | — | no GSAP; ADR-009's trigger is unfired |
 | post | OQ-02.3 / OQ-09.9 | human | — | the Vercel preview per PR is the editor tool; a CMS needs ADR-010 (D-09.14) |
 | post | OQ-07.3 | owner | — | no CRM; the inbox is the record (D-07.8) |
-| post | OQ-08.7 | human | — | `pnpm audit` stays advisory |
+| post | OQ-08.7 | human | PR-2.10 ships it advisory; the blocking question stays post-launch | `pnpm audit` stays advisory — but as a job that exists from Phase 2 (D-10.15 (a)), not as a default that ships nothing. The open half is only whether it ever becomes blocking |
 | post | OQ-11.2 | human | — | `bd` continues; `issues.jsonl` is the archive either way |
 
 ## Open questions
@@ -959,7 +1056,10 @@ lands; **A-10.3** the orchestrator creates the phase epics, task beads and gate 
 - `docs/technical/07-forms-integrations.md` — D-07.1…13, INV-07.1…9, OQ-07.1…11, §8 tests, §9 requirements;
   D-07.10's sending identity is already written on HD-13's domain; forms lane PR-5.8…5.10, Phase 7.
 - `docs/technical/08-testing-quality.md` — D-08.1…19, OQ-08.1…11; the gate inventory and DoD behind every
-  "Verifier check" cell; PR-2.5/2.6 build it, PR-8.4/8.5/8.6 finish it.
+  "Verifier check" cell; PR-2.5/2.6 build it, PR-8.4/8.5/8.6 finish it. §10's two `no · unscheduled` rows are
+  scheduled by D-10.15 — `audit.yml` at PR-2.10, `nightly.yml` at PR-5.11 — and both PRs flip their `Built?`
+  cell there in the same PR. What 08 owes in return is the scope note on §12.2's `e2e-full` clause
+  (D-10.15 (d)) and the four mis-scoped gate clauses in §14's sweep note.
 - `docs/technical/09-deployment-operations.md` — D-09.1…22, INV-09.1…7, OQ-09.1…11; Vercel settings, env scopes,
   WAF, DNS, security headers, governance files, budgets, §5.1's launch checklist, editor workflow; OPS rows.
 - `docs/technical/11-work-tracking.md` — W-11.1…12, INV-11.1…5, D-11.1…8, TRAP-11.9/11.12/11.13; gate beads,

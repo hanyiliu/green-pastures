@@ -15,7 +15,13 @@ Status: draft · seat writer-testing · 2026-08-22 · revised 2026-08-22 for HD-
 (provisional-value gate) and HD-10 (three locales); revised 2026-08-23 for ADJ-24 — the sending-identity
 samples moved onto the real domain, which the release gate did not see (§3 R4, D-08.17); corrected
 2026-08-23 — §2's TODO gate was specified with a glibc-only `\b`, which matches nothing under Apple git and
-so failed open; it now reads `-nwE`, matching the shipped workflow
+so failed open; it now reads `-nwE`, matching the shipped workflow; **reconciled with the repository
+2026-08-23** — §10 and §11 described a toolchain that is largely still plan (`check:tokens`, `check:secrets`,
+`check:env`, `check:todo` as a script, the flaky-tag lint, the dependency allowlist and `lhci` are not in
+`package.json`, and four jobs are not in `.github/workflows/**`), and gave `pnpm verify` a formula that was
+neither what the script runs nor honest about the `--warn-locale` flags it carries. Both tables now carry a
+build-status column, the future rows keep their place with the PR that brings them, `pnpm verify` is quoted
+verbatim from `package.json`, and the stale "the build has never passed" note is retired
 
 ## Decisions
 
@@ -39,7 +45,8 @@ so failed open; it now reads `-nwE`, matching the shipped workflow
 - **D-08.3 ESLint.** Flat config (`eslint.config.mjs`, ESLint 9; Next 16 removed `next lint`, so `pnpm lint`
   runs `eslint . --max-warnings 0`). Plugins: `@eslint/js`, `typescript-eslint` (type-aware),
   `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`, `@next/eslint-plugin-next`,
-  `eslint-plugin-playwright` (tests/e2e), `@vitest/eslint-plugin` (tests/unit), `eslint-config-prettier`.
+  `eslint-plugin-playwright` (`e2e/**` + `playwright.config.ts`), `@vitest/eslint-plugin` (`tests/**`),
+  `eslint-config-prettier`.
   Project bans are `no-restricted-imports` and `no-restricted-syntax` selectors (§2); no custom plugin.
 - **D-08.4 Stylelint** (`stylelint-config-standard` + `stylelint-config-tailwindcss` for `@theme`/`@apply`/
   `@variant`) on `src/**/*.css`; `src/styles/tokens.css` is the **only** file exempt from the colour/px/ms
@@ -66,7 +73,7 @@ so failed open; it now reads `-nwE`, matching the shipped workflow
   route × locale × interactive state, **0 violations**; keyboard scripts for nav, hamburger, lightbox, form,
   skip link. `color-contrast` gates as well, with one **allowlist** rather than a blanket exemption: each pair
   03 §10 computes as failing by the design's own values (D-03.12) gets an entry in
-  `tests/e2e/axe-exceptions.json` — `{ selector, fg, bg, ratio, reason: '03 §10 / D-03.12', expires }`, where
+  `e2e/axe-exceptions.json` — `{ selector, fg, bg, ratio, reason: '03 §10 / D-03.12', expires }`, where
   `expires` is the phase gate that answers OQ-03.2. A contrast violation on any pair *not* in that file fails
   the job, and so does an entry past its expiry. A new contrast regression is therefore blocked from day one
   while the known design debt is visible, enumerated and dated.
@@ -91,8 +98,9 @@ so failed open; it now reads `-nwE`, matching the shipped workflow
   IPA Gothic / Noto Color Emoji) — macOS renders CJK and emoji differently, so local baselines are invalid.
   **The `e2e` and `e2e-full` jobs run in that same image via `container:`** (§10): a bare GitHub runner has a
   different font set, so baselines generated in the image could never match screenshots taken on the runner.
-  Gated from the phase in which 04's section components land (10); before that the suite is `@visual` and
-  skipped. No Percy/Chromatic: the suite is ~60 images and the cost is not justified at launch. This snapshot
+  The spec is `e2e/visual*`, which 10 schedules at **PR-8.6** — 04's phase is when the sections the baselines
+  capture first exist, not when the spec that captures them is written, so §12.2's `@visual` clause binds from
+  the **Phase 8** gate and the suite does not exist to be run or skipped before it. No Percy/Chromatic: the suite is ~60 images and the cost is not justified at launch. This snapshot
   proves *our* rendering on one Linux font stack; it says nothing about how `→ ★ ↗` fall back on a user's
   macOS or Windows machine (03 §5), so it is complemented by the manual per-OS glyph check in §12.2.
 - **D-08.11 Security checks.** `scripts/ci/bundle-secrets.sh` greps the **client** output of `next build` —
@@ -177,7 +185,7 @@ so failed open; it now reads `-nwE`, matching the shipped workflow
 | E2E | Playwright (2 PR projects, 4 on `main`) | every route × locale (INV-02.5), switcher, slide, form (INV-07.4), reduced motion (INV-05.8), CLS, fonts, no-JS (INV-05.10), SEO, headers | `e2e` (shards) · `e2e-full` | required (`e2e-ok`) |
 | A11y | axe-core + keyboard scripts | 0 WCAG 2.2 AA violations per route × locale × state; focus order/trap/return | inside `e2e` (`@a11y`) | required |
 | Performance | Lighthouse CI | budgets on preview (advisory) and production (gate) | `lighthouse-preview` · `lighthouse-prod` | advisory / launch |
-| Visual | Playwright screenshots | sections look like the design at 390/1280 in every enabled locale | inside `e2e` (`@visual`) | required from 04's phase |
+| Visual | Playwright screenshots | sections look like the design at 390/1280 in every enabled locale | inside `e2e` (`@visual`) | required from the Phase 8 gate (`e2e/visual*` is PR-8.6, §12.2) |
 | Security | grep, audit, gitleaks, headers | no secret in client output (INV-07.3), env documented, deps, headers | `build` · `audit` · `e2e` | `build` required; `audit` advisory |
 | Process | `bead-trailer`, TODO grep, PR template | INV-11.1/11.3, TRAP-11.9, DoD checklist | `bead-trailer` · `static` | required |
 
@@ -263,8 +271,11 @@ so failed open; it now reads `-nwE`, matching the shipped workflow
   is exempt from the colour/px/ms rules. CSS-side breakpoints: `scripts/ci/check-tokens.ts` fails on any
   `@media` with a numeric width or any `@variant` other than `md`/`lg`/`xl` in `src/**/*.css`, and on a
   `prefers-reduced-motion` media query missing from a file that declares `@keyframes` (INV-05.8).
-- **Prettier** with `prettier-plugin-tailwindcss` (class order) over `src`, `tests`, `scripts`, `content/**/*.json`
-  (02 requires stable JSON formatting so diffs show copy only). `pnpm format:check` is part of `static`.
+- **Prettier** with `prettier-plugin-tailwindcss` (class order) over `src`, `tests`, `e2e`, `scripts`,
+  `content/**/*.json` and the root config files (02 requires stable JSON formatting so diffs show copy only).
+  The shipped script is `prettier --check .` with the scope carved out by `.prettierignore` rather than by an
+  argument list, so a new source directory is covered the day it appears instead of on the day someone
+  remembers to add it. `pnpm format:check` is part of `static`.
 - **TODO grep** (TRAP-11.9), two commands, each of which must produce no output:
 
 ```sh
@@ -432,7 +443,12 @@ R4's three literals.
 
 ### 5 · End-to-end (Playwright)
 
-Config: `tests/e2e/playwright.config.ts`; `webServer` = `pnpm start -p 3000` over the downloaded `.next`
+Config: `playwright.config.ts` **at the repository root**, with `testDir: "./e2e"` — the specs live in `e2e/`
+and grow one family per phase (10 §7: `e2e/smoke*` PR-3.6, `e2e/form*` PR-5.10, `e2e/routes*` PR-6.10,
+`e2e/a11y*` PR-8.4, `e2e/visual*` PR-8.6). Earlier revisions of this document wrote
+`tests/e2e/playwright.config.ts`; that path was never built and `tests/` holds the Vitest suite only. The one
+thing that *does* live under `tests/e2e/` is the screenshot baseline directory, which the shipped config pins
+there explicitly via `snapshotPathTemplate` because D-08.10 pins it there. `webServer` = `pnpm start -p 3000` over the downloaded `.next`
 artifact (locally `pnpm build && pnpm start`), env: `INQUIRY_TRANSPORT=log`, Cloudflare's published
 always-pass test pair (07 §5) — site key `1x00000000000000000000AA`, secret
 `1x0000000000000000000000000000000AA` — `INQUIRY_TO_EMAIL=inbox@example.test`,
@@ -477,7 +493,7 @@ the row below states three rather than two.
 | `@i18n` | the three-option switcher from `/en/programs?x=1#sectionId`; root `/` with `Accept-Language:` unset, `zh-CN`, `zh-TW` and `en-GB`; the lower-cased path `/zh-hans/programs` | the trigger shows `LOCALE_META[current].shortLabel` (`EN`/`简`/`繁`) and the menu lists the endonyms in `routing.locales` order with `aria-current` on the current one (D-02.10 — a two-name toggle fails); choosing 简体中文 gives URL `/zh-Hans/programs?x=1#sectionId`, `scrollY` unchanged, `NEXT_LOCALE` cookie, `lang` updated; **cascade**: every `[data-reveal]` in the new tree plays `swap` — opacity 0→1 with `min(index × 14 ms, 300 ms)` delays read from `data-reveal-index` (D-05.9; `[data-wordswap]` does not exist — `WordSwap` is only the menu sample line, checked in `@motion`); under reduced motion the cascade **still plays**, opacity-only with the `y` track dropped and the 14 ms delays kept, and only the root View-Transition crossfade is instant (05 §5.9) — a no-cascade instant swap fails; negotiation lands `zh-CN`→`/zh-Hans`, `en-GB` and unset→`/en`, and `zh-TW`→`/zh-Hant` **once `zh-Hant` is in `routing.locales`**; **while it is held back (D-08.18, the plan's default for most of the build) the same `zh-TW` header must land `/zh-Hans` — same language, other script — and never `/en`** (02's table read the way 06 implements it: each row an ordered preference chain filtered by `routing.locales`, first survivor wins — `D-06.15`(a), OQ-08.11 **closed**); `/zh-hans/programs` 308s to `/zh-Hans/programs` |
 | `@seo` | `sitemap.xml`, `robots.txt`, `/api/inquiry` | sitemap = every route × locale with alternates, no `/api/`; robots `Disallow: /api/`; `GET /api/inquiry` → 405 |
 | `@form` | fill → submit → success panel (focus on its heading); blank required → inline errors, `aria-invalid`, focus on first invalid; `page.route` forces 502 → `emailFailed` banner; forces 429 → `rateLimited`; forces `turnstile_failed` → its banner; honeypot filled → success panel (no-send proven in unit); pending state `aria-busy`, never `disabled`; 390 px: full-width submit, controls ≥ 44 px; keyboard-only completion. A *real* Turnstile rejection needs a different server env, so it is unit-only by design (MSW against `siteverify`, §4); Cloudflare's always-fail pair — site key `2x00000000000000000000AB`, secret `2x0000000000000000000000000000000AA` — is wired into a `workflow_dispatch` variant of `e2e` that boots a second `next start`, kept out of the PR matrix for the runner budget (OQ-08.3) | INV-07.4, D-07.4 |
-| `@nojs` | `javaScriptEnabled: false` project on `/` and the form | all section text visible (no opacity 0), count-up final values, `<noscript>` fallback visible, native validation, switcher anchor `href` = other-locale path | INV-05.10, D-07.5 |
+| `@nojs` | `javaScriptEnabled: false` project on `/` and the form | all section text visible (no opacity 0), count-up final values, `<noscript>` fallback visible, native validation, switcher anchor `href` = other-locale path — INV-05.10, D-07.5 |
 | `@motion` | reduced-motion parity (`reducedMotion: 'reduce'` vs default, settle, compare text + computed `transform: none`, `animationName: none` on loops, count-up final); reveal-once (scroll away/back; subpage and back by **typed Back** — the in-page "← Back" control — *and* by **browser Back**, `page.goBack()`, which is a different history path, 05 §5.14); stagger 110 ms (read `transition-delay`/Motion timings via `data-reveal-index`) **and its alternation**: gallery polaroids alternate sign by index (even → negative `x`/`rotate`, odd → positive) and review bubbles take `transform-origin` from tail side (`12% 100%` left, `88% 100%` right), both read from computed style at the first animation frame; `WordSwap` on day change (click another day chip → the old sample line leaves before the new one enters, `mode="wait"`, `--dur-word-swap`; opacity-only under reduced motion); computed-style scan: no transform on nav/section shells/ancestors of fixed/sticky, no `overflow` clip on stagger ancestors, `will-change: auto` at rest | INV-05.2/3/4/7/8, D-05.6/9 |
 | `@motion-obs` (chromium-desktop, 1280 only — note (c)) | init script replaces `window.IntersectionObserver` with a counting proxy before any bundle runs; after loading `/` and scrolling the whole page, **exactly two** observers were constructed (the frozen reveal pool + the hero's ambient-pause `useInView`, INV-05.9) and a third fails — at 1280 the hero is the only `AmbientScope` 04 §3.3 mounts, which is what makes two the right number; scroll the hero out of view → its section carries `data-ambient="paused"` and every `.loop` inside computes `animation-play-state: paused`; scroll back → `running` | INV-05.9 |
 | `@hover` | pointer gating (D-05.12, 05 §5.10). In the `webkit-mobile` project, `matchMedia('(hover: none) and (pointer: coarse)').matches` is the precondition, then `hover` on every button, nav link, polaroid and card leaves computed `transform`, `translate`, `scale` and `box-shadow` unchanged. In `chromium-desktop` with `reducedMotion: 'reduce'`, the same hovers change only colour/shadow — computed `transform` stays `none` on the inner layer (05 §5.10). If OQ-08.3 moves `webkit-mobile` to `main`-only, the touch half moves with it and the reduced-motion half still runs on every PR | D-05.12 |
@@ -495,7 +511,7 @@ the row below states three rather than two.
 axe (`AxeBuilder().withTags([...])`) runs on: every route × locale (idle); `/` with hamburger open (390),
 lightbox open, menu day switched; the form idle / error / success; 404. Rules: all WCAG 2.2 AA; 0 violations.
 `color-contrast` is **not** blanket-disabled (D-08.8): each violation is matched against
-`tests/e2e/axe-exceptions.json`, whose only entries at launch are the pairs 03 §10 already computes as failing
+`e2e/axe-exceptions.json`, whose only entries at launch are the pairs 03 §10 already computes as failing
 (each with `selector`, the two hex values, the computed ratio, `reason: '03 §10 / D-03.12'` and an `expires`
 phase gate). A matched violation is reported into the job summary; an **unmatched** one fails the job, so a
 contrast regression introduced by new markup or a token edit is blocked on the PR that introduces it. Entries
@@ -539,7 +555,7 @@ summary for eyeballing. Field vitals (INP, p75) are read in Speed Insights after
 
 ### 8 · Visual regression
 
-`tests/e2e/visual.spec.ts` (`@visual`, chromium-desktop only, D-08.10): for each locale and each viewport
+`e2e/visual.spec.ts` (`@visual`, chromium-desktop only, D-08.10): for each locale and each viewport
 (1280×800, 390×844 via `test.use`), `/` scrolled section by section (`section[id]` → `toHaveScreenshot`,
 `animations: 'disabled'`, reduced motion on, `mask` for the count-up and the menu's "today" chip, wait
 `document.fonts.ready`), the top fold of each detail page in `site.json.routes[]` (six — `faq` and `enroll`
@@ -637,6 +653,12 @@ checks on this page (INV-04.7's 44 px hit areas by `@form` and `@a11y`; INV-06.4
 implements it, as a §12.2 gate item; INV-08.1 is scoped to the five contract documents until then, and
 adding an invariant to any of those five adds a row here in the same PR.
 
+**This table names the check, not its build status.** Most of the checks above are specified against code
+that does not exist yet — there is no motion tree, no form and no section component to lint or render — so a
+row here means "this is the named check that enforces the invariant", never "this ran on the last PR".
+Which of them exist today is §10's `Built?` column and §11's `In package.json?` column, and those two are
+the only places in this document to read a build status from.
+
 ### 10 · CI pipeline (GitHub Actions)
 
 ```mermaid
@@ -645,23 +667,65 @@ flowchart LR
   build --> e2e["e2e (shard 1/2, 2/2)"] --> ok[e2e-ok]
   PR --> bt[bead-trailer]
   V[deployment_status<br/>success · Preview] --> lhp[lighthouse-preview + preview-smoke]
-  P[deployment_status<br/>success · Production] --> lprod[lighthouse-prod + seo-smoke + headers]
-  S[schedule nightly] --> full[e2e-full 4 projects] & audit
+  P[deployment_status<br/>success · Production] --> lprod["lighthouse-prod + @seo + @headers"]
+  G["workflow_dispatch at each gate<br/>(nightly schedule written, guarded off)"] --> full["e2e-full · 4 projects"]
+  W["schedule weekly"] --> audit
+  PR --> audit
 ```
 
-| Job | Trigger | Needs | Steps (abridged) | Timeout | Artifacts | Required |
-|---|---|---|---|---|---|---|
-| `static` | PR, push `main` | — | checkout · `pnpm/action-setup` → `setup-node` (cache) · `typecheck` · `lint` · `lint:css` · `format:check` · `check:tokens` · `check:todo` · `check:env` · flaky-tag lint · deps allowlist | 10 min | — | yes |
-| `content` | PR, push | — | `validate:content --report` · summary · sticky comment · upload report | 5 min | `content-coverage.md` | yes |
-| `unit` | PR, push | — | `vitest run --coverage` · summary | 10 min | `coverage/` | yes |
-| `build` | PR, push | — | restore `.next/cache` · `next build` · route summary · `bundle-secrets.sh` · upload `.next` (minus cache) | 15 min | `next-build` | yes |
-| `e2e` | PR, push | `build` | **`container: mcr.microsoft.com/playwright:v<version>-noble`** — browsers and their OS deps ship in the image, so no `install-deps` and no browser cache, and the fonts match the `@visual` baselines exactly (D-08.10); on a bare runner the font set differs and every CJK/emoji screenshot would diff forever · download `next-build` · `pnpm/action-setup` + `setup-node` · `playwright test --shard` (PR: 2 projects; push `main`: same) | 25 min | `playwright-report/`, traces, `section-heights.json`, screenshot diffs | via `e2e-ok` |
-| `e2e-ok` | — | `e2e` | `if: always()` — fails unless every shard succeeded (single name for branch protection) | 2 min | — | **yes** |
-| `bead-trailer` | PR (opened, synchronize, reopened, edited) | — | `scripts/ci/bead-trailer.sh origin/$base $head` with `PR_BODY`, `jq` (11 §6) | 5 min | — | yes |
-| `lighthouse-preview` | `deployment_status` (state `success`, preview environment) | — | `lhci autorun --collect.url=$URL/en …` · `@smoke` + `@form` subset against `$URL` (with `x-vercel-protection-bypass` — previews are protected, 09 D-09.4) · check-run on `github.event.deployment.sha` via `actions/github-script` · summary | 15 min | `lhci/` | advisory |
-| `lighthouse-prod` | `deployment_status` (state `success`, production environment) · `workflow_dispatch` | — | `validate:content --release` (R1–R4 + locale completeness, §3) · full LHCI matrix, 42 collections at three locales · `seo-smoke.ts` (sitemap/hreflang/robots on the real domain) · `@headers` | **60 min** (was 40; §7's re-cut matrix still needs the headroom at three locales) | `lhci/` | launch gate (§12.3) |
-| `e2e-full` | push `main` · nightly `schedule` · `workflow_dispatch` | `build` | same `container:` as `e2e`; all 4 projects, `retries: 0`; failure opens a bead via the orchestrator (no auto-issue) | 40 min | report | advisory |
-| `audit` | PR · weekly `schedule` | — | `pnpm audit --prod --audit-level=high` · `gitleaks` (PR diff) [gitleaks-action licence for orgs — assumed free for a personal repo] | 10 min | — | advisory |
+**Reading this table: `Built?` separates what runs today from what is specified.** The table is the whole
+pipeline, plan included — a job table that showed only today's jobs would stop being a plan and the phases
+would have nothing to build against. So every row stays, and the `Built?` column says whether the row is
+running in `.github/workflows/**` right now (`yes`), running with named steps still missing (`partly`), or
+purely specified (`no`, with the PR or phase that brings it). `ci.yml`'s own header comment keeps the same
+distinction from the other side, and the two are to be edited together: **the PR that builds a row flips its
+`Built?` cell in the same PR.** The convention is the one `ci.yml` already applies to the `content` job: while
+the job did not exist its header comment said so and named the PR that would create it ("`content` arrives
+with PR-3.4, which is the PR that creates the `pnpm validate:content` script the job would run"), and PR-3.4
+rewrote that sentence in the past tense on the day it landed. The `Built?` column is that sentence, per row.
+
+| Job | Built? | Trigger | Needs | Steps (abridged) | Timeout | Artifacts | Required |
+|---|---|---|---|---|---|---|---|
+| `static` | **partly** | PR, push `main` | — | **Running today:** checkout · `pnpm/action-setup` → `setup-node` (cache) · `install --frozen-lockfile` · `typecheck` · `lint` · `lint:css` · `format:check` · the §2 TODO grep, as a step named `check:todo` whose body is the two `git grep` commands **inlined** — `scripts/ci/todo-grep.sh` does not exist, so the step is shell, not a script call. **Specified, not built:** `check:tokens` (PR-4.x — `check-tokens.ts` has no `tokens.css` to scan until the tokens PR lands), `check:todo` *as a script* (the same two greps, moved out of the workflow so `pnpm verify` and CI share one implementation per INV-08.6), `check:env` (`env-example.ts`), the `@flaky-known` tag lint (D-08.13 — it reads `.beads/issues.jsonl`, and it has no tagged test to lint yet) and the dependency allowlist (`deps-allowlist.sh`, INV-05.11). A step that calls a script `package.json` does not define fails on every PR, which is why each one waits for the PR that writes its script | 10 min | — | yes |
+| `content` | yes | PR, push | — | `validate:content --report` plus one `--warn-locale` per lagging locale — the same flag list `pnpm verify` carries and never a different one (§11 (b)) — run under `continue-on-error` · job summary · sticky comment · upload report · a final step that re-raises the validator's exit code (the earlier steps have to run even on a red gate — a red run is when the editor most needs the report) | 5 min | `content-coverage.md` | yes |
+| `unit` | yes | PR, push | — | `pnpm test:coverage` (= `vitest run --coverage`) · upload `coverage/` | 10 min | `coverage/` | yes |
+| `build` | **partly** | PR, push | — | **Running today:** restore `.next/cache` · `next build` · upload `.next` (minus cache, `include-hidden-files: true`). **Specified, not built:** the route summary into `$GITHUB_STEP_SUMMARY` (§7) and `bundle-secrets.sh` (D-08.11) — both arrive with the PR that writes `scripts/ci/bundle-secrets.sh` | 15 min | `next-build` | yes |
+| `e2e` | yes | PR, push | `build` | **`container: mcr.microsoft.com/playwright:v<version>-noble`** — browsers and their OS deps ship in the image, so no `install-deps` and no browser cache, and the fonts match the `@visual` baselines exactly (D-08.10); on a bare runner the font set differs and every CJK/emoji screenshot would diff forever · download `next-build` · `pnpm/action-setup` + `setup-node` · `playwright test --shard` (PR: 2 projects; push `main`: same) | 25 min | `playwright-report/`, `blob-report/`, `test-results/`; `section-heights.json` and screenshot diffs once `@perf` and `@visual` exist | via `e2e-ok` |
+| `e2e-ok` | yes | — | `e2e` | `if: always()` — fails unless every shard succeeded (single name for branch protection) | 2 min | — | **yes** |
+| `bead-trailer` | yes | PR (opened, synchronize, reopened, edited) | — | `scripts/ci/bead-trailer.sh origin/$base $head` with `PR_BODY`, `jq` (11 §6). Its own workflow, `bead-trailer.yml` | — (no `timeout-minutes`) | — | yes |
+| `lighthouse-preview` | **no** · PR-8.5 | `deployment_status` (state `success`, preview environment) | — | `lhci autorun --collect.url=$URL/en …` · `@smoke` + `@form` subset against `$URL` (with `x-vercel-protection-bypass` — previews are protected, 09 D-09.4) · check-run on `github.event.deployment.sha` via `actions/github-script` · summary | 15 min | `lhci/` | advisory |
+| `lighthouse-prod` | **no** · PR-8.5 | `deployment_status` (state `success`, production environment) · `workflow_dispatch` | — | `validate:content --release` (R1–R4 + locale completeness, §3) · full LHCI matrix, 42 collections at three locales · the `@seo` and `@headers` tags (§5) against the production base URL — sitemap/`hreflang`/canonical/robots and the 06/09 header set. Both tags live in `e2e/routes*` (PR-6.10, whose own assertions and PR-6.11's headers are the substance), so this job re-runs an existing spec against a different base URL and needs no spec file of its own | **60 min** (was 40; §7's re-cut matrix still needs the headroom at three locales) | `lhci/` | launch gate (§12.3) |
+| `e2e-full` | **no** · PR-5.11 | `workflow_dispatch` (the live trigger — the orchestrator dispatches it when it opens a gate bead) · `push` `main` and nightly `schedule` written but job-level guarded on a repository variable defaulting to **off** until OQ-08.3 closes, because neither fits the free tier as costed (D-10.15 (c)) | `build` | same `container:` as `e2e`; all 4 projects (`playwright.config.ts` already switches them on `E2E_FULL=1`, so the config half is done and only the workflow is missing), `retries: 0`; failure opens a bead via the orchestrator (no auto-issue) | 40 min | report | advisory |
+| `audit` | **no** · PR-2.10 | PR · weekly `schedule` | — | `pnpm audit --prod --audit-level=high` · `gitleaks` (PR diff) [gitleaks-action licence for orgs — assumed free for a personal repo] | 10 min | — | advisory |
+
+**The two rows that read `no · unscheduled` are scheduled now; three scripts still are not.** 10's D-10.15
+answered what this paragraph used to report: `audit.yml` is **PR-2.10** in Phase 2 and `nightly.yml` is
+**PR-5.11** in Phase 5, each its own file rather than a job inside `ci.yml` because each carries a `schedule`
+trigger `ci.yml` has no `on:` block for, and each flips its own `Built?` cell above in the same PR. §12.2's
+`e2e-full` clause is scoped to the Phase 5 gate to match, and three of its neighbours were scoped in the same
+pass. `lighthouse-preview` and `lighthouse-prod` were never the gap — PR-8.5 has named them, with the
+workflow file, `lighthouserc*` and the `package.json` line that adds `@lhci/cli` — but they are Phase 8, which
+is why §12.2's Lighthouse clause is now scoped too.
+
+**What remains unscheduled is three scripts, and it is a gap in 10's tables rather than in this section.**
+`scripts/ci/bundle-secrets.sh` and `scripts/ci/env-example.ts` (D-08.11, INV-07.3): the `build` and `static`
+rows above each wait on "the PR that writes" them, D-08.11 sits in 10's Phase 2 *Scope* line, and no row's
+*Files* column carries either path. `scripts/ci/todo-grep.sh` (INV-08.6): the check itself runs today as an
+inlined shell step in `static`, which is precisely the CI-versus-`pnpm verify` divergence that invariant
+names — shipping the greps inlined is the divergence, not its close — and no row schedules the extraction.
+For each of the three, everything a row needs is already fixed on this page: the file path, the job it runs
+in, the `package.json` script that calls it (§11) and the invariant it serves. The only missing thing is a PR
+number, which is 10's to mint, so 08 re-specifying them would produce nothing. One wrinkle is worth naming
+before the rows are written: `bundle-secrets.sh` adds a *step* to `ci.yml`'s existing `build` job, and 10 §7's
+rule for that file is that additions are new jobs and never edits to an existing one — so either that rule
+takes a named exception for it (as it already does for the `--warn-locale` flags) or the grep runs as its own
+job that downloads the `next-build` artifact, and the row should say which.
+
+**`seo-smoke.ts` is retired as a file name.** Earlier revisions of the `lighthouse-prod` row and of §12.3
+named a script by that path, which no PR writes and which duplicated checks §5 already has tags for. The
+launch checks it stood for are the `@seo` and `@headers` tags run against the production base URL; the
+assertions are PR-6.10's and PR-6.11's, both scheduled, and the spelling here now matches theirs. No new row
+is owed for it.
 
 Conventions: `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }` on PR workflows;
 `permissions: contents: read` by default, `pull-requests: write` only on `content`, `checks: write` only on
@@ -697,7 +761,8 @@ number rather than being closed. Two levers are already costed: moving `webkit-m
 returns ≈ 6 min/PR, and holding `@visual` at `en` + `zh-Hans` returns ≈ 2 min/PR and 34 baseline images.
 Neither is taken unilaterally. The step is the commit that adds `zh-Hant` to `routing.locales` (D-08.18):
 until then every number in the middle column still applies, however much Traditional content sits in the tree.
-The nightly `e2e-full` (4 projects) and `lighthouse-prod` grow on the same ratio; `lighthouse-prod` is the one
+The four-project `e2e-full` (≈ 35–40 min a run, which is why PR-5.11 ships it dispatch-only rather than
+nightly until OQ-08.3 closes — D-10.15 (c)) and `lighthouse-prod` grow on the same ratio; `lighthouse-prod` is the one
 job where the growth broke a limit rather than a budget, and §7 re-cuts its sampling depth to fit 60 minutes.
 
 `deployment_status` workflows, like `repository_dispatch` ones, exist only on the
@@ -711,35 +776,86 @@ may re-run once only for an infrastructure failure — runner lost, cache 5xx �
 
 ### 11 · Local development loop
 
-| Script | Runs | Notes |
-|---|---|---|
-| `pnpm dev` / `build` / `start` | Next | `.env.local` from `.env.example` (07 §5); `INQUIRY_TRANSPORT=log` prints emails |
-| `pnpm typecheck` | `next typegen && tsc --noEmit` | §2 |
-| `pnpm lint` / `lint:css` / `format` / `format:check` | ESLint · Stylelint · Prettier | `lint:fix` variants exist |
-| `pnpm validate:content [--report] [--warn-locale <id>] [--release [--accept-sample <path>]]` | `tsx scripts/validate-content.ts` | §3. `--warn-locale zh-Hans` / `zh-Hant` while a tree is being translated; `--release` is the launch gate and ignores it. `--accept-sample` is R4-only, repeatable, names one path, and is typed by a human at the launch gate — never baked into a workflow without §12.3 recording why |
-| `pnpm check:tokens` | `tsx scripts/ci/check-tokens.ts` + `vitest run tests/unit/design` | CSS scans + parity/snapshot |
-| `pnpm check:secrets` / `check:env` / `check:todo` | `scripts/ci/bundle-secrets.sh` (needs a build) · `env-example.ts` · `todo-grep.sh` | |
-| `pnpm test` / `test:watch` / `test:coverage` | Vitest | |
-| `pnpm test:e2e [--project …] [--grep @tag]` / `test:e2e:ui` | Playwright, host-native, with `--grep-invert @visual` baked in | `--grep @smoke` is the 2-minute local check. `@visual` is excluded because a macOS host cannot reproduce the container's fonts (D-08.10) — this is the one intended gap in INV-08.6, and `pnpm test:e2e:docker` closes it |
-| `pnpm test:e2e:docker` / `test:e2e:update` | the same `playwright test` inside `mcr.microsoft.com/playwright:v<version>-noble` with the repo mounted; `:update` adds `--grep @visual --update-snapshots` | D-08.10; Docker required. `:docker` is what to run before touching anything the baselines cover |
-| `pnpm verify` | `typecheck && lint && lint:css && format:check && check:tokens && check:todo && check:env && validate:content --report && test && build && check:secrets` | what `static`+`content`+`unit`+`build` run; `pnpm verify:e2e` adds `test:e2e`. Not `ci`: `pnpm ci` is a reserved pnpm command — an undocumented alias for `clean-install` (`pnpm clean` + `pnpm install --frozen-lockfile`) — so `pnpm ci` would wipe and reinstall instead of running the gate. It is absent from `pnpm help -a`, so scanning the command list does not catch the collision; do not rename this script back |
-| `pnpm lhci` | `lhci autorun --collect.url=http://localhost:3000/en` | local sanity only; numbers differ from the preview |
+Same convention as §10: **the second column says whether the script exists in `package.json` today.** A row
+marked `no` is plan — the script is specified here and written by the PR named in the row, which flips the
+cell in the same PR. Rows marked `yes` are the shipped entries, read off `package.json` on 2026-08-23.
 
-**Status, 2026-08-23 — the `build` step of `pnpm verify` has never passed in this worktree.** No run of
-`pnpm verify` has yet completed end to end: `pnpm build` fails before finishing, Turbopack exiting on a
-port-binding error, so the `build` and `check:secrets` steps at the tail of the chain have been green in
-nobody's run — not passing, and not failing on their own merits either, since they have never been reached.
-A separate seat is diagnosing the port binding; it is **not** fixed. Until it reports, read everything this
-document says about `build` — §10's `build` job, D-08.11's client-output grep (which needs a build), §3's
-loader-inside-`build` gate, and INV-08.6's "same scripts as CI" — as specified intent rather than observed
-behaviour, and do not cite a local `pnpm verify` as evidence that the full gate holds.
+| Script | In `package.json`? | Runs | Notes |
+|---|---|---|---|
+| `pnpm dev` / `build` / `start` | yes | Next | `.env.local` from `.env.example` (07 §5); `INQUIRY_TRANSPORT=log` prints emails |
+| `pnpm typecheck` | yes | `next typegen && tsc --noEmit` | §2 |
+| `pnpm lint` / `lint:css` / `format` / `format:check` | yes | ESLint · Stylelint · Prettier | `lint:fix` and `lint:css:fix` exist; `format:check` is `prettier --check .` scoped by `.prettierignore` |
+| `pnpm validate:content [--report] [--warn-locale <id>] [--release [--accept-sample <path>]]` | yes | `tsx scripts/validate-content.ts` | §3. `--warn-locale zh-Hans` / `zh-Hant` while a tree is being translated; `--release` is the launch gate and ignores it. `--accept-sample` is R4-only, repeatable, names one path, and is typed by a human at the launch gate — never baked into a workflow without §12.3 recording why |
+| `pnpm test` / `test:watch` / `test:coverage` | yes | Vitest | |
+| `pnpm test:e2e [--project …] [--grep @tag]` / `test:e2e:ui` | yes | Playwright, host-native, with `--grep-invert @visual` baked in | `--grep @smoke` is the 2-minute local check. `@visual` is excluded because a macOS host cannot reproduce the container's fonts (D-08.10) — this is the one *intended* gap in INV-08.6 (the missing `check:todo` script two rows down is the unintended one), and `pnpm test:e2e:docker` closes it |
+| `pnpm test:e2e:docker` / `test:e2e:update` | yes | the same `playwright test` inside `mcr.microsoft.com/playwright:v<version>-noble` with the repo mounted; `:update` adds `--grep @visual --update-snapshots` | D-08.10; Docker required. `:docker` is what to run before touching anything the baselines cover |
+| `pnpm verify` / `verify:e2e` | yes | the formula below | the local twin of `static`+`content`+`unit`+`build`; `verify:e2e` is `verify && test:e2e`. Not `ci`: `pnpm ci` is a reserved pnpm command — an undocumented alias for `clean-install` (`pnpm clean` + `pnpm install --frozen-lockfile`) — so `pnpm ci` would wipe and reinstall instead of running the gate. It is absent from `pnpm help -a`, so scanning the command list does not catch the collision; do not rename this script back |
+| `pnpm check:tokens` | **no** · PR-4.x | `tsx scripts/ci/check-tokens.ts` + `vitest run tests/unit/design` | CSS scans + parity/snapshot. Nothing to scan until `src/styles/tokens.css` and `src/design/tokens.ts` exist, which is the tokens PR |
+| `pnpm check:secrets` / `check:env` | **no** · with their scripts | `scripts/ci/bundle-secrets.sh` (needs a build) · `env-example.ts` | `scripts/ci/` holds only `bead-trailer.sh` today; each arrives with the PR that writes it, and joins `verify` and `static` in that same PR |
+| `pnpm check:todo` | **no** · the check itself runs | `scripts/ci/todo-grep.sh` | The **check** is live — the two §2 `git grep` commands are inlined in `static`'s `check:todo` step. What is missing is the *script*, so today the gate exists in CI and not in `pnpm verify`. That is the live INV-08.6 divergence that invariant now names, and extracting the shell into `todo-grep.sh` (called by both) is what closes it |
+| `pnpm lhci` | **no** · PR-8.5 | `lhci autorun --collect.url=http://localhost:3000/en` | local sanity only; numbers differ from the preview. `@lhci/cli` is not a dependency yet — PR-8.5 adds it with the Lighthouse jobs (§10) |
 
-Hooks: none (D-08.14). Habit, written in `00-README.md`/CONTRIBUTING: run `pnpm verify` before pushing; run
-`pnpm test:e2e --grep @smoke` before requesting review. Editor: `.editorconfig` (LF, 2 spaces, final
-newline, UTF-8), `.vscode/settings.json` (`editor.formatOnSave`, `eslint.useFlatConfig`, ESLint/Stylelint
-`fixAll` on save, Tailwind IntelliSense pointed at `src/app/globals.css`, `files.associations` for
-`content/**/*.json`), `.vscode/extensions.json` (ESLint, Stylelint, Prettier, Tailwind CSS, Playwright,
-Vitest). `.nvmrc` = `24`; `engines.node = "24.x"`; `packageManager = "pnpm@<pinned>"`.
+**`pnpm verify`, exactly** (`package.json`, verified 2026-08-23):
+
+```sh
+pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:check \
+  && pnpm run validate:content --report --warn-locale zh-Hans --warn-locale zh-Hant \
+  && pnpm run test && pnpm run build
+```
+
+Two things about that line are load-bearing and neither is obvious from reading it.
+
+**(a) The `--warn-locale` flags are deliberate, and deleting them reds the gate.** They are §3's phased-
+translation mechanism (D-08.5, HD-12): each one demotes *that locale's parity findings* to warnings while its
+tree is being filled in, and touches nothing else — never the Zod checks, never INV-02.4, never the provisional
+registry. The Chinese trees are **knowingly incomplete during this phase**: `zh-Hans` is finished by PR-8.1 and
+`zh-Hant`, seeded by PR-3.9 as an OpenCC conversion, by PR-8.8. The gap is not small and not a rounding error
+— the last `--report` run in this worktree puts `zh-Hans` at **10.8 % key coverage, 288 of 323 keys missing**,
+which without the flag is 288 parity errors and a non-zero exit. So a reader who strikes these flags as noise
+turns the local gate red on purpose and learns nothing the coverage report was not already printing. They
+come **out** one at a time, by the PR that finishes the locale —
+PR-8.1 drops `zh-Hans`, PR-8.8 drops `zh-Hant` — and on the day the last one goes, `verify` is the launch-
+strength parity check. `--release` ignores the flags entirely in every mode (§3, INV-02.11), so they can never
+warn a locale through the launch gate.
+
+**(b) The flag list is duplicated in `ci.yml`'s `content` job and the two must not drift.** INV-08.6 is one
+command set: the flags in `verify` and the flags in `content` are the same string, and a PR that changes one
+changes the other. Neither is the source of truth over the other; the pair is. The list holds one entry per
+locale that is **both** in `routing.locales` and still being translated, so it grows when a locale is enabled
+(PR-3.9) and shrinks when one is finished (PR-8.1, PR-8.8) or taken back out (D-10.12) — read it off
+`package.json` rather than from this page if the two ever disagree, and then fix this page.
+
+Earlier revisions of this section gave `verify` a formula built on `check:tokens`, `check:todo`, `check:env`
+and `check:secrets`, and left the `--warn-locale` flags out. None of those four scripts exists; the flags have
+been in the script since PR-3.4 put `validate:content` into it. So the formula named four checks that could
+not run and hid the one flag that changes what the gate asserts. The formula above is the script.
+
+**Status, 2026-08-23 — `pnpm build` now completes locally; the earlier blocker is closed.** An earlier
+revision of this section recorded that the `build` step of `pnpm verify` had never passed in this worktree,
+Turbopack exiting on a port-binding error before finishing. That is no longer true and the note is retired:
+`gp-dln.16` closed with "build verified after the Turbopack cache diagnosis", and the worktree carries a
+completed build — `.next/BUILD_ID` and a `prerender-manifest.json` listing the prerendered locale routes,
+both written 2026-08-23. `build` is therefore observed behaviour, not intent.
+
+What is still intent, and is the reason this note stays rather than being deleted: **`pnpm verify`'s tail is
+shorter than the gate this document describes.** The chain ends at `build`, so D-08.11's client-output secret
+grep — the thing that reads `.next/static/**` *after* a successful build — runs nowhere yet, locally or in CI
+(§10's `build` row). A green `pnpm verify` today means typecheck, three linters, the content gate under its
+`--warn-locale` flags, the unit suite and a build; it does not mean the six required checks, because `e2e`
+and `bead-trailer` are not in it by design (`verify:e2e` adds the first) and `check:secrets` is not in it yet.
+
+Hooks: none (D-08.14) — and that one is observed, not just decided: the repository has no Husky or lefthook
+config and no `.git/hooks` the repo installs. Habit, written in `00-README.md`/CONTRIBUTING: run `pnpm verify`
+before pushing; run `pnpm test:e2e --grep @smoke` before requesting review.
+
+Editor, same convention as the tables above. **Shipped:** `.editorconfig` (LF, 2 spaces, final newline,
+UTF-8), `.nvmrc` = `24`, `engines.node = "24.x"`, `packageManager = "pnpm@11.4.0"`. **Specified, not built:**
+`.vscode/settings.json` (`editor.formatOnSave`, `eslint.useFlatConfig`, ESLint/Stylelint `fixAll` on save,
+Tailwind IntelliSense pointed at `src/app/globals.css`, `files.associations` for `content/**/*.json`) and
+`.vscode/extensions.json` (ESLint, Stylelint, Prettier, Tailwind CSS, Playwright, Vitest) — there is no
+`.vscode/` directory in the repository today. Nothing gates on them: they are convenience, and the checks
+that matter run in `pnpm verify` and CI either way (D-08.14's whole point). Whoever adds the directory adds
+it here as shipped in the same PR.
 
 ### 12 · Definition of Done
 
@@ -757,9 +873,23 @@ edited in the same PR (INV-03.5); ☐ new/changed INV in
 ☐ implementer and verifier named and different (INV-11.3). `.github/PULL_REQUEST_TEMPLATE.md` carries the
 boxes and ends with the `Bead:` placeholder paragraph.
 
-**12.2 Per phase gate** (10 schedules, 11 W-11.6 closes): every bead of the phase has a verifier report;
-`e2e-full` green on `main` (4 projects); `@a11y` 0 violations across the matrix; `lighthouse-preview` meets
-§7 on the phase's last preview; `@visual` baselines current (from 04's phase); content coverage 100 % in
+**12.2 Per phase gate** (10 schedules, 11 W-11.6 closes). **Four of the clauses below named a runner no PR
+builds until a late phase, so each now carries the gate it starts at** — the scope `MC-08.1` already carried,
+applied to its neighbours after the 2026-08-23 gate-condition sweep (10 §14). A condition whose workflow does
+not exist is not a gate, and Phases 2–7 were carrying four of them. The list: every bead of the phase has a
+verifier report; **from the Phase 5 gate onward**, `e2e-full` green on the gate's `main` SHA (4 projects),
+dispatched at the gate with its run linked from the gate bead — PR-5.11 ships `nightly.yml` with
+`workflow_dispatch` live and its `schedule` / `push: main` triggers written but guarded off (D-10.15 (c)), so
+the dispatch *is* the trigger here and not a shortcut round one; **from the Phase 8 gate onward**, `@a11y`
+0 violations across the route × locale × viewport matrix (`e2e/a11y*` is PR-8.4) — at every earlier gate the
+clause reads instead *every axe assertion the phase's own PRs ship is clean*, which is the form's from Phase 5
+(PR-5.10) and the gallery's from Phase 6 (PR-6.5), and is knowingly narrower than the matrix; **from the
+Phase 8 gate onward**, `lighthouse-preview` meets §7 on the phase's last preview (PR-8.5 builds that
+workflow), so §7's budgets bind at one gate and then again at launch through `lighthouse-prod` (§12.3) —
+before Phase 8 no §7 number is measured anywhere, and the gate states that rather than implying otherwise;
+**from the Phase 8 gate onward**, `@visual` baselines current (`e2e/visual*` is PR-8.6 — an earlier revision
+of this clause read "from 04's phase", which is when the sections the baselines capture first exist, not when
+the spec that captures them is written; D-08.10 is reworded to match); content coverage 100 % in
 every locale in `routing.locales` for the namespaces the phase shipped — a locale that is not there yet is
 either finished or removed from `routing.locales`, never warned through the gate (INV-02.11); the phase's
 provisional block in `reports/content-coverage.md` reviewed, so the list the owner has to clear at launch is
@@ -788,8 +918,9 @@ override is a recorded decision and not a quiet flag — and every locale in `ro
 with `--warn-locale` ignored (INV-02.11); the
 23 Phase 3 paths (02 *Provisional values*) are the list the owner works down, and 09's launch checklist reads
 the same block out of `reports/content-coverage.md`; LHCI on the production domain,
-every route × locale — 21 URLs at three locales — mobile + desktop, meets §7; `@a11y` matrix against production = 0; `@headers`,
-`seo-smoke.ts` (sitemap, `hreflang`, canonical, robots, 404 per locale) on the real domain; **one manual
+every route × locale — 21 URLs at three locales — mobile + desktop, meets §7; `@a11y` matrix against production = 0; the `@seo` and
+`@headers` tags (§5) run against the real domain — sitemap, `hreflang`, canonical, robots and a 404 per
+locale, plus the header set 06/09 declare; **one manual
 real-key Turnstile submission in production** reaches the inbox (07 §5 — previews use test keys), then
 `INQUIRY_TO_EMAIL` production scope is confirmed — this is the item that catches the residual risk R4 cannot
 (§3: a sending address edited to something *different* and still unverified), so "the mail was accepted" is
@@ -831,6 +962,12 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   `packageManager` pin, `.nvmrc`); a check that exists only in CI, or only locally, is a bug. One named
   exception: `@visual` is font-dependent and runs in the Playwright container both in CI and locally
   (`pnpm test:e2e:docker`), so the host-native `pnpm test:e2e` excludes it rather than fail it (§11, D-08.10).
+  **One known open divergence, 2026-08-23** — not an exception, a bug this invariant is naming so it gets
+  fixed: the §2 TODO grep runs in CI only, as an inlined shell step in `static`, because
+  `scripts/ci/todo-grep.sh` does not exist for `pnpm verify` to call (§11). It closes when that script is
+  written and both callers point at it. Two flags are checked the other way round and *do* agree today —
+  `validate:content`'s `--warn-locale` list is the same string in `verify` and in the `content` job, and
+  §11 (b) says a PR changing one changes the other.
 - **INV-08.7 No secrets in PR CI.** PR workflows use only `GITHUB_TOKEN`, Cloudflare's published test keys
   and `INQUIRY_TRANSPORT=log`; no real key is ever a repository secret for PR runs; artifacts contain no env.
 - **INV-08.8 Baselines and thresholds move with a reason.** Screenshot baselines, section-height baselines,
@@ -935,13 +1072,21 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   workflows, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json`), View Transitions spike.
 - `docs/technical/12-open-questions.md` — OQ-08.1…11 roll-up (OQ-08.3 restated, OQ-08.10 new; OQ-08.11 was
   new and is now **closed** here by 06 `D-06.15`(a), so 12's row for it needs the same closure).
-- Files this document names: `eslint.config.mjs`, `stylelint.config.mjs`, `prettier.config.mjs`,
-  `vitest.config.ts`, `tests/unit/**`, `tests/e2e/playwright.config.ts`, `tests/e2e/**`,
-  `tests/e2e/__screenshots__/`, `tests/e2e/visual.spec.ts`, `tests/e2e/axe-exceptions.json`,
-  `lighthouserc.cjs`, `scripts/validate-content.ts`, `scripts/ci/{bead-trailer.sh,
-  todo-grep.sh, bundle-secrets.sh, env-example.ts, check-tokens.ts, deps-allowlist.sh, seo-smoke.ts}`,
-  `.github/workflows/{ci.yml, bead-trailer.yml, preview.yml, production.yml, nightly.yml, audit.yml}`,
-  `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json` (09 D-09.17, shipped by 10's PR-2.9),
-  `reports/content-coverage.md`, `reports/section-heights.json`. Content files it reads but never owns:
+- Files this document names, split the same way §10 and §11 split their tables — **shipped** (present in the
+  repository, verified 2026-08-23): `eslint.config.mjs`, `.stylelintrc.mjs`, `.prettierrc.json`,
+  `.prettierignore`, `vitest.config.ts`, `playwright.config.ts` (root), `tests/unit/**`, `e2e/**`,
+  `scripts/validate-content.ts`, `scripts/ci/bead-trailer.sh`,
+  `.github/workflows/{ci.yml, bead-trailer.yml}`, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json`
+  (09 D-09.17, shipped by 10's PR-2.9), `reports/content-coverage.md`, `.editorconfig`, `.nvmrc`.
+  **Specified, not built:** `e2e/visual.spec.ts`, `e2e/axe-exceptions.json`, `tests/e2e/__screenshots__/`
+  (the one path deliberately outside `e2e/` — the shipped config's `snapshotPathTemplate` already points
+  there, D-08.10), `lighthouserc.cjs`, `scripts/ci/{todo-grep.sh, bundle-secrets.sh, env-example.ts,
+  check-tokens.ts, deps-allowlist.sh}` — the first three of those five are the ones no PR schedules (§10);
+  an earlier revision listed a sixth, `seo-smoke.ts`, which is retired: the launch SEO and header checks are
+  the `@seo` and `@headers` tags of §5, not a script,
+  `.github/workflows/{preview.yml, production.yml, nightly.yml, audit.yml}`, `.vscode/{settings,extensions}.json`,
+  `reports/section-heights.json`. Earlier revisions listed `stylelint.config.mjs`,
+  `prettier.config.mjs` and `tests/e2e/playwright.config.ts`, none of which is the name the repository uses.
+  Content files it reads but never owns:
   `content/site.json` (`routes[]`, `provisional`, the localized `brand.*` values) and `content/<locale>/**`
   for `en`, `zh-Hans` and `zh-Hant` — every assertion's expected text comes from there (INV-08.5).
