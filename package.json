@@ -19,6 +19,7 @@
     "lint:css:fix": "stylelint \"src/**/*.css\" --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "validate:content": "tsx scripts/validate-content.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -26,7 +27,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:docker": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.62.1-noble npx --yes playwright test",
     "test:e2e:update": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.62.1-noble npx --yes playwright test --grep @visual --update-snapshots",
-    "verify": "pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:check && pnpm run test && pnpm run build",
+    "verify": "pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:check && pnpm run validate:content --report --warn-locale zh-Hans && pnpm run test && pnpm run build",
     "verify:e2e": "pnpm run verify && pnpm run test:e2e"
   },
   "dependencies": {
@@ -65,6 +66,7 @@
     "stylelint-config-standard": "40.0.0",
     "stylelint-config-tailwindcss": "1.0.1",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.12",
     "typescript": "5.9.3",
     "typescript-eslint": "8.67.0",
     "vitest": "4.1.11"
