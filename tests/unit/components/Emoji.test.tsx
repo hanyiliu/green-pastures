@@ -52,9 +52,25 @@ describe("Emoji", () => {
     expect(container.firstElementChild?.className).not.toMatch(/\bsize-/);
   });
 
-  it("keeps caller classes", () => {
-    const { container } = render(<Emoji symbol="🥦" className="mr-1" />);
+  describe("caller classes", () => {
+    it("takes a class that sets a property the recipe leaves alone", () => {
+      const { container } = render(<Emoji symbol="🥦" className="mr-1" />);
 
-    expect(container.firstElementChild).toHaveClass("mr-1");
+      expect(container.firstElementChild).toHaveClass("mr-1");
+    });
+
+    it("refuses a box size the recipe already sets", () => {
+      expect(() => render(<Emoji symbol="🥦" size="dot" className="size-8" />)).toThrow(
+        /"size-8"/u,
+      );
+      // …including through the shorthand: `size-12` is a width and a height.
+      expect(() => render(<Emoji symbol="🥦" size="dot" className="h-8" />)).toThrow(/"h-8"/u);
+    });
+
+    it("takes the same size marked important", () => {
+      const { container } = render(<Emoji symbol="🥦" size="dot" className="size-8!" />);
+
+      expect(container.firstElementChild).toHaveClass("size-8!");
+    });
   });
 });

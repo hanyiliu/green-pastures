@@ -93,4 +93,39 @@ describe("LearnMoreLink", () => {
     // The rule lives on the inner span, so the 44px box cannot stretch it away.
     expect(link.querySelector("span")).toHaveClass("pb-0.5");
   });
+
+  describe("caller classes", () => {
+    it("takes a class that sets a property the recipe leaves alone", () => {
+      renderIn(
+        routing.defaultLocale,
+        <LearnMoreLink routeId="gallery" className="mt-2">
+          Browse the gallery →
+        </LearnMoreLink>,
+      );
+
+      expect(screen.getByRole("link")).toHaveClass("mt-2");
+    });
+
+    it("refuses the weight the recipe already sets", () => {
+      expect(() =>
+        renderIn(
+          routing.defaultLocale,
+          <LearnMoreLink routeId="gallery" className="font-normal">
+            Browse the gallery →
+          </LearnMoreLink>,
+        ),
+      ).toThrow(/"font-normal"/u);
+    });
+
+    it("takes the same weight marked important", () => {
+      renderIn(
+        routing.defaultLocale,
+        <LearnMoreLink routeId="gallery" className="font-normal!">
+          Browse the gallery →
+        </LearnMoreLink>,
+      );
+
+      expect(screen.getByRole("link")).toHaveClass("font-normal!");
+    });
+  });
 });

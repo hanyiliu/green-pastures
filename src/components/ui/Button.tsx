@@ -2,6 +2,8 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { Link } from "@/i18n/navigation";
 
+import { withOverrides } from "./class-names";
+
 /**
  * The pill button (04 §3.2): `--radius-pill`, a `--shadow-primary*` family
  * shadow, the desktop-only hover lift of 05 §5.10, and a hit area that is never
@@ -81,6 +83,7 @@ type ButtonBaseProps = {
   readonly children: ReactNode;
   readonly size?: ButtonSize;
   readonly tone?: ButtonTone;
+  /** Extra classes; an override of a property the recipe sets must be important (`w-auto!`). */
   readonly className?: string;
 };
 
@@ -91,7 +94,7 @@ export type ButtonProps = ButtonBaseProps &
   );
 
 export function Button({ children, size = "nav", tone = "sage", className, ...rest }: ButtonProps) {
-  const classes = `${buttonRecipe(size, tone)} ${className ?? ""}`;
+  const classes = withOverrides("Button", buttonRecipe(size, tone), className);
 
   if (rest.as === "button") {
     return (

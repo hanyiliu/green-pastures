@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { withOverrides } from "@/components/ui/class-names";
 import { getSite } from "@/content/site";
 
 /**
@@ -134,9 +135,14 @@ export type SectionProps = {
    * order.
    */
   readonly decor?: ReactNode;
-  /** Extra classes on the `<section>` — the gallery's `px` bleed, the hero's own padding. */
+  /**
+   * Extra classes on the `<section>` — the gallery's `px` bleed, the hero's own
+   * padding. Both of those *replace* a property this recipe sets, so both are
+   * written important (`px-0!`); anything the recipe leaves alone is a plain
+   * class. See `withOverrides`.
+   */
   readonly className?: string;
-  /** Extra classes on the centred content container. */
+  /** Extra classes on the centred content container, under the same contract. */
   readonly contentClassName?: string;
 };
 
@@ -154,10 +160,22 @@ export function Section({
       data-section={id}
       aria-labelledby={labelledBy}
       style={sectionRoleVariables(id)}
-      className={`relative snap-start scroll-mt-(--nav-h) bg-(color:--section-bg) px-(--section-px) py-(--section-py) ${className ?? ""}`}
+      className={withOverrides(
+        "Section",
+        `relative snap-start scroll-mt-(--nav-h) bg-(color:--section-bg) px-(--section-px) py-(--section-py)`,
+        className,
+      )}
     >
       {decor}
-      <div className={`mx-auto w-full max-w-content ${contentClassName ?? ""}`}>{children}</div>
+      <div
+        className={withOverrides(
+          "Section's content container",
+          `mx-auto w-full max-w-content`,
+          contentClassName,
+        )}
+      >
+        {children}
+      </div>
     </section>
   );
 }

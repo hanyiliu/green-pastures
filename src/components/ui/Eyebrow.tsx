@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { withOverrides } from "./class-names";
+
 /**
  * The eyebrow recipe (04 §3.2) — **the only place `uppercase` is applied**
  * (04 §5.5, 03 §3.3). Section eyebrows, programme age labels, teacher role
@@ -27,6 +29,14 @@ import type { ReactNode } from "react";
  * The wider `--tracking-eyebrow` (1.5px) belongs to the section eyebrow; the
  * two label sizes take `--tracking-label` (0.5px), which is what the design
  * sets on the role lines.
+ *
+ * **`sm` and `panel` currently render identically**, and that is a token fact,
+ * not a duplicate variant: `src/styles/tokens.css` gives `--text-eyebrow-sm`
+ * and `--text-panel-label` the same 10px `< md` / 12px `≥ md`, neither declares
+ * a line height, and both sizes take `--tracking-label`. 04 §3.2 names all
+ * three sizes and 03 §3.2 lists the two tokens on separate rows — the age
+ * label and the info-panel label are free to diverge — so the variant stays and
+ * the coincidence is 03's to resolve.
  */
 const SIZE = {
   eyebrow: "text-eyebrow tracking-eyebrow",
@@ -41,13 +51,18 @@ export type EyebrowProps = {
   readonly size?: EyebrowSize;
   /** `span` by default so an eyebrow can sit inside a chip or a heading stack. */
   readonly as?: "span" | "div" | "p";
+  /** Extra classes; an override of a property the recipe sets must be important (`tracking-label!`). */
   readonly className?: string;
 };
 
 export function Eyebrow({ children, size = "eyebrow", as: Tag = "span", className }: EyebrowProps) {
   return (
     <Tag
-      className={`font-body font-bold text-(color:--section-accent) uppercase ${SIZE[size]} ${className ?? ""}`}
+      className={withOverrides(
+        "Eyebrow",
+        `font-body font-bold text-(color:--section-accent) uppercase ${SIZE[size]}`,
+        className,
+      )}
     >
       {children}
     </Tag>

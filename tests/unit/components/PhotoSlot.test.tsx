@@ -95,4 +95,25 @@ describe("PhotoSlot", () => {
 
     expect(screen.getByText("HEAD TEACHER")).toBeInTheDocument();
   });
+
+  describe("caller classes", () => {
+    it("takes a class that sets a property the recipe leaves alone", () => {
+      const { container } = render(<PhotoSlot slotId="hero" className="aspect-square" />);
+
+      expect(container.firstElementChild).toHaveClass("aspect-square");
+    });
+
+    it("refuses the full width and the radius the recipe already sets", () => {
+      expect(() => render(<PhotoSlot slotId="hero" className="w-auto" />)).toThrow(/"w-auto"/u);
+      expect(() => render(<PhotoSlot slotId="hero" className="rounded-none" />)).toThrow(
+        /"rounded-none"/u,
+      );
+    });
+
+    it("takes them marked important", () => {
+      const { container } = render(<PhotoSlot slotId="hero" className="w-auto! rounded-none!" />);
+
+      expect(container.firstElementChild).toHaveClass("w-auto!", "rounded-none!");
+    });
+  });
 });
