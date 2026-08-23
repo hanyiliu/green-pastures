@@ -21,7 +21,11 @@ Status: draft · seat writer-ops · 2026-08-22 · revised 2026-08-22 for HD-2 (r
 plan, domain bought), HD-4 · HD-7 · HD-9 (provisional values), HD-8 (one editor entry point), HD-10 (three
 locales) and HD-13 (the domain is `greenpasturesdaycare.com`). HD-14 (the human confirmed 03 `D-03.5`'s system
 CJK stack) was read against this document and changes nothing in it: 09 never treated the typeface as an open
-launch item, and checklist item 16 is a check on those system faces either way.
+launch item, and checklist item 16 is a check on those system faces either way. **Ruleset ground truth
+re-verified against the GitHub API 2026-08-23:** the "Main Protection" ruleset's include list *does* name the
+default branch, so push, force-push and non-squash-merge protection on `main` is live and `INV-09.4` is a
+fact; what the ruleset carries no rule for is `required_status_checks`, so none of the six checks is required
+(`D-09.8`, `INV-09.4`, §3's delta table, §5.1 item 10).
 
 ## Decisions
 
@@ -113,16 +117,20 @@ launch item, and checklist item 16 is a check on those system faces either way.
   linear history, squash-only with squash message source
   "Pull request title and description" (answers `OQ-11.3`; `D-11.5`, TRAP-11.14), no force-push, no deletion,
   no bypass for admins, head branches auto-deleted.
-  **State as of 2026-08-22 (HD-2) — the intent is answered, the setting is not finished.** A repository
-  ruleset named **"Main Protection"** exists and is enabled with `deletion`, `non_fast_forward` and
-  `pull_request` (**0** required approvals), but its `conditions.ref_name.include` list is **empty**, so it
-  matches **no branch**: `main` is currently unprotected and a direct push would succeed. `INV-09.4` is
-  therefore a requirement, not yet a fact. Three things close the gap, all of them the human's to do in
-  repository settings (seats never change repo settings): add `~DEFAULT_BRANCH` (or `refs/heads/main`) to the
-  ruleset's include list; raise required approvals from 0 to 1 and add the remaining rules above (code-owner
-  review, required status checks with "branches up to date", linear history, no bypass); and add
-  **`bead-trailer` as a required check once that workflow exists on `main`** — it cannot be required before it
-  has run, so it joins the list at the Phase 2 gate (10 PR-2.x, 11 §6), not now. §5.1 item 10 is the tick.
+  **State as of 2026-08-23 (HD-2; ground truth read from the GitHub API, not inferred) — `main` *is*
+  protected, and not one check is required.** The repository ruleset named **"Main Protection"**
+  (id 21223922) is **active**, and its `conditions.ref_name.include` list **does** name the default branch
+  (`~DEFAULT_BRANCH`), so its `deletion`, `non_fast_forward` and `pull_request` (squash-only, **0** required
+  approvals) rules are live: `main` rejects a direct push, a force-push and a non-squash merge today, and
+  `INV-09.4` is a fact rather than a requirement. What the ruleset does **not** carry is a
+  `required_status_checks` rule — **zero** required checks — so *none* of the six names above blocks a merge
+  and a pull request with `content` red can still be squashed in. Three things close the remaining gap, all
+  of them the human's to do in repository settings (seats never change repo settings): add a
+  `required_status_checks` rule with "branches up to date" and list the six names in it; raise required
+  approvals from 0 to 1 and add the rules above that are still unset (code-owner review, linear history, no
+  bypass); and add **`bead-trailer` last, once that workflow has reported that check name on `main`** — it
+  cannot be required before it has run, so it joins the list at the Phase 2 gate (10 PR-2.x, 11 §6), not now.
+  §5.1 item 10 is the tick, and it is re-read from the API rather than assumed.
 - **D-09.9 Release, rollback, hotfix.** A release *is* a squash merge to `main` — nothing else. Rollback is
   Vercel **Instant Rollback** to any earlier production deployment (on Pro; on Hobby only to the immediately
   previous one — D-09.2 [verified: Vercel rollback docs, 2026-08-22]) first, then a revert PR so `main` and
@@ -206,7 +214,8 @@ launch item, and checklist item 16 is a check on those system faces either way.
   (`D-02.9`); a `Content-Security-Policy-Report-Only` allowlist (self, `challenges.cloudflare.com`, Vercel
   analytics hosts) is a post-launch task once a report endpoint exists.
 - **D-09.19 Access control.** GitHub: owner = admin, developer = admin, translator = write (branches and PRs
-  only; `main` is protected for everyone — once D-09.8's include list is fixed, which it is not yet); Vercel:
+  only; `main` is protected for everyone — true in fact since the ruleset's include list names the default
+  branch, though no status check is required to merge, D-09.8); Vercel:
   owner = Owner, developer = Member, translator = Viewer — **these three roles exist only on a Pro team, so
   while the project is on Hobby (D-09.2) there is exactly one Vercel account and the developer holds it**;
   Resend and Cloudflare accounts belong to the daycare (owner's email) with the developer invited, never the
@@ -335,7 +344,9 @@ flowchart LR
   F -->|bad release| G[Instant Rollback, then revert PR]
 ```
 
-**Required checks on `main`** (08 §CI owns the list and the names; 09 lists the roles): `static` (types, lint,
+**Required checks on `main`** (08 §CI owns the list and the names; 09 lists the roles — and as of 2026-08-23
+*none of them is required yet*, because the ruleset carries no `required_status_checks` rule: see the delta
+table below): `static` (types, lint,
 CSS lint, formatting, token/`TODO`-in-source/env scripts), `content` (`pnpm validate:content`,
 INV-02.2/3/4/8/10, three-way parity and the provisional block, with the coverage report attached to the PR —
 this job **reports** provisional values and does not fail on them; only `--release` does, §4.11), `unit`,
@@ -360,23 +371,29 @@ force pushes · restrict deletions · do not allow bypassing (admins included). 
 description" (one of GitHub's four options [verified: GitHub docs, 2026-08-22]); automatically delete head
 branches. The bead-trailer gate's PR-body check (11 §6 item 3) is what keeps INV-11.1 true on `main`.
 
-**What is actually configured today (2026-08-22, HD-2) — read this before assuming `main` is safe.** The
-human has created the ruleset; it is not yet in force. Ground truth, and the delta:
+**What is actually configured today (read from the GitHub API 2026-08-23, HD-2) — read this before assuming a
+check gates anything.** The human created the ruleset and it *is* in force on `main`; what it has no rule for
+is required status checks. Ground truth, and the delta:
 
-| Rule | In the "Main Protection" ruleset today | Target (above) | Action |
+| Rule | In the "Main Protection" ruleset today (API, 2026-08-23) | Target (above) | Action |
 |---|---|---|---|
-| Branches the ruleset applies to | **none** — `conditions.ref_name.include` is empty | `~DEFAULT_BRANCH` | add it; **until then every rule below is inert and `main` accepts a direct push** |
+| Branches the ruleset applies to | `~DEFAULT_BRANCH` — the include list **does** name the default branch, and the ruleset's enforcement is `active`, so every rule it sets is live on `main` | `~DEFAULT_BRANCH` | — |
 | Restrict deletions | on | on | — |
 | Block force pushes (non-fast-forward) | on | on | — |
-| Pull request required | on, **0 required approvals** | 1 approval + dismiss stale + code-owner review | raise to 1, tick the two boxes |
-| Required status checks | not set | 08's `static` · `content` · `unit` · `build` · `e2e-ok` + `bead-trailer` | add each **after its workflow has run once on `main`** — a check that has never reported cannot be selected |
+| Pull request required | on, squash-only, **0 required approvals** | 1 approval + dismiss stale + code-owner review | raise to 1, tick the two boxes |
+| Required status checks | **no such rule** — the ruleset carries no `required_status_checks` rule at all, so **zero** checks are required and a pull request merges with `content` red | 08's `static` · `content` · `unit` · `build` · `e2e-ok` + `bead-trailer` | **the outstanding half of HD-2**: add the rule, with "branches up to date", then add each name **after its workflow has reported once on `main`** — a check that has never reported cannot be selected |
 | Linear history · no bypass | not set | both on | set both |
-| Squash-only + squash message source | repository setting, not verified | squash only, "Pull request title and description" | set at the Phase 2 gate |
+| Squash-only + squash message source | **squash-only is live** in the ruleset's `pull_request` rule; the squash *message source* is a repository setting, not verified | squash only, "Pull request title and description" | confirm the message source at the Phase 2 gate |
 
-Two honest consequences. `INV-09.4` ("no direct push to `main`") is a **requirement, not a fact**, and stays
-one until the include list is filled. And `bead-trailer` is deliberately last: it becomes a required check
-**once that workflow exists on `main`** (Phase 2, 10 PR-2.x, 11 §6) — requiring it before its first run makes
-every PR unmergeable. Repository settings belong to the human; no seat and no workflow changes them.
+Two honest consequences, and they pull in opposite directions. `INV-09.4` ("no direct push to `main`") **is a
+fact**: the include list names the default branch, so the deletion, force-push and merge-style rules are live
+today. But the diagram's `all required checks green` arrow is **not** a gate — with no
+`required_status_checks` rule, nothing mechanically stops a squash merge over a red `content`, and until the
+human adds that rule "the checks are green" is a habit the reviewers keep rather than something the
+repository enforces (08 `D-08.19`, `INV-08.2`). And `bead-trailer` is deliberately last: it becomes a required
+check **once that workflow has reported that check name on `main`** (Phase 2, 10 PR-2.x, 11 §6) — requiring it
+before its first run makes every PR unmergeable. Repository settings belong to the human; no seat and no
+workflow changes them.
 
 **Vercel Git settings:** production branch `main`; preview deployments for all branches; PR comments on;
 GitHub Deployments on — the Vercel GitHub integration posts a GitHub deployment and its statuses for every
@@ -848,11 +865,16 @@ have run on `main`** (§3).
    upgrade rather than displacing this one.
 9. Security headers present on `/en` (curl) per D-09.18; HSTS present; no `X-Robots-Tag: noindex` on
    production.
-10. Branch protection: the "Main Protection" ruleset **actually applies to `main`** — its include list
-    contains `~DEFAULT_BRANCH`, approvals raised from 0 to 1, and the remaining rules of §3's delta table set;
-    repository merge settings per §3; `bead-trailer` workflow live on `main` (11 §6) **and then** added to the
-    required checks. Verify, do not assume: `gh api repos/<owner>/<repo>/rules/branches/main` must return the
-    rules, not an empty list — an enabled ruleset with an empty include list protects nothing (D-09.8, HD-2).
+10. Branch protection: the "Main Protection" ruleset **requires the six checks of 08 `D-08.12`**. Half of
+    this item is already done and was verified against the GitHub API on 2026-08-23 — the include list
+    contains `~DEFAULT_BRANCH` and the `deletion`, `non_fast_forward` and squash-only `pull_request` rules are
+    live, so `main` rejects a direct push, a force-push and a non-squash merge. What is left is the
+    `required_status_checks` rule the ruleset does not carry, approvals raised from 0 to 1, and the remaining
+    rules of §3's delta table set; repository merge settings per §3; `bead-trailer` workflow live on `main`
+    (11 §6) **and then** added to the required checks. Verify, do not assume:
+    `gh api repos/<owner>/<repo>/rules/branches/main` must list a `required_status_checks` rule naming all six
+    — a ruleset that protects the branch and requires no check still lets a red pull request merge (D-09.8,
+    HD-2).
     Also merged: CODEOWNERS, PR template, `content/README.md`, `content/GLOSSARY.md`, `renovate.json` and the
     replaced root `README.md` (D-09.22 — it links to `content/README.md` and `docs/technical/00-README.md`,
     and no Create React App text survives); the two standing beads (D-09.11) created, claimed, `bd export`ed
@@ -940,10 +962,14 @@ have run on `main`** (§3).
   completeness gate) and in §2's table with scope, owner and rotation.
 - **INV-09.3 Content reaches production only through a pull request with green gates and a reviewed preview.**
   There is no other write path to `content/**` or `public/images/**` on `main`.
-- **INV-09.4 No direct push to `main`.** The ruleset blocks it for everyone, admins included; releases are
-  squash merges; emergencies are rollbacks, not pushes. **Not yet true in fact:** the "Main Protection"
-  ruleset matches no branch until its include list names the default branch (D-09.8, §3) — this invariant is
-  a requirement on the human's repository settings and is verified by launch item 10.
+- **INV-09.4 No direct push to `main`.** The ruleset blocks it; releases are squash merges; emergencies are
+  rollbacks, not pushes. **True in fact as checked on 2026-08-23:** verified against the GitHub API, the
+  "Main Protection" ruleset is active and its include list names the default branch, so its `deletion`,
+  `non_fast_forward` and squash-only `pull_request` rules are live and `main` rejects a direct push, a
+  force-push and a non-squash merge (D-09.8, §3). Two parts of the target rule set are still the human's, and
+  launch item 10 checks both: "do not allow bypassing", so *admins included* is intent rather than setting
+  (§3's delta table), and the `required_status_checks` rule the ruleset does not carry — a separate half,
+  owned by `INV-08.2` and 08 `D-08.19`, without which nothing has to be green to merge.
 - **INV-09.5 Every production deployment is traceable** to one squash commit, one PR and one `Bead:` id
   (11 INV-11.1 + D-09.9).
 - **INV-09.6 One production origin, and 09 does not own it.** The production origin is
