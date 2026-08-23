@@ -30,3 +30,42 @@
  * spelled it out and kept a second copy alive. Tracker data, not markup.
  */
 @source not "../../.beads";
+
+/*
+ * INV-05.2 / 05 §5.8 — the one clipping site in the build.
+ *
+ * The gallery's polaroids fly in from +150px beyond the right edge, and
+ * INV-05.2 forbids absorbing that anywhere nearer: an `overflow` on a section
+ * or a card is a clipping ancestor, and a clipping ancestor truncates the
+ * stagger reveal it sits above. `.stylelintrc.mjs` bans `overflow: hidden |
+ * clip | auto` across `src/components/**` and exempts this file alone, so the
+ * bleed has exactly one place to land — here.
+ *
+ * `clip`, and `overflow-x` rather than the shorthand. `clip` establishes no
+ * scroll container, so `position: sticky` and scroll snapping keep resolving
+ * against the viewport no matter where this rule is written; `hidden` would
+ * establish one the moment the rule moved off the root element, and re-parent
+ * every sticky descendant to a box that never scrolls. The single axis is
+ * because the page scrolls vertically and `overflow: clip` would clip that too.
+ *
+ * **`documentElement.scrollWidth - clientWidth` does not measure this rule.**
+ * The root element propagates its overflow to the viewport and is itself left
+ * used-value `visible`, so that subtraction reports the bleed either way.
+ * Measured on a production build at 390x844 with a +150px bleed on the page,
+ * chromium 1234 and webkit 2336, the rule toggled and nothing else changed:
+ *
+ *                       wheel scrollX   ArrowRight scrollX   the subtraction
+ *   without the rule            126                   80               126
+ *   with the rule                 0                    0               126
+ *
+ * The header measured `position: sticky` with a bounding rect at `top: 0` and
+ * remained the hit-test target at `scrollY` 547, in both engines, both ways.
+ * So the rule fixes what it is for and the subtraction is the wrong
+ * instrument: an assertion of "no horizontal scroll" has to read
+ * `window.scrollX` after a real horizontal input (08 §6), or it reports a
+ * defect this rule has already fixed and stays silent about the ones it has
+ * not.
+ */
+html {
+  overflow-x: clip;
+}
