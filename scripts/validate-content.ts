@@ -7,9 +7,8 @@ import { z } from "zod";
 import { faqCollectionSchema } from "@/content/schemas/faq";
 import { galleryCollectionSchema } from "@/content/schemas/gallery";
 import { menuCollectionSchema } from "@/content/schemas/menu";
-import { isRichTagToken, tagTokensIn } from "@/content/schemas/primitives";
 import { programsCollectionSchema } from "@/content/schemas/programs";
-import { isPendingLocalePath, SiteSchema, type Site } from "@/content/schemas/site";
+import { SiteSchema, type Site } from "@/content/schemas/site";
 import { teachersCollectionSchema } from "@/content/schemas/teachers";
 import { testimonialsCollectionSchema } from "@/content/schemas/testimonials";
 import { LOCALE_IDS, routing } from "@/i18n/routing";
@@ -49,22 +48,35 @@ import { LOCALE_IDS, routing } from "@/i18n/routing";
  *    already carves the analogous exception for a pending locale. Without this
  *    the six `collections.teachers.*` entries 02 ships would red the `content`
  *    job for the whole of Phase 3, when `content/zh-Hans/collections/` is `{}`.
- * 2. **The asset-existence check is dormant while `public/` does not exist.**
- *    PR-8.3 delivers the photography. A missing `public/` is reported as one
- *    loud warning naming the rule that is asleep — not as silence, and not as
- *    an error over a directory nobody has created yet. The moment `public/`
- *    exists every referenced file must be in it, and `asset-missing` is
- *    an error. The unit suite pins the active behaviour so the rule cannot rot
- *    into the vacuous gate this project has shipped once already.
+ * 2. **The asset-existence check sleeps per directory, and never under
+ *    `--release`.** PR-8.3 delivers the photography, so in PR mode a referenced
+ *    file is exempt while **nothing has been delivered into the directory it
+ *    belongs in** — reported as one loud warning naming the rule that is asleep
+ *    and every directory it is waiting on, not as silence and not as an error
+ *    over a folder nobody has filled. Every other reference is checked as
+ *    written and `asset-missing` is an error. `--release` is the launch gate
+ *    and refuses the demotion the way INV-02.11 refuses `--warn-locale`'s: at
+ *    release there is no dormancy at all and every referenced file must exist.
+ *    The unit suite pins both halves so the rule cannot rot into the vacuous
+ *    gate this project has shipped once already.
+ *
+ *    The trigger used to be "does `public/` exist", and PR-4.5's
+ *    `public/brand/logo.png` — one file nothing in `site.json` references —
+ *    woke the whole Phase 8 check four phases early and red the `content` job
+ *    over sixteen photographs the owner has said arrive later. "A file has
+ *    landed in the folder this one belongs in" is the narrowest fact on disk
+ *    that means *this* delivery has started: an unrelated asset cannot flip it,
+ *    and neither can the empty parent directory `mkdir -p` leaves behind on its
+ *    way to a subdirectory ({@link ContentTree.assetDirs}).
  * 3. **08 §3 rule 6 is applied to `SiteSchema`'s input.** `SiteSchema` enforces
- *    INV-02.10 for the loader as well, and a stale marker it reinstates — as a
- *    `site-schema` finding — is the very error rule 6 removes; a failed parse
- *    would take the asset, collection-schema and alt-text checks with it.
- *    Pending-locale entries are therefore withheld from the copy this file
- *    parses ({@link siteForSchema}); rules 1–5 still run over the raw list.
- *    The rule itself is not written here: `src/content/schemas/site.ts` owns
- *    `isPendingLocalePath()`, because the loader needs it too, and this file
- *    imports it. One rule, one spelling, both gates.
+ *    INV-02.10 for the loader as well and has no notion of a held-back locale,
+ *    so it reads `brand.name.zh-Hant` as a stale marker. Left alone it would
+ *    reinstate — as a `site-schema` finding — the very error rule 6 removes, and
+ *    a failed parse would take the asset, collection-schema and alt-text checks
+ *    with it. Pending-locale entries are therefore withheld from the copy this
+ *    file parses ({@link siteForSchema}); rules 1–5 still run over the raw list.
+ *    The loader itself is not fixed by this — `src/content/schemas/site.ts` owns
+ *    that half, and until it carries rule 6 the same entry reds `next build`.
  */
 
 /* -------------------------------------------------------------------------- *
@@ -146,6 +158,16 @@ export type ContentTree = {
    * (`/images/hero.jpg`), or `undefined` when `public/` does not exist at all.
    */
   readonly assets: ReadonlySet<string> | undefined;
+  /**
+   * Every directory under `public/` that **holds at least one file**, rooted
+   * the same way (`/images`, `/images/gallery`, and `/` for files sitting
+   * directly in `public/`) — what the asset check reads to decide whether a
+   * given file's delivery has started. A directory that exists only as the
+   * parent of another is not in here: `mkdir -p public/images/gallery` makes
+   * `public/images` on the way past, and that is not a delivery. `undefined`
+   * exactly when {@link ContentTree.assets} is.
+   */
+  readonly assetDirs: ReadonlySet<string> | undefined;
   /** Files that exist but are not readable JSON. */
   readonly unreadable: readonly { readonly file: string; readonly message: string }[];
 };
@@ -267,6 +289,12 @@ function mergeOverReference(base: unknown, override: unknown): unknown {
 /* -------------------------------------------------------------------------- *
  * ICU messages: arguments, rich tags, and the `'{` escape 02 bans
  * -------------------------------------------------------------------------- */
+
+/** Anything tag-shaped, the same token `src/content/schemas/primitives.ts` uses. */
+const TAG_TOKEN = /<\/?[A-Za-z][^>]*>/g;
+
+/** 02 `D-02.5`'s closed allowlist, as the exact tokens a value may contain. */
+const ALLOWED_TAG_TOKEN = /^<\/?(?:em|strong|link|count|day)>$/;
 
 const PLURAL_TYPES = new Set(["plural", "select", "selectordinal"]);
 
@@ -398,11 +426,8 @@ export function readIcu(message: string): IcuShape {
 
   const tags = new Set<string>();
   const htmlTokens: string[] = [];
-  // Both halves of the split — what counts as a tag, and which tags 02 D-02.5
-  // allows — come from `primitives.ts`, so this gate and the schemas that parse
-  // the same strings on every build cannot draw the line in different places.
-  for (const token of tagTokensIn(message)) {
-    if (isRichTagToken(token)) {
+  for (const token of message.match(TAG_TOKEN) ?? []) {
+    if (ALLOWED_TAG_TOKEN.test(token)) {
       tags.add(token.replace(/[</>]/g, ""));
     } else {
       htmlTokens.push(token);
@@ -537,11 +562,15 @@ function listJson(dir: string): readonly string[] {
     .sort();
 }
 
-function walkAssets(dir: string, prefix: string, into: Set<string>): void {
+function walkAssets(dir: string, prefix: string, files: Set<string>, dirs: Set<string>): void {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) walkAssets(full, `${prefix}/${entry}`, into);
-    else into.add(`${prefix}/${entry}`);
+    if (statSync(full).isDirectory()) {
+      walkAssets(full, `${prefix}/${entry}`, files, dirs);
+      continue;
+    }
+    files.add(`${prefix}/${entry}`);
+    dirs.add(prefix === "" ? "/" : prefix);
   }
 }
 
@@ -581,12 +610,14 @@ export function readContentTree(root: string, config: LocaleConfig = LOCALES): C
 
   const publicDir = join(root, "public");
   let assets: Set<string> | undefined;
+  let assetDirs: Set<string> | undefined;
   if (existsSync(publicDir)) {
     assets = new Set<string>();
-    walkAssets(publicDir, "", assets);
+    assetDirs = new Set<string>();
+    walkAssets(publicDir, "", assets, assetDirs);
   }
 
-  return { site, siteFile: rel(siteFile), locales, assets, unreadable };
+  return { site, siteFile: rel(siteFile), locales, assets, assetDirs, unreadable };
 }
 
 /* -------------------------------------------------------------------------- *
@@ -1003,19 +1034,29 @@ function assetReferences(site: Site): readonly AssetRef[] {
   return refs;
 }
 
-function checkAssets(report: Report, site: Site, tree: ContentTree): void {
-  const refs = assetReferences(site);
-  if (tree.assets === undefined) {
-    report.add({
-      rule: RULES.ASSET_DORMANT,
-      severity: "warning",
-      file: tree.siteFile,
-      message: `public/ does not exist, so the asset-existence check is asleep over ${String(refs.length)} referenced file(s). PR-8.3 delivers the photography; the check becomes an error the moment the directory is created.`,
-    });
-    return;
-  }
-  for (const ref of refs) {
-    if (tree.assets.has(ref.path)) continue;
+/** The directory an `AssetPath` names, rooted like {@link ContentTree.assetDirs}. */
+function assetDirOf(path: string): string {
+  const cut = path.lastIndexOf("/");
+  return cut <= 0 ? "/" : path.slice(0, cut);
+}
+
+/**
+ * INV-02.3's existence half, with the phased-delivery carve-out of note 2.
+ *
+ * A reference sleeps only while nothing has been delivered into the directory
+ * that would hold it, only in PR mode, and only loudly: the dormant set is
+ * reported as one warning that names every directory being waited on. A file
+ * missing from a directory that *has* been delivered into is an error, and
+ * under `--release` nothing sleeps at all.
+ */
+function checkAssets(report: Report, site: Site, tree: ContentTree, options: Options): void {
+  const dormant: AssetRef[] = [];
+  for (const ref of assetReferences(site)) {
+    if (tree.assets?.has(ref.path) === true) continue;
+    if (!options.release && tree.assetDirs?.has(assetDirOf(ref.path)) !== true) {
+      dormant.push(ref);
+      continue;
+    }
     report.add({
       rule: RULES.ASSET_MISSING,
       severity: "error",
@@ -1024,6 +1065,14 @@ function checkAssets(report: Report, site: Site, tree: ContentTree): void {
       message: `${ref.path} is referenced by site.json and does not exist under public/ (INV-02.3).`,
     });
   }
+  if (dormant.length === 0) return;
+  const directories = [...new Set(dormant.map((ref) => `public${assetDirOf(ref.path)}`))].sort();
+  report.add({
+    rule: RULES.ASSET_DORMANT,
+    severity: "warning",
+    file: tree.siteFile,
+    message: `Nothing has been delivered into ${directories.join(", ")}, so the asset-existence check is asleep over ${String(dormant.length)} referenced file(s) that belong there. PR-8.3 delivers the photography; each directory wakes its own references the moment a file lands in it, and --release never sleeps (INV-02.3).`,
+  });
 }
 
 /**
@@ -1070,39 +1119,49 @@ function checkAltText(report: Report, site: Site, reference: LocaleView): void {
 
 const RESERVED_TOP_LEVEL = ["collections", "messages"] as const;
 
-/*
- * 08 §3 rule 6 — the pending-locale entry — is `isPendingLocalePath()` in
- * `src/content/schemas/site.ts`, imported at the top of this file and used by
- * `resolveProvisional()` and `siteForSchema()` below.
+/**
+ * 08 §3 rule 6 — is this a **pending-locale** entry?
  *
- * It lives there because the schema needs it too: the loader runs `SiteSchema`
- * on every `next build`, so the rule has to hold in both gates or one is green
- * while the other is red on the same entry — the bug that put a second copy of
- * the predicate here in the first place. `LocaleConfig` is that function's
- * `LocaleSets` plus `reference`, so this file's config is passed straight in.
+ * A `site.json` path whose final segment is a locale id the project knows
+ * (`LOCALE_IDS`) but has not enabled yet (`routing.locales`): `brand.name.zh-Hant`
+ * while `zh-Hant` is under review. Such an entry is "neither resolved nor an
+ * error"; it is listed as *pending locale* and still blocks `--release` under
+ * R1. The path cannot resolve by construction — INV-02.3 forbids `brand.name`
+ * from carrying an entry for a locale that is not enabled — which is precisely
+ * why the rule exists.
+ *
+ * The `collections.` / `messages.` forms are excluded: rule 2 gives their first
+ * segment the deciding vote, so a final segment that happens to spell a locale
+ * id is an ordinary key there, not a locale suffix.
+ *
+ * One predicate, two callers ({@link resolveProvisional} and the schema input
+ * below), so the two cannot drift apart.
  */
+export function isPendingLocalePath(path: string, config: LocaleConfig): boolean {
+  const segments = path.split(".");
+  const head = segments[0];
+  if (head === "collections" || head === "messages") return false;
+  const last = String(segments[segments.length - 1]);
+  return config.known.includes(last) && !config.enabled.includes(last);
+}
 
 /**
  * `content/site.json` as `SiteSchema` should see it: without the pending-locale
  * entries of 08 §3 rule 6.
  *
  * `SiteSchema` enforces INV-02.10 for the loader too — every registry path must
- * resolve — and when it knew nothing of held-back locales it reported
- * `brand.name.zh-Hant` as a stale marker, reinstating as a `site-schema`
- * finding exactly the error rule 6 removes. Worse, a failed parse yields no
+ * resolve — and it knows nothing about held-back locales, so it reports
+ * `brand.name.zh-Hant` as a stale marker and reinstates, as a `site-schema`
+ * finding, exactly the error rule 6 removes. Worse, a failed parse yields no
  * `data`, so one exempt entry would also silence the asset, collection-schema
- * and alt-text checks that run off the parsed file. Withholding the entries was
- * the narrowest fix inside this file, and it is written so it cannot cost
- * anything: rules 1–5 still run over the raw list in {@link resolveProvisional}
- * — duplicates included, so hiding an entry here cannot hide a duplicate — and
- * every other schema rule sees the file unchanged.
+ * and alt-text checks that run off the parsed file.
  *
- * `SiteSchema` now carries rule 6 itself, against `routing.ts` — the same lists
- * this file's `LOCALES` is built from — so on the project's own configuration
- * the schema would exempt these entries unasked. This stays because it is what
- * makes the exemption hold for a `config` that is not the project's, and
- * because the guarantee above is about what the schema is *handed*, not about
- * what it happens to tolerate.
+ * Withholding those entries from the schema's copy is the narrowest fix inside
+ * this file: rules 1–5 still run over the raw list in {@link resolveProvisional}
+ * — duplicates included, so hiding an entry here cannot hide a duplicate — and
+ * every other schema rule sees the file unchanged. The loader
+ * (`src/content/site.ts` → `src/content/schemas/site.ts`) still lacks rule 6 and
+ * will red `next build` on the same entry; that fix belongs to that file's owner.
  */
 function siteForSchema(site: unknown, config: LocaleConfig): unknown {
   if (!isRecord(site) || !Array.isArray(site.provisional)) return site;
@@ -1432,7 +1491,7 @@ export function validateContent(
     });
   } else {
     const site = siteResult.data;
-    checkAssets(report, site, tree);
+    checkAssets(report, site, tree, options);
     if (reference !== undefined) {
       checkCollectionSchemas(
         report,
