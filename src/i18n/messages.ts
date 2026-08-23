@@ -189,11 +189,29 @@ function collect(files: ReadonlyArray<LoadedFile>): MessageTree {
  *   missing from an *otherwise present* locale tree throws, naming the path to
  *   copy from `en` — an editor deleted or forgot a file.
  * - The one carve-out: a locale whose tree does not exist **at all** (not one
- *   file loads) is the phased-translation window, not an editing mistake —
- *   `content/zh-Hans/` arrives at PR-3.5 and `content/zh-Hant/` at PR-3.9. That
- *   case logs the same per-file error and renders markers, so `/zh-Hans` still
- *   serves with the right `<html lang>` instead of 500ing for several PRs. The
- *   carve-out lapses the moment the tree exists.
+ *   file loads) is the phased-translation window, not an editing mistake. It
+ *   logs the same per-file error and renders markers, so the locale still
+ *   serves with the right `<html lang>` instead of 500ing on every request.
+ *
+ *   The condition is per locale, so the carve-out retires itself: it can no
+ *   longer fire for `zh-Hans` now that PR-3.5 has authored `content/zh-Hans/`,
+ *   and no code had to change for that. It is kept for `zh-Hant`, which is in
+ *   `LOCALE_IDS` but not `routing.locales` and has no tree yet: 02's
+ *   add-a-locale checklist enables the id (step 1) before it copies the tree
+ *   across (step 3), and this is what makes that order survivable in dev at
+ *   PR-3.9 rather than a crash on every `/zh-Hant` request. It retires for
+ *   `zh-Hant` the same way, the day that tree lands.
+ *
+ * - An **authored but empty** file (`{}`) is present, not missing: that is how
+ *   a namespace nobody has translated yet is spelled, and it is the state
+ *   `content/zh-Hans/` is in today — PR-3.5's prototype strings in `common`,
+ *   `home` and `visit`, `{}` in the other fifteen files. That is not a
+ *   half-authored tree but the phased-translation window D-02.8's CI row and
+ *   INV-02.11 describe, and it is the state the site lives in for weeks, so it
+ *   must not throw. It is silent here by design — dev renders `⟦…⟧` per key,
+ *   prod renders `en`, and `validate:content --warn-locale zh-Hans` is the
+ *   thing that reports the gap (INV-02.11). Deleting those empty files would
+ *   turn the phase state back into the dev throw above.
  *
  * Exported so the branch table above can be tested without a content fixture
  * for a locale another PR owns.
