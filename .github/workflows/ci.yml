@@ -136,7 +136,7 @@ jobs:
       - name: validate:content
         id: validate
         continue-on-error: true
-        run: pnpm run validate:content --report --warn-locale zh-Hans
+        run: pnpm run validate:content --report --warn-locale zh-Hans --warn-locale zh-Hant
 
       - name: job summary
         if: always()

@@ -325,6 +325,12 @@ const PROJECT_LOCALES: LocaleSets = { known: LOCALE_IDS, enabled: routing.locale
  * `next build` — through this schema, which the loader runs on every build — the
  * moment they land in `content/site.json` (OQ-08.10, D-10.12's fallback).
  *
+ * PR-3.9 landed those two paths and enabled the locale in the same commit, so
+ * they resolve today and this rule is dormant. It becomes load-bearing again the
+ * day D-10.12's fallback fires and `zh-Hant` leaves `routing.locales` while its
+ * registry entries stay: that day is rehearsed, mock and all, in
+ * `tests/unit/content/locale-withdrawal.test.ts`.
+ *
  * The `collections.` / `messages.` forms are excluded: rule 2 gives their first
  * segment the deciding vote, so a final segment that happens to spell a locale
  * id is an ordinary key there, not a locale suffix.

@@ -95,8 +95,12 @@ function fired(outcome: Outcome, rule: RuleId): boolean {
   return outcome.out.includes(`[${rule}]`);
 }
 
-/** The flags CI passes today: `zh-Hans` is mid-translation for the whole of Phase 3. */
-const PHASE_3 = ["--warn-locale", "zh-Hans"];
+/**
+ * The flags CI passes today: both Chinese trees are mid-translation for the
+ * whole of Phase 3 — `zh-Hans` because PR-3.5 seeded 33 of its 323 keys, and
+ * `zh-Hant` because PR-3.9 converted exactly those 33 across (D-02.21).
+ */
+const PHASE_3 = ["--warn-locale", "zh-Hans", "--warn-locale", "zh-Hant"];
 
 /* -------------------------------------------------------------------------- *
  * The real repository
@@ -351,21 +355,13 @@ describe("parity", () => {
   });
 
   it("scans a locale that is not in routing.locales in a reporting-only pass", () => {
-    const root = fixture(({ root: base }) => {
-      const dir = join(base, "content/zh-Hant/messages");
-      mkdirSync(dir, { recursive: true });
-      // Deliberately broken: an orphan key and an empty string. Neither may fail.
-      writeJson(join(dir, "common.json"), { nav: { nope: "" } });
-    });
-    const outcome = gate(root, ...PHASE_3);
-    // Both halves of 08 §3: the reviewer gets a number, and nothing in the pass
-    // can fail the job — not as an error, and not at all. The two deliberate
-    // breakages are named rules, so the assertions name them too rather than
-    // trusting the exit code to have been produced by the right reason.
-    expect(outcome.out).toMatch(/zh-Hant\s+pending review\s+\d+\/\d+ keys/);
-    expect(fired(outcome, RULES.PARITY_EXTRA)).toBe(false);
-    expect(fired(outcome, RULES.EMPTY_STRING)).toBe(false);
-    expect(outcome.code).toBe(0);
+    // Every id the project knows is enabled today, so the reporting-only pass
+    // has no locale to run on and this case is stated in
+    // `locale-withdrawal.test.ts` instead, where `zh-Hant` is held back. What
+    // is checkable here is the premise that moved it: `run()` reads the live
+    // configuration, and the live configuration has nothing held back.
+    expect(LOCALES.known.filter((id) => !LOCALES.enabled.includes(id))).toStrictEqual([]);
+    expect(gate(fixture(), ...PHASE_3).out).not.toContain("pending review");
   });
 });
 
@@ -616,44 +612,25 @@ describe("the provisional registry", () => {
     expect(strict.code).toBe(1);
   });
 
-  it("lists a pending-locale entry instead of erroring on it (08 §3 rule 6)", () => {
-    const root = fixture(addPath("brand.name.zh-Hant"));
-    const outcome = gate(root, ...PHASE_3);
-    // The whole row, not the word "pending": a status word elsewhere in the
-    // output ("pending review", the coverage status of a held-back tree) must
-    // not be able to satisfy this assertion.
+  it("resolves the seeded zh-Hant paths like any other, now that the locale is enabled", () => {
+    // Rule 6's *exemption* has nothing to exempt while the catalogue is fully
+    // enabled: `brand.name.zh-Hant` is an ordinary resolved row. The exemption
+    // firing — and the two cases that used to live here, one for the row and
+    // one for the parsed-file checks it must not silence — moved to
+    // `locale-withdrawal.test.ts`, which mocks `routing.locales` back to
+    // D-10.12's two ids so the rule has a locale to hold back.
+    const outcome = gate(fixture(), ...PHASE_3);
     expect(outcome.out).toContain(
-      "| `brand.name.zh-Hant` | — | — | `content/site.json` | pending locale |",
+      '| `brand.name.zh-Hant` | — | "優朵幼兒園" | `content/site.json` | resolved |',
     );
-    // Rule 6's claim is that the entry is not an error under ANY rule id — the
-    // registry's own resolution rule, and equally `SiteSchema`, which enforces
-    // INV-02.10 for the loader and knows nothing about held-back locales.
     expect(fired(outcome, RULES.PROVISIONAL_UNRESOLVED)).toBe(false);
     expect(fired(outcome, RULES.SITE_SCHEMA)).toBe(false);
-    // The exit code is the rule: "reds the content job" is what rule 6 exists
-    // to prevent, and a listed row beside a failing gate is not compliance.
     expect(outcome.code).toBe(0);
   });
 
-  it("keeps the parsed-file checks alive beside a pending-locale entry", () => {
-    // A failed `site.json` parse yields no data, so an entry that wrongly reds
-    // the schema also silences every check that reads the parsed file — assets,
-    // collection schemas, alt text. That collateral is invisible in the exit
-    // code, so it gets its own row.
-    const root = fixture((ctx) => {
-      addPath("brand.name.zh-Hant")(ctx);
-      const file = ctx.en("collections/teachers.json");
-      const json = readJson(file) as unknown as { ping: Record<string, unknown> };
-      delete json.ping.photoAlt;
-      writeJson(file, json);
-    });
-    const outcome = gate(root, ...PHASE_3);
-    expect(fired(outcome, RULES.MISSING_ALT)).toBe(true);
-    expect(outcome.code).toBe(1);
-  });
-
-  it("still blocks --release on a pending-locale entry (08 §3 rule 6 under R1)", () => {
-    const outcome = gate(fixture(addPath("brand.name.zh-Hant")), "--release");
+  it("still blocks --release on the seeded zh-Hant paths (R1)", () => {
+    // The shipped registry already carries both, so nothing is appended here.
+    const outcome = gate(fixture(), "--release");
     expect(fired(outcome, RULES.R1_REGISTRY)).toBe(true);
     expect(outcome.out).toContain("`brand.name.zh-Hant`");
     expect(outcome.code).toBe(1);
@@ -700,11 +677,16 @@ describe("--release", () => {
     json.license = "412803711";
     json.yelp.url = "https://www.yelp.com/biz/green-pastures-fremont";
     writeJson(ctx.site, json);
-    // A stand-in for PR-8.1's finished translation.
-    cpSync(join(ctx.root, "content/en"), join(ctx.root, "content/zh-Hans"), {
-      recursive: true,
-      force: true,
-    });
+    // A stand-in for PR-8.1's and PR-8.8's finished translations. Derived from
+    // `LOCALES.enabled`, so a release-ready tree stays release-ready whichever
+    // way D-10.12 goes with `zh-Hant`.
+    for (const id of LOCALES.enabled) {
+      if (id === LOCALES.reference) continue;
+      cpSync(join(ctx.root, "content/en"), join(ctx.root, "content", id), {
+        recursive: true,
+        force: true,
+      });
+    }
   };
 
   it("R1 fails while the registry is non-empty", () => {
@@ -827,7 +809,7 @@ describe("the coverage report", () => {
     expect(markdown).toContain("`--warn-locale zh-Hans`");
     // The rows themselves, not the word "coverage" — which the title, the file
     // name and the mode line all contain whatever the report says.
-    expect(markdown).toContain("| status | reference | enabled | no tree |");
+    expect(markdown).toContain("| status | reference | enabled | enabled |");
     expect(markdown).toMatch(/\| coverage \| 100\.0 % \| \d+\.\d % \| \d+\.\d % \|/);
     expect(markdown).toContain("| path | locale | current value | file | state |");
   });
@@ -889,11 +871,14 @@ describe("the command line", () => {
     ["an unknown flag", ["--nope"]],
     ["a flag with no value", ["--warn-locale"]],
     ["a locale id that names nothing", ["--warn-locale", "zh"]],
-    // A held-back locale has no parity findings to demote — its pass is
-    // reporting-only (08 §3) — so the flag is refused rather than accepted and
-    // silently ignored. It starts working the day PR-3.9 puts `zh-Hant` in
-    // `routing.locales`, which is the invocation 08 §3 names.
-    ["a locale the project knows but has not enabled", ["--warn-locale", "zh-Hant"]],
+    ["a regional variant of an enabled id", ["--warn-locale", "zh-Hant-TW"]],
+    // This row used to name `zh-Hant`: a held-back locale has no parity
+    // findings to demote — its pass is reporting-only (08 §3) — so the flag is
+    // refused rather than accepted and silently ignored. PR-3.9 put `zh-Hant`
+    // in `routing.locales`, which turned that invocation into the valid one CI
+    // now passes (see PHASE_3 above and `--warn-locale` in the `content` job).
+    // The refusal itself is what the two ids above still state, and the
+    // held-back case returns verbatim if D-10.12 withdraws the locale.
     ["--accept-sample outside --release", ["--accept-sample", "contact.email"]],
   ])("exits 2 with usage on %s", (_label, args) => {
     const outcome = gate(REPO_ROOT, ...args);

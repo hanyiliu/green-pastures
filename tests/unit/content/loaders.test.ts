@@ -87,7 +87,8 @@ describe("getSite (02 D-02.12)", () => {
 
   it("still exposes the registry to the validator through its own accessor", () => {
     expect(getProvisionalPaths()).toStrictEqual(siteJson.provisional);
-    expect(getProvisionalPaths()).toHaveLength(21);
+    // 02's Phase 3 seed: PR-3.2's 21 paths plus PR-3.9's two `zh-Hant` brand paths.
+    expect(getProvisionalPaths()).toHaveLength(23);
   });
 
   it("parses once and memoises the result", () => {

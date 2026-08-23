@@ -20,7 +20,7 @@ the pencil on github.com, the `Bead:` line, a pull request — exactly the steps
 | The word | What it means, and what to do with it |
 |---|---|
 | **locale** | A language, and the folder that holds it: `en`, `zh-Hans`, `zh-Hant`. "Add it in the other locale" means "open the file with the same name in the other folder". The folder names are spelled exactly like that, capital letters included. |
-| **`en` / `zh-Hans` / `zh-Hant`** | English · Simplified Chinese · Traditional Chinese. `en` and `zh-Hans` are on the site; `zh-Hant` is not switched on yet. |
+| **`en` / `zh-Hans` / `zh-Hant`** | English · Simplified Chinese · Traditional Chinese. All three are on the site; `zh-Hant` is the seed (below), so its files are readable but not yet read. |
 | **reference locale** | `en`. A sentence exists in English first, then in Chinese. The check compares each Chinese file against English, never one Chinese against the other. |
 | **file** (a developer may say *namespace*) | One JSON file per screen or area, under `messages/`. The file name is the front of every key's address: `home.hero.title` lives in `messages/home.json`, under `hero`, at `title`. |
 | **key** | The name to the left of the colon. The site looks the sentence up by that name, so renaming a key makes the text disappear. Never rename one. |
@@ -59,10 +59,10 @@ given — use it, do not invent a second one. *Proposed* means nothing is writte
 needs the term should use the proposal, or change it here in the same pull request and then use what they
 wrote. Either way the decision is made once, in this file.
 
-**The Traditional column is a glyph conversion, not yet a reading.** Nothing under `content/zh-Hant/` exists
-yet. Every Traditional cell below is the character-by-character conversion of the Simplified one, offered so
-that the reviewer has something to correct rather than a blank page. Part 3 lists what a glyph conversion
-cannot decide.
+**The Traditional column is a glyph conversion, not yet a reading.** `content/zh-Hant/` now exists and is
+exactly that conversion, run once over `content/zh-Hans/`. Every Traditional cell below is the
+character-by-character conversion of the Simplified one, offered so that the reviewer has something to correct
+rather than a blank page. Part 3 lists what a glyph conversion cannot decide.
 
 ### 2.1 The daycare's name — data, not a term
 
@@ -71,8 +71,8 @@ The name is the one thing in this file you do **not** type into a sentence. It l
 
 | Field | `en` | `zh-Hans` | `zh-Hant` |
 |---|---|---|---|
-| `brand.name` | Green Pastures Montessori Daycare | 优朵幼儿园 | 優朵幼兒園 — *not in the file yet; it is added when `zh-Hant` is switched on* |
-| `brand.shortName` | Green Pastures | 优朵 | 優朵 — *same* |
+| `brand.name` | Green Pastures Montessori Daycare | 优朵幼儿园 | 優朵幼兒園 |
+| `brand.shortName` | Green Pastures | 优朵 | 優朵 |
 
 Three things follow, and they are why the name is here at all:
 
@@ -81,8 +81,9 @@ Three things follow, and they are why the name is here at all:
    out. The check hunts for the name inside language files and rejects it.
 2. **绿茵园 is not the name.** It was the prototype's placeholder and was rejected. It must not reappear
    anywhere in copy.
-3. **The Chinese name is provisional.** `brand.name.zh-Hans` and `brand.shortName.zh-Hans` are both on the
-   `provisional` list: they are a proposal, not a decision. Confirming or changing them is one edit in
+3. **The Chinese name is provisional.** All four Chinese entries — `brand.name` and `brand.shortName` in
+   `zh-Hans` and `zh-Hant` — are on the `provisional` list: they are a proposal, not a decision. Confirming
+   or changing them is one edit in
    `site.json` plus deleting their two lines ([`README.md`](README.md) §6) — and nothing else in the
    repository has to change.
 
@@ -212,8 +213,9 @@ Every *in the tree* citation resolves against `content/zh-Hans/**` as it stands 
 come from the design's `I18N` table in `docs/design/desktop/Green Pastures - Homepage.dc.html`, which is where
 the seeded copy came from. Two things to revisit:
 
-- **When `zh-Hant` is seeded and reviewed** (`PR-8.8`): the Traditional column stops being a seed. Mark the
-  rows the reviewer confirmed, and add `brand.name["zh-Hant"]` / `brand.shortName["zh-Hant"]` to §2.1 once
-  they are in `site.json` (`PR-8.2`).
+- **When `zh-Hant` is reviewed** (`PR-8.8`): the Traditional column stops being a seed. Mark the rows the
+  reviewer confirmed. (The seeding half is done — `PR-3.9` converted the tree and put
+  `brand.name["zh-Hant"]` / `brand.shortName["zh-Hant"]` in `site.json`, where §2.1 now cites them; `PR-8.2`
+  still has to confirm the name itself.)
 - **When the Chinese collections are written** (`PR-8.1`): §2.4's program names and §2.6's dietary chips move
   from *proposed* to *in the tree*, with their paths.

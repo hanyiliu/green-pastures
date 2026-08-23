@@ -6,13 +6,15 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { SiteSchema, isPendingLocalePath } from "@/content/schemas/site";
+import { SiteSchema, isPendingLocalePath, type LocaleSets } from "@/content/schemas/site";
+import { routing } from "@/i18n/routing";
 
 import {
   LOCALES,
   RULES,
   isPendingLocalePath as validatorIsPendingLocalePath,
   run,
+  type LocaleConfig,
 } from "../../../scripts/validate-content";
 
 /**
@@ -29,8 +31,19 @@ import {
  * is the guard against the two spellings drifting apart again while both exist:
  * every path below must get the same verdict from both, so a change to either
  * predicate that is not made to the other fails here rather than in CI on the
- * day 02's Phase 3 seed lands.
+ * day D-10.12's escape hatch is used.
+ *
+ * PR-3.9 enabled `zh-Hant`, so the project's own configuration now holds back
+ * nothing and its verdict is *false* for every path here. That would make a
+ * comparison of two defaults vacuous, so each case is stated twice: once
+ * against the live configuration, and once against a synthetic pair that does
+ * hold a locale back. The rule firing end to end through both gates is
+ * `locale-withdrawal.test.ts`.
  */
+
+/** A pair that holds a locale back, so the *true* verdict has cases too. */
+const HELD: LocaleSets = { known: ["en", "zh-Hans", "zh-Hant"], enabled: ["en", "zh-Hans"] };
+const HELD_CONFIG: LocaleConfig = { reference: "en", ...HELD };
 
 /** Paths chosen to straddle every boundary the rule draws. */
 const PATHS = [
@@ -64,12 +77,16 @@ const PATHS = [
 
 describe("08 §3 rule 6 is one rule in two places", () => {
   it("has a case of each verdict, so the comparison below cannot pass vacuously", () => {
-    expect(PATHS.filter((path) => isPendingLocalePath(path)).length).toBeGreaterThan(0);
-    expect(PATHS.filter((path) => !isPendingLocalePath(path)).length).toBeGreaterThan(0);
+    expect(PATHS.filter((path) => isPendingLocalePath(path, HELD)).length).toBeGreaterThan(0);
+    expect(PATHS.filter((path) => !isPendingLocalePath(path, HELD)).length).toBeGreaterThan(0);
   });
 
-  it.each(PATHS)("the schema and the validator agree on %o", (path) => {
+  it.each(PATHS)("the schema and the validator agree on %o, live", (path) => {
     expect(isPendingLocalePath(path)).toBe(validatorIsPendingLocalePath(path, LOCALES));
+  });
+
+  it.each(PATHS)("the schema and the validator agree on %o, with a locale held back", (path) => {
+    expect(isPendingLocalePath(path, HELD)).toBe(validatorIsPendingLocalePath(path, HELD_CONFIG));
   });
 
   it("reads the same locale lists — routing.ts, never a literal (INV-08.4)", () => {
@@ -79,6 +96,7 @@ describe("08 §3 rule 6 is one rule in two places", () => {
     expect(isPendingLocalePath("brand.name.zh-Hant", LOCALES)).toBe(
       isPendingLocalePath("brand.name.zh-Hant"),
     );
+    expect(LOCALES.enabled).toStrictEqual([...routing.locales]);
   });
 });
 
@@ -114,7 +132,9 @@ function fixture(path: string): { readonly root: string; readonly site: unknown 
 /** `pnpm validate:content` with the flags CI passes through Phase 3. */
 function gate(root: string): { readonly code: number; readonly out: string } {
   const lines: string[] = [];
-  const code = run(["--warn-locale", "zh-Hans"], root, (line: string) => lines.push(line));
+  const code = run(["--warn-locale", "zh-Hans", "--warn-locale", "zh-Hant"], root, (line: string) =>
+    lines.push(line),
+  );
   return { code, out: lines.join("\n") };
 }
 
@@ -125,12 +145,17 @@ function build(site: unknown): { readonly ok: boolean; readonly out: string } {
 }
 
 describe("validate:content and next build reach the same verdict", () => {
-  it("both accept a pending-locale entry (08 §3 rule 6)", () => {
-    const { root, site } = fixture("brand.name.zh-Hant");
+  it("both accept the entry rule 6 exempts, in the configuration that exempts it", () => {
+    // The acceptance case needs a locale that is held back, which the project
+    // no longer has: `locale-withdrawal.test.ts` runs this same pair of gates
+    // against `routing.locales` mocked back to D-10.12's two ids. What is left
+    // here is the half that needs no mock — the seeded path resolves like any
+    // other now that PR-3.9 enabled the locale, and both gates say so.
+    const { root, site } = fixture("contact.address.city");
     const gated = gate(root);
+    expect(gated.out).toContain("| `brand.name.zh-Hant` |");
+    expect(gated.out).not.toContain("pending locale");
     expect(gated.code).toBe(0);
-    expect(gated.out).toContain("pending locale");
-    // The half that used to disagree: the loader's parse.
     expect(build(site).out).toBe("");
   });
 

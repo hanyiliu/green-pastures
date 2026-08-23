@@ -42,6 +42,16 @@ function heldBack(): string[] {
   return LOCALE_IDS.filter((id) => !enabled.includes(id));
 }
 
+/**
+ * An id `LocalizedText` must refuse. A catalogue id that is held back is the
+ * sharpest case — `zh-Hant` was one until PR-3.9, and would be again if D-10.12
+ * withdrew it — but the catalogue is fully enabled today, so the rule is stated
+ * against an id the project does not know at all. Same refusal, same code.
+ */
+function refusedId(): string {
+  return heldBack()[0] ?? "ja";
+}
+
 describe("Text (02 D-02.5, D-02.8, INV-02.8)", () => {
   it("trims, so a stray space in a JSON edit cannot reach the page", () => {
     expect(Text.parse("  Follow the child  ")).toBe("Follow the child");
@@ -119,18 +129,20 @@ describe("LocalizedText (02 D-02.19, INV-02.3)", () => {
   });
 
   it("rejects an id that routing.locales does not enable", () => {
-    const held = heldBack();
-    expect(held.length).toBeGreaterThan(0);
-    const result = LocalizedText.safeParse({ ...complete(), [String(held[0])]: "優朵幼兒園" });
+    const refused = refusedId();
+    expect(routing.locales).not.toContain(refused);
+    const result = LocalizedText.safeParse({ ...complete(), [refused]: "優朵幼兒園" });
     expect(result.success).toBe(false);
     expect(codes(result)).toContain("unrecognized_keys");
   });
 
   it("takes its key set from routing.locales — enabling a locale forces its brand name", () => {
     // The deliberate coupling of D-02.19: the key schema *is* `routing.locales`,
-    // so adding `zh-Hant` there breaks every localized value until its name is
-    // authored. Today the catalogue is wider than the enabled set, and a value
-    // covering the whole catalogue is therefore rejected.
+    // so adding `zh-Hant` there broke every localized value until PR-3.9
+    // authored its brand names — and withdrawing it under D-10.12 would break
+    // them again from the other side, because the value may then carry no
+    // `zh-Hant` entry. The assertion tracks whichever state the catalogue and
+    // the enabled set are in, so it states the coupling rather than the day.
     expect(Object.keys(complete())).toStrictEqual([...routing.locales]);
     const everyKnownId = Object.fromEntries(LOCALE_IDS.map((id) => [id, `brand-${id}`]));
     expect(LocalizedText.safeParse(everyKnownId).success).toBe(heldBack().length === 0);

@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "philosophy": "教學理念",
+    "programs": "課程班級",
+    "menu": "餐點",
+    "gallery": "相冊",
+    "reviews": "家長評價",
+    "team": "我們的團隊",
+    "bookTour": "預約參觀"
+  },
+  "punctuation": {
+    "quoteOpen": "“",
+    "quoteClose": "”"
+  }
+}

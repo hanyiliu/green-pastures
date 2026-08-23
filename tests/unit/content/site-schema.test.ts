@@ -160,11 +160,16 @@ describe("localized values in site.json (D-02.19, INV-02.3)", () => {
   });
 
   it("rejects a brand name for a locale routing.ts has not enabled", () => {
+    // A catalogue id that is held back is the sharpest case — `zh-Hant` was one
+    // until PR-3.9 — but the catalogue is fully enabled today, so an id the
+    // project does not know at all stands in. The other direction, where the
+    // shipped `zh-Hant` values become the unrecognised keys, is
+    // `locale-withdrawal.test.ts`.
     const enabled: readonly string[] = routing.locales;
-    const held = LOCALE_IDS.find((id) => !enabled.includes(id));
-    expect(held).toBeDefined();
+    const refused = LOCALE_IDS.find((id) => !enabled.includes(id)) ?? "ja";
+    expect(enabled).not.toContain(refused);
     const site = draft((value) => {
-      value.brand.name[String(held)] = "優朵幼兒園";
+      value.brand.name[refused] = "優朵幼兒園";
     });
     expect(complaints(site)).toContain("unrecognized_keys");
   });
@@ -269,9 +274,13 @@ describe("cross-references (INV-02.3)", () => {
 });
 
 describe("the provisional registry (02 D-02.20, INV-02.10)", () => {
-  it("ships 21 paths and every one of them resolves", () => {
+  it("ships 23 paths and every one of them resolves", () => {
+    // 02's Phase 3 seed in full: PR-3.2's 21 plus the two brand paths PR-3.9
+    // added with the `zh-Hant` locale.
     const site = SiteSchema.parse(siteJson);
-    expect(site.provisional).toHaveLength(21);
+    expect(site.provisional).toHaveLength(23);
+    expect(site.provisional).toContain("brand.name.zh-Hant");
+    expect(site.provisional).toContain("brand.shortName.zh-Hant");
     expect(complaints(siteJson)).toBe("");
   });
 
@@ -353,24 +362,14 @@ describe("the provisional registry (02 D-02.20, INV-02.10)", () => {
  * Pending locales (08 §3 rule 6)
  * -------------------------------------------------------------------------- */
 
-const enabledLocales: readonly string[] = routing.locales;
-
 /**
- * The locale `routing.ts` knows and has not enabled — `zh-Hant` today
- * (INV-02.11). The first test below asserts it exists, because every case after
- * it is meaningless without one: the day `zh-Hant` is enabled, rule 6 has
- * nothing to exempt and these tests need a held-back locale of their own.
+ * The rule is stated here against a synthetic pair, and exercised against the
+ * schema in `locale-withdrawal.test.ts` — which mocks `routing.locales` back to
+ * the two ids of D-10.12's withdrawal, because PR-3.9 enabled `zh-Hant` and the
+ * project no longer has a locale that is known but not enabled. With none, rule
+ * 6 has nothing to exempt and every schema-level case here would have passed
+ * vacuously.
  */
-const heldBack = LOCALE_IDS.find((id) => !enabledLocales.includes(id));
-const held = String(heldBack);
-
-/** The shipped registry plus one entry — the state a Phase 3 seed edit creates. */
-function plusProvisional(...paths: string[]): Draft {
-  return draft((site) => {
-    site.provisional.push(...paths);
-  });
-}
-
 describe("isPendingLocalePath (08 §3 rule 6)", () => {
   // Stated against a synthetic pair so the rule is pinned independently of
   // which locales happen to be enabled, and so it reads as the rule rather than
@@ -392,52 +391,28 @@ describe("isPendingLocalePath (08 §3 rule 6)", () => {
   });
 
   it("defaults to the project's own locales, never a literal list (INV-08.4)", () => {
-    expect(isPendingLocalePath(`brand.name.${held}`)).toBe(heldBack !== undefined);
-    expect(isPendingLocalePath(`brand.name.${String(routing.defaultLocale)}`)).toBe(false);
+    // Every catalogue id, so a default that had drifted into a literal copy of
+    // an older `routing.locales` disagrees with the live one and fails here.
+    const project = { known: [...LOCALE_IDS], enabled: [...routing.locales] };
+    for (const id of LOCALE_IDS) {
+      expect(isPendingLocalePath(`brand.name.${id}`)).toBe(
+        isPendingLocalePath(`brand.name.${id}`, project),
+      );
+    }
+    // Nothing is held back today, so the project's own verdict is false for
+    // every id — the state that moved rule 6's live cases to their own file.
+    expect(LOCALE_IDS.filter((id) => isPendingLocalePath(`brand.name.${id}`))).toStrictEqual([]);
   });
 });
 
-describe("pending-locale registry entries (08 §3 rule 6)", () => {
-  it("has a locale to hold back — the premise of every case below", () => {
-    expect(heldBack).toBeDefined();
-  });
-
-  // The direction that was broken: `validate:content` green, `next build` red.
+describe("a locale-shaped tail is not a licence to resolve to nothing", () => {
+  // The direction an over-broad rule 6 would swallow. These hold whatever
+  // `routing.locales` contains, which is why they stay here rather than moving
+  // to `locale-withdrawal.test.ts` with the rest of rule 6.
   it.each([
-    ["brand.name", `brand.name.${held}`],
-    ["brand.shortName", `brand.shortName.${held}`],
-  ])("accepts a %s entry for the held-back locale", (_label, path) => {
-    expect(complaints(withProvisional(path))).toBe("");
-  });
-
-  it("accepts 02's Phase 3 seed — the shipped registry plus both zh-Hant paths", () => {
-    const site = plusProvisional(`brand.name.${held}`, `brand.shortName.${held}`);
-    expect(complaints(site)).toBe("");
-  });
-
-  it("keeps the exempt entry in the registry, so --release still sees it under R1", () => {
-    // Rule 6 exempts the path from *resolution*. If the schema dropped it the
-    // launch gate would go green on an entry nobody had cleared.
-    const path = `brand.name.${held}`;
-    const site = SiteSchema.parse(plusProvisional(path));
-    expect(site.provisional).toContain(path);
-  });
-
-  it("is the reason the entry cannot resolve: INV-02.3 rejects the value itself", () => {
-    // The carve-out is not a convenience — `brand.name` may not carry the key
-    // the path names, so the path is unresolvable by construction.
-    const site = draft((value) => {
-      value.brand.name[held] = "優朵幼兒園";
-      value.provisional.push(`brand.name.${held}`);
-    });
-    expect(complaints(site)).toContain("unrecognized_keys");
-  });
-
-  // The direction an over-broad exemption would swallow.
-  it.each([
-    ["a field that is not there", "contact.instagram"],
-    ["a mistyped locale suffix", `brand.name.${held}x`],
+    ["a mistyped locale suffix", "brand.name.zh-Hanx"],
     ["a locale-shaped suffix nobody knows", "brand.name.zh"],
+    ["the retired bare identifier on a real value", "brand.shortName.zh"],
     [
       "an enabled locale on a path that resolves to nothing",
       `brand.nmae.${String(routing.locales[1])}`,
@@ -448,34 +423,5 @@ describe("pending-locale registry entries (08 §3 rule 6)", () => {
     ],
   ])("still rejects %s", (_label, path) => {
     expect(complaints(withProvisional(path))).toContain("resolves to nothing in content/site.json");
-  });
-
-  it("does not exempt a collections path whose last segment is the held locale", () => {
-    // Rule 2 gives the first segment the deciding vote, so the locale id is an
-    // ordinary key here and the collection still has to exist.
-    expect(complaints(withProvisional(`collections.recipes.soup.${held}`))).toContain(
-      "names no known collection",
-    );
-  });
-
-  it("does not exempt a messages path whose last segment is the held locale", () => {
-    expect(complaints(withProvisional(`messages.${held}`))).toContain(
-      "must be messages.<namespace>.<key>",
-    );
-  });
-
-  it("still rejects a duplicate of a pending-locale entry (rule 1 outranks rule 6)", () => {
-    const path = `brand.name.${held}`;
-    expect(complaints(withProvisional(path, path))).toContain(
-      `Duplicate provisional entry "${path}"`,
-    );
-  });
-
-  it("leaves every other cross-reference in force beside a pending-locale entry", () => {
-    // An exemption that short-circuited the rest of the refinement would hide
-    // real findings behind one held-back locale.
-    const site = plusProvisional(`brand.name.${held}`);
-    site.nav.primary[0] = { id: "philosophy", routeId: "nowhere" };
-    expect(complaints(site)).toContain('routeId "nowhere" is not an id in routes[]');
   });
 });
