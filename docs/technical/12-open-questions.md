@@ -15,8 +15,15 @@ what the answers left in conflict. This revision records both rounds: **twelve**
 **none** with the second, and §6 is re-derived around the distinction all of this turns on, which is the
 single most misreadable thing in this document. **An answer that unblocks the build is not an answer that
 unblocks launch.** Seven of the eight hard blockers in §6 now carry a 2026-08-22 answer and block anyway.
+One later change is folded in without renumbering anything: on **2026-08-23** `08` retired its own `OQ-08.11`
+entry — the last document still carrying a question its named seat had already answered — so that id leaves
+§2 for §5 and the split becomes **59 · 14 · 20**. It opened no question and moved no blocker. The same day
+`01` marked `OQ-01.1` and `OQ-01.2` answered in place and corrected its Vercel-plan line to `D-09.2`'s
+Hobby-at-start, which retires the three "`01` has still to" notes §5 was carrying and changes no count.
 
-Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…HD-15, ADJ-20…ADJ-22, ADJ-24)
+Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…HD-15, ADJ-20…ADJ-22, ADJ-24) ·
+revised 2026-08-23 (`OQ-08.11` retired by `08`, closed by `06` `D-06.15`(a); `01` synced — `OQ-01.1`,
+`OQ-01.2`, the plan line)
 
 ## Decisions
 
@@ -63,7 +70,7 @@ round: `OQ-06.2`/`OQ-09.2` got its name (HD-13) and kept a registrar-access sliv
 | Phase | Id(s) | Question | Answerer | Answer lands in | Blocked until answered | If never answered |
 |---|---|---|---|---|---|---|
 | 2 | `OQ-11.3` | **Answered in intent 2026-08-22 (HD-2), open in fact.** The human states branch protection is added, and a "Main Protection" ruleset does exist — but its `ref_name.include` list is empty, so it targets no branch. Needed: `~DEFAULT_BRANCH` in that list, squash-only merges, "PR title and description" as the squash message, and `bead-trailer` as a required check once the workflow exists | human | `09`, `11` | the Phase 2 gate itself | **none** — the gate cannot close while `main` is unprotected in fact (§6) |
-| 2 | `OQ-09.1` · `OQ-01.4` | **Plan half answered 2026-08-22 (HD-3):** Vercel, **Hobby at the start**, no budget concern (`D-09.2`). Still open: who holds the billing, how many paid seats, the monthly budget cap, and whether Hobby's non-commercial terms are answered by upgrading to Pro or by a written eligibility confirmation from Vercel | human (owner) | `09` (`D-09.2`, `D-09.20`), `01` | nothing now — launch item 3a | Hobby carries Phases 2–6; the launch gate cannot tick without one of the two answers (§6), and `OQ-10.7` decides when the change happens |
+| 2 | `OQ-09.1` · `OQ-01.4` | **Plan half answered 2026-08-22 (HD-3):** Vercel, **Hobby at the start, Pro before the DNS cutover** (`D-09.2`; `01` now records the same outcome). No budget concern was raised while the site is not public. Still open: who holds the billing, how many paid seats, the monthly budget cap, and whether Hobby's non-commercial terms are answered by upgrading to Pro or by a written eligibility confirmation from Vercel — the same four `01` hands back to `09` | human (owner) | `09` (`D-09.2`, `D-09.20`), `01` | nothing now — launch item 3a | Hobby is technically enough through **Phase 7** (`D-09.2`, `01`) and under `OQ-10.7`'s default is *scheduled* to carry **Phases 2–6**, upgrading at OPS-7.3 (`10` `D-10.13`) — capability and schedule, not a disagreement. The launch gate cannot tick without one of the two answers (§6), and `OQ-10.7` decides when the change happens |
 | 2 | `OQ-09.3` | Deployment Protection on previews — reviewers sign in to Vercel rather than opening public links. HD-3 gave this a new edge: a free Viewer seat exists only on a team, so on Hobby the developer is the only person who can open a preview at all | human (owner) | `09` (`D-09.4`) | OPS-2.1 | previews private; reviewers get a free Viewer seat once the project is on a team |
 | 2 | `OQ-08.3` | CI minutes: is the repo private (2,000 free GitHub minutes/month), and is the **three-locale** figure acceptable — ≈ 38–40 runner-minutes per PR and ≈ 1,300–2,000 a month, against ≈ 30 and ≈ 1,000–1,500 for two locales? | human | `08` §10 | PR-2.6 | change nothing and let the scaffold PR measure it; nothing needs deciding until `zh-Hant` joins `routing.locales` |
 | 2 | `OQ-11.1` | May the orchestrator `bd dolt push` to `origin`, and on whose credentials? | human | `11` (`D-11.6`) | PR-2.1 | export-only; no Dolt push |
@@ -116,10 +123,12 @@ round: `OQ-06.2`/`OQ-09.2` got its name (HD-13) and kept a registrar-access sliv
 
 ### 2 · Questions the build answers for itself
 
-15 identifiers on 14 rows. Each has a named seat and a phase, and none holds a phase waiting on the human
-(`D-12.3`); `OQ-08.1` is the single row whose seat confirms its answer with the design owner in review. Four
+14 identifiers on 13 rows. Each has a named seat and a phase, and none holds a phase waiting on the human
+(`D-12.3`); `OQ-08.1` is the single row whose seat confirms its answer with the design owner in review. Three
 of the rows are new on 2026-08-22 — the three-locale decision and the provisional registry each left a seam
-between two documents, and a seam is a question one seat owes another.
+between two documents, and a seam is a question one seat owes another. A fourth arrived with them and has
+since left: `OQ-08.11`, answered by `06` in `D-06.15`(a) and retired by `08` on **2026-08-23**, is now in §5
+and nowhere else on the register.
 
 | Phase | Id(s) | Question | Answered by | Answer lands in | Blocked until answered | If unresolved |
 |---|---|---|---|---|---|---|
@@ -130,7 +139,6 @@ between two documents, and a seam is a question one seat owes another.
 | 2 | `OQ-11.4` | Will the repo get a `CLAUDE.md`? | orchestrator → the `00-README` owner (`gp-dln.3`) | `00` (`D-00.4`), PR-2.2 | PR-2.2 | **answered:** `D-00.4` — a thin pointer `CLAUDE.md` lands in PR-2.2; `00` and `11` stay the conventions of record |
 | 3 | `OQ-06.8` | Accept `06` §6.12's four requests — **three still live**: (1) `brand.url` is not the metadata origin — relabel or drop, and HD-13 lets `02` retire its `https://greenpastures.example` sample either way (`ADJ-24` keeps `brand.url` out of the sending-identity move: its value and its fate stay `OQ-09.10`'s); (2) `ogLocale` becomes a sixth `LOCALE_META` field; (3) the unknown-locale 404 sentence is scoped to matcher-excluded paths; (4) **satisfied 2026-08-22** — the ask was to strike "plus the design's `⌄` chevron" from `D-02.10`, and `02` has done it: `D-02.10` no longer carries the phrase and `02`'s switcher prose now reads "no chevron, no disclosure glyph (ADJ-20)". `06` §6.12 still lists four; the correction has landed | `02` (writer-contracts) | `02` | PR-3.2 | `06` ships as written — `NEXT_PUBLIC_SITE_URL` is the origin, `ogLocale` lives in `LOCALE_META`, `INV-06.10` keeps `brand.url` out of every metadata path, and the trigger renders no chevron, which `D-02.10` now says itself |
 | 3 | `OQ-08.10` | **Pending-locale provisional paths.** The 23-entry seed contains `brand.name.zh-Hant` and `brand.shortName.zh-Hant`; `INV-02.3` allows a localized value only for ids in `routing.locales`, and `INV-02.11`/`OQ-02.8` keep `zh-Hant` out of it — so two seeded paths are unresolvable, and an unresolvable path fails `validate:content` in every mode. Confirm `08` §3 rule 6 (*pending locale*: reported, still blocking `--release`, never an error), or drop the two paths until the locale is enabled | `02` (writer-contracts), on `08`'s finding | `02` *Provisional values* | the day `--warn-locale` is first used | `08` §3 rule 6 stands and the `content` job stays green; the alternative is 02's call, not 08's |
-| 3 | `OQ-08.11` | **Negotiation with a disabled locale — answered 2026-08-22 by its named seat (`06` `D-06.15`(a)).** `02`'s Accept-Language table maps `zh-TW`/`zh-HK`/`zh-MO`/`zh-Hant-*` → `zh-Hant` unconditionally, but `INV-02.11` allows `zh-Hant` to be absent from `routing.locales`. Does the proxy then send that visitor to `zh-Hans` (same language, wrong script) or to `en` (the default)? The row stays on §2 until `08` retires its own entry, exactly as `OQ-11.4` stays until `11` retires its own | `06` (writer-routing) | `06` proxy (`D-06.15`(a)), `08`'s `@i18n` test | nothing — PR-3.1 implements the answer and `10` §14 records it | **answered:** `D-06.15`(a) — each row of the table is an ordered **preference chain filtered by `routing.locales`**, first survivor wins, so while `zh-Hant` is held out a `zh-TW` reader gets **`zh-Hans`**, the same language in the other script, and never `en`. `08`'s `@i18n` row already reads the table intersected with `routing.locales`, which is the same mechanism; only `08`'s own *Open questions* entry has yet to follow |
 | 3 | `OQ-09.10` | Drop `content/site.json` → `brand.url` in favour of `NEXT_PUBLIC_SITE_URL`, or keep it as the human-edited value `06` reads — and what `metadataBase`, the sitemap and robots use on a Preview deployment, where that variable is unset. Sharpened by HD-4/HD-9: `brand.url` is `provisional` entry 1, so keeping it means the owner types the origin into `site.json` *and* the developer types it into a Vercel variable, which `INV-09.6` forbids. **Sharpened again, not settled, by HD-13**: the reason to keep the field was never that the origin was unknown, and it demonstrably is not now — the choice is unchanged and the answer is cheaper, because whichever way it goes the literal is `https://greenpasturesdaycare.com`. `06` answers the Preview half at source (`D-06.11`'s `VERCEL_URL` fallback chain); `02` still owes the field's fate | `02`'s seat, on `06`'s requirement (`D-06.11`) | `02`, `06`, `09` §2 | PR-3.2, PR-6.8 | both exist, `--release` blocks on the provisional entry, and `02`'s copy of the origin can drift from the variable |
 | 4 | `OQ-05.2` | The View Transitions spike, (a)–(f): typed navigations, z-order of `.gp-page` during `subpage-exit`, Safari behaviour, snapshot size on a tall mobile page, whether Next already focuses the new page, and whether next-intl's `Link`/`useRouter` pass `transitionTypes` through | the 04 implementer, spike PR-4.4 | `05` §5.7, `04` | PR-4.4, then PR-6.1 | the spike answers itself; a "no" on any of (a)–(f) selects F1 and `01` records the ADR-005 amendment in the same PR |
 | 4 | `OQ-08.9` | Reword `03` §5 to point at `MC-08.1`, the named manual per-OS glyph check — `08` cannot pin per-OS screenshot baselines | `03` (writer-design-system) | `03` §5 | the Phase 4 docs pass | `03` §5 keeps pointing at a per-OS snapshot that does not exist; `MC-08.1` still runs |
@@ -201,7 +209,8 @@ necessarily shippable.**
 The `OQ-` ids their own documents have retired reach neither §1 nor §2, so their answerers are recorded here:
 `OQ-03.7` (answerer `05`, implemented in `03` §7), `OQ-04.8` (withdrawn by `04`, no answerer), `OQ-05.5`
 (answerers `02` and `06`, implemented in `D-06.8`), `OQ-05.7` (answerer `03`, implemented in `03` §7),
-`OQ-08.4` (answerer `09`, implemented in `D-09.4`), `OQ-10.5` and `OQ-10.6` (answerer `10`, implemented in
+`OQ-08.4` (answerer `09`, implemented in `D-09.4`), `OQ-08.11` (answerer `06`, implemented in `D-06.15`(a),
+retired by `08` on 2026-08-23), `OQ-10.5` and `OQ-10.6` (answerer `10`, implemented in
 `10` §14) — plus the **twelve** the two rounds retired outright: `OQ-01.1`, `OQ-02.1`, `OQ-02.4`, `OQ-02.7`,
 `OQ-03.3`, `OQ-04.4`, `OQ-04.5`, `OQ-06.1` and `OQ-07.9` at the gate, and `OQ-03.4`, `OQ-01.2` and `OQ-04.9`
 in the second sitting (HD-14).
@@ -210,9 +219,10 @@ in the second sitting (HD-14).
 in writing and left the other open in the same breath: `OQ-11.3`, `OQ-09.1`/`OQ-01.4`, `OQ-06.9`, `OQ-07.6`,
 `OQ-07.7`, `OQ-07.8` and — new this round — `OQ-06.2`/`OQ-09.2`. They appear in the table below marked
 *(still on §1)*: the answer is recorded, the question is not finished. Two further rows are decided but kept
-on §1 as live overrides (`OQ-02.2`, `OQ-07.10`), and two stay on §2 carrying their answer inline until the
-document that declared each one retires its own entry — `OQ-11.4` until `11` does, and, new this round,
-`OQ-08.11` until `08` does, its answerer `06` having recorded it in `D-06.15`(a).
+on §1 as live overrides (`OQ-02.2`, `OQ-07.10`), and **one** stays on §2 carrying its answer inline until the
+document that declared it retires its own entry — `OQ-11.4`, until `11` does. `OQ-08.11` was the second such
+row for one day: `06` answered it in `D-06.15`(a) on 2026-08-22 and `08` retired its own entry on
+**2026-08-23**, which is the whole of what §7 step 3 asks for, so the id has left §2 for the table below.
 The first round left one answer that closed nothing — **HD-11 rejected the premise of `OQ-03.4`** rather than
 answering it, since the design names no CJK typeface anywhere — and the second round closed the corrected
 question outright (HD-14), which is why that row is in the table below rather than in §1.
@@ -223,15 +233,15 @@ question outright (HD-14), which is why that row is in the table below rather th
 | `OQ-02.4` · `gp-dln.12` | HD-6 · `D-02.19` | The Chinese brand name is **优朵幼儿园** (short 优朵); **绿茵园 is rejected** and the prototype's "绿茵园的生活" gallery title is re-authored as `{brandShortName}的日常`. `zh-Hant` carries its own 優朵幼兒園 / 優朵. The English footer keeps both names through `{brandNameOther}`, not a locale branch. Explicitly **provisional** | **the launch gate** — the name is not final, and its `provisional` entries make `--release` fail (§6) |
 | `OQ-02.7` · `OQ-04.5` · `OQ-06.1` · `gp-dln.6` | HD-5 · `D-02.17` | **"Staff" is Team** — one page, the `team` namespace. Six subpage routes at launch: Philosophy, Programs, Menu, Gallery, Reviews, Team. FAQ and Enrollment are reserved, not built | nothing |
 | `OQ-03.3` | HD-10 · `03` `D-03.14` | Not Simplified-only, so one SC-first stack is not enough. `--font-cjk` now resolves per script: `--font-cjk-sc` under `:root:lang(zh-Hans)` and `--font-cjk-tc` (`PingFang TC`, `Hiragino Sans CNS`, `Microsoft JhengHei`, Noto/Source Han TC) under `:root:lang(zh-Hant)`; the shared `:root:lang(zh)` typography rules match both scripts and are not split | nothing — `08`'s visual-regression matrix gains a `zh-Hant` row, which `08` owns |
-| `OQ-03.4` · `OQ-01.2` · `OQ-04.9` | HD-11 then **HD-14** · `03` `D-03.5`, `D-03.14` | **The system CJK stack ships for both Chinese scripts and no CJK webfont is loaded at launch.** HD-11 had found the question's premise false — the handoff names Fredoka and Nunito, neither carrying a Han ideograph, so the 中文 in the prototypes already renders in an OS substitute — and HD-14 confirmed that stack as the decision rather than the fallback. `--font-cjk-sc` / `--font-cjk-tc` / `--font-cjk` stand as `03` §3.1 and `D-03.14` declare them. Naming a face later is possible without being open: two token values and a `next/font` loader scoped to the Chinese layouts, now on `10` §9's post-launch backlog as new brand work | nothing — `PR-4.1` carries no font decision. `03` and `04` have marked their copies; **`01` has still to mark `OQ-01.2` answered in place**, exactly as it has still to mark `OQ-01.1`. The per-OS look is covered by `08`'s manual check `MC-08.1`, not by this question |
-| `OQ-09.1` · `OQ-01.4` *(still on §1)* | HD-3 · `D-09.2` | Hosting is Vercel and the plan is **Hobby at start**, revisited before launch; no budget concern was raised, so `OQ-01.4`'s budget cap is answered by "none stated" | **the launch gate** — Hobby is licensed for non-commercial use and this is a commercial site; it also has a single custom WAF rule, which `D-07.7`'s rate limit consumes (§6) |
+| `OQ-03.4` · `OQ-01.2` · `OQ-04.9` | HD-11 then **HD-14** · `03` `D-03.5`, `D-03.14` | **The system CJK stack ships for both Chinese scripts and no CJK webfont is loaded at launch.** HD-11 had found the question's premise false — the handoff names Fredoka and Nunito, neither carrying a Han ideograph, so the 中文 in the prototypes already renders in an OS substitute — and HD-14 confirmed that stack as the decision rather than the fallback. `--font-cjk-sc` / `--font-cjk-tc` / `--font-cjk` stand as `03` §3.1 and `D-03.14` declare them. Naming a face later is possible without being open: two token values and a `next/font` loader scoped to the Chinese layouts, now on `10` §9's post-launch backlog as new brand work | nothing — `PR-4.1` carries no font decision. **All three documents have now marked their copies:** `03` and `04` on 2026-08-22, and `01` since — its `OQ-01.2` entry is marked answered in place, dated 2026-08-22 and citing HD-14 with `03` `D-03.5` / `D-03.14` (confirmed here 2026-08-23). `01` states the same thing this row does, including that naming a face later is a one-token change and not a pending answer. The per-OS look is covered by `08`'s manual check `MC-08.1`, not by this question |
+| `OQ-09.1` · `OQ-01.4` *(still on §1)* | HD-3 · `D-09.2` | Hosting is Vercel and the plan is **Hobby at start, Pro before the DNS cutover** — `01` records the same outcome from `D-09.2` and no longer reads "Pro" as the starting plan. No budget concern was raised while the site is not public, so `OQ-01.4` contributes no cap of its own; the monthly cap itself is not answered and stays open on §1 as `09`'s | **the launch gate** — Hobby is licensed for non-commercial use and this is a commercial site; it also has a single custom WAF rule, which `D-07.7`'s rate limit consumes (§6) |
 | `OQ-11.3` *(still on §1)* | HD-2 | The human states branch protection **is added**, and a "Main Protection" ruleset does exist with `deletion`, `non_fast_forward` and `pull_request` (0 required approvals) | **the Phase 2 gate** — verified 2026-08-22, the ruleset's `ref_name.include` list is empty, so it targets no branch and `main` is unprotected in fact (§6) |
 | `OQ-06.2` · `OQ-09.2` *(still on §1)* | HD-13 · `06` `D-06.11` · `09` `D-09.5` | **The domain is `greenpasturesdaycare.com`.** Apex canonical, `www` → apex 308, apex primary at Vercel and the Search Console property; `NEXT_PUBLIC_SITE_URL` = `https://greenpasturesdaycare.com` in the Production scope only. `06` INV-06.10 is untouched — the origin still reaches `metadataBase`, `hreflang`, the sitemap, robots and JSON-LD through the variable, and the literal appears nowhere in `src/`. The design mock's `greenpasturesmontessori.com` is excluded | **the DNS cutover** — the name is not the access. Who holds the registrar login (and the DNS host, if separate) was never asked before and is now the whole of the question (§6) |
 | `OQ-07.6` *(still on §1)* | HD-4, then HD-13 · `D-02.20` · `07` `D-07.10` | The sending identity becomes content instead of invention, and HD-13 puts the samples on the real host: `email.sendingDomain` `mail.greenpasturesdaycare.com`, `email.fromAddress` `no-reply@mail.greenpasturesdaycare.com`, inquiry inbox `contact.email` `hello@greenpasturesdaycare.com`, all provisional; the from display name is `brand.name[locale]`, never duplicated. `ADJ-24` (2026-08-22) settled that spelling against `02`'s and `09`'s `mail.greenpastures.example` and both have adopted it; only the sample changed — the sending domain is still a value of its own, and `brand.url` did not move with it (`OQ-09.10`) | **the Phase 7 gate** — a named domain is not a verified one: Resend refuses an unverified `from`, the `mail.` subdomain is still the owner's to confirm, and nobody yet reads that inbox (§6) |
 | `OQ-07.7` *(still on §1)* | HD-7 · `D-02.20` | `yelp.rating` `5.0`, `yelp.reviewCount` `47` and a plausible `yelp.url` ship as provisional sample values rather than `TODO` | **the launch gate** — replace with the real figures **or delete the `yelp` block**, then clear the three entries (§6) |
 | `OQ-07.8` *(still on §1)* | HD-7 · `D-02.20` | The street address ships as a sample: `contact.address.street` `1234 Sample Way`, `postalCode` `94538`, `contact.mapsUrl` a matching Maps link — all provisional. `city` Fremont, `region` CA and `country` US are deliberately **not** provisional; they are known good | **the launch gate** — replace with the real address, or drop the field for a locality-only publication; either way the entries must clear (§6) |
 | `OQ-06.9` · `gp-dln.13` *(still on §1)* | HD-7 · `D-02.20` | Every owner fact the JSON-LD and the contact surface publish ships as an editable sample default registered in `site.json.provisional`: phone `+15105550142` / `(510) 555-0142`, `license` `000000000`, the address above, the inbox, and the three teachers' names and credentials. `hours` and `timeZone` are not provisional — the design and the human state them | **the launch gate** — 23 entries, enumerated in §6; `--release` fails while any remain (`INV-02.10`) |
-| `OQ-01.1` · `OQ-07.9` | the human ("no tag is necessary") | **No third-party analytics tag** — no GA4, no Google Tag, no Plausible snippet. Vercel Web Analytics + Speed Insights remains the launch default (memo ADJ-10, `D-07.9`): cookieless, no consent banner, `A-07.1` untouched. Read the same way if the human meant a git release tag — none is cut (`OQ-00.3`) | nothing — but `01` must still mark `OQ-01.1` answered in place; `07` has recorded it (`D-07.13`, `INV-07.8`) |
+| `OQ-01.1` · `OQ-07.9` | the human ("no tag is necessary") | **No third-party analytics tag** — no GA4, no Google Tag, no Plausible snippet. Vercel Web Analytics + Speed Insights remains the launch default (memo ADJ-10, `D-07.9`): cookieless, no consent banner, `A-07.1` untouched. Read the same way if the human meant a git release tag — none is cut (`OQ-00.3`) | nothing — **both copies are now marked.** `07` recorded it (`D-07.13`, `INV-07.8`) and `01` has since marked `OQ-01.1` answered in place, dated 2026-08-22 and citing the gate answer with `07` `D-07.13` / `OQ-07.9` and memo ADJ-10 (confirmed here 2026-08-23). `01` adds only the price of a later override: a new ADR there, a consent story in all three locales, and an amendment to `07` `INV-07.8` |
 | `OQ-04.4` | HD-12 · `D-04.12` | Photos and translations stay placeholders as planned: `PhotoSlot` colour fill, no stock imagery, and Chinese parity in warn mode until PR-8.1 | nothing — but `OQ-10.3` (the photographs themselves) is still open on §1 |
 | `OQ-12.1` | the human | **Accepted:** silence is acceptance of every default in §1. The gate then answered what it could of §6 and left the rest as this table's last column | nothing |
 | `gp-dln.4` | HD-1 | The document set is accepted as the plan of record and ADR-001…009 stand as written. `00` records the sign-off | nothing |
@@ -250,7 +260,7 @@ Settled inside the plan, before the gate:
 | `OQ-07.10` (still on §1 as an override) | `D-07.2`, `02`'s key set, `07` §9 | child's age = `infant`, `toddler`, `preschool`, `expecting`, `other`; desired start = the next 12 months plus `asap` and `flexible`; the Enrollment page reuses the five-field superset |
 | `OQ-05.5` | `D-02.10`, `D-02.16`, `D-06.7`, `D-06.8` | Locale switch is a same-path `router.replace`; the Back mapping and client-namespace coverage are fixed |
 | `OQ-08.4` | `D-09.4` | Previews stay protected; OPS-2.1 generates the bypass secret `lighthouse-preview` needs |
-| `OQ-08.11` (still on §2 until `08` retires it) | `06` `D-06.15`(a) | While `zh-Hant` is held out of `routing.locales`, a `zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant-*` reader negotiates to `zh-Hans`, never to `en`: each row of `02`'s table is an ordered preference chain filtered by `routing.locales` and the first survivor wins. `08`'s `@i18n` test asserts that one row |
+| `OQ-08.11` — **closed 2026-08-23**, off §2 | `06` `D-06.15`(a); `08` retired its own entry 2026-08-23 | While `zh-Hant` is held out of `routing.locales`, a `zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant-*` reader negotiates to `zh-Hans`, never to `en`: each row of `02`'s table is an ordered preference chain filtered by `routing.locales` and the first survivor wins. `08` asserts both halves — its `@i18n` row (`zh-TW` → `/zh-Hans` while the locale is held back, `zh-TW` → `/zh-Hant` once it is enabled) and `06` §6.10's pure negotiation unit test. Nothing here reaches launch: the answer is a proxy behaviour PR-3.1 implements, and enabling `zh-Hant` is still `OQ-02.8`'s |
 | `OQ-11.4` (still on §2 until `11` retires it) | `D-00.4` | A thin pointer `CLAUDE.md` lands in PR-2.2; `00-README.md` and `11-work-tracking.md` remain the conventions of record |
 | Root-path locale detection | `D-02.9` | Detection on the bare root is **on**; `localePrefix: 'always'` for every other path |
 | "Child's age" option set | `D-02.4` rule 8, memo ADJ-9 | The canonical five ids — `infant`, `toddler`, `preschool`, `expecting`, `other`. `OQ-07.10` keeps only the owner's right to trim or relabel |
@@ -341,18 +351,21 @@ working copy of rows 5–8; `09` owns the launch checklist that reads it.
   quote one for context without registering it. The two together must reproduce the whole population:
   each document numbers its questions contiguously from `.1`, so that population is the sum of the highest
   id in each — `01` 5 · `02` 8 · `03` 7 · `04` 11 · `05` 8 · `06` 10 · `07` 11 · `08` 11 · `09` 11 ·
-  `10` 7 · `11` 4 = **93** as of 2026-08-22 — which makes the total re-derivable from the documents rather
+  `10` 7 · `11` 4 = **93** as of 2026-08-23 — which makes the total re-derivable from the documents rather
   than trusted here. It was 85 before the Phase 1 gate: answering twelve questions opened eight new ones
   (`OQ-02.8`, `OQ-04.11`, `OQ-06.10`, `OQ-07.11`, `OQ-08.10`, `OQ-08.11`, `OQ-09.11`, `OQ-10.7`), which is
   what a decision that reaches four documents costs. The second round (HD-13…HD-15) opened **none** — it
-  answered inside questions that already existed — so the population is unchanged at 93 and only the split
-  moved: **59** ids sit in §1, **15** in §2 and the remaining **19** in §5.
+  answered inside questions that already existed — and neither did `08` retiring `OQ-08.11` on 2026-08-23,
+  because retiring an id moves it rather than adding one. The population is therefore unchanged at 93 and
+  only the split moved: **59** ids sit in §1, **14** in §2 and the remaining **20** in §5 (15 and 19 before
+  2026-08-23).
   **How many of the 93 are already decided is deliberately not restated as a number:
   §5 is that list.** It grows every time an owning document closes a question, and a count repeated in this
   invariant would rot silently, since nothing mechanically enforces it. An id is in §5 *and* still on the
   register only while something narrower stays open — the human's right to override a decision already taken
   (`OQ-02.2`, `OQ-07.10`), a document that has recorded the answer without yet retiring its own entry
-  (`OQ-11.4`, and `OQ-08.11` since `06` answered it in `D-06.15`(a)), or — new on 2026-08-22 — an answer
+  (`OQ-11.4` — and `OQ-08.11` for one day, until `08` retired its entry on 2026-08-23 and the id left the
+  register for §5, which is what this clause is for), or — new on 2026-08-22 — an answer
   that covers the build and not the launch (`OQ-11.3`, `OQ-09.1`/`OQ-01.4`, `OQ-06.9`, `OQ-07.6`, `OQ-07.7`,
   `OQ-07.8` and, since HD-13, `OQ-06.2`/`OQ-09.2`).
   Both assumption families are in §4: `A-07.1`–`A-07.7` and `A-10.1`–`A-10.3`, ten in total — `A-07.6` and
@@ -418,14 +431,16 @@ working copy of rows 5–8; `09` owns the launch checklist that reads it.
   `D-04.16` (the chevron-less trigger, `ADJ-20`).
 - `docs/technical/05-animation-system.md` — `OQ-05.1`…`OQ-05.8`; `D-05.9`, `D-05.10` and §5.7's F1 fallback.
 - `docs/technical/06-routing-pages-seo.md` — `OQ-06.1`…`OQ-06.10`; `D-06.6` (the `#visit` fallback target,
-  `ADJ-21`), `D-06.7`, `D-06.8`, `D-06.9`, `D-06.11` (HD-13's production origin), `D-06.15`(a) (the answer to
-  `OQ-08.11`), `INV-06.10`, §6.5, §6.6, §6.9, §6.10's origin gate, §6.12's four asks on `02` — of which the
-  chevron correction is satisfied and three stay live (`OQ-06.8`).
+  `ADJ-21`), `D-06.7`, `D-06.8`, `D-06.9`, `D-06.11` (HD-13's production origin), `D-06.15`(a) with §6.10's
+  negotiation unit test (the answer to `OQ-08.11`, which `08` retired on 2026-08-23), `INV-06.10`, §6.5,
+  §6.6, §6.9, §6.10's origin gate, §6.12's four asks on `02` — of which the chevron correction is satisfied
+  and three stay live (`OQ-06.8`).
 - `docs/technical/07-forms-integrations.md` — `OQ-07.1`…`OQ-07.11` and `A-07.1`…`A-07.7`; `D-07.2`, `D-07.6`,
   `D-07.8`, `D-07.9`, `D-07.10` (the sending identity, written on HD-13's domain), `D-07.11`, `D-07.13`,
   `INV-07.8`.
-- `docs/technical/08-testing-quality.md` — `OQ-08.1`…`OQ-08.11`; `D-08.8`, `D-08.18`, `INV-08.4`, `INV-08.7`,
-  `MC-08.1`, §3 rule 6, §8, §10.
+- `docs/technical/08-testing-quality.md` — `OQ-08.1`…`OQ-08.11`, of which `OQ-08.11` is **closed there
+  2026-08-23** on `06` `D-06.15`(a) and now sits in §5 only; `D-08.8`, `D-08.18`, `INV-08.4`, `INV-08.7`,
+  `MC-08.1`, §3 rule 6, the `@i18n` row's held-back and enabled `zh-TW` cases, §8, §10.
 - `docs/technical/09-deployment-operations.md` — `OQ-09.1`…`OQ-09.11`; `D-09.2` (the Hobby decision), `D-09.4`,
   `D-09.5` (`greenpasturesdaycare.com`, apex canonical, `www` → apex 308), `D-09.10`, `D-09.12`, `D-09.13`,
   `D-09.15`, `D-09.19` (accounts belong to the daycare, the developer is invited), `D-09.20`, `INV-09.6`;

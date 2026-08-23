@@ -6,14 +6,16 @@ validation, client behaviour, the server path that emails the daycare, spam and 
 data handling, environment configuration, and the site's other third-party touch points (Yelp, map, analytics,
 error monitoring, fonts). It fixes the contract other docs build on: 02 names the strings, 04 builds the
 components, 06 wires the routes and anchors, 08 tests it, 09 provisions secrets and firewall rules. Claims
-about vendors are labelled `[verified: source, 2026-08-22]` or `[assumed — confirm]`. Since the Phase 1 gate it
+about vendors are labelled `[verified: source, 2026-08-22]` or `[assumed — confirm]`, the house rule memo
+ADJ-19 set for every third-party pricing, limit or version claim. Since the Phase 1 gate it
 also records three facts that change how the form ships: the sending identity and every owner fact are
 **content with sample defaults** rather than invented constants or `TODO` sentinels (HD-4 / HD-7, mechanism in
 02 D-02.20), the site runs in **three locales** (`en`, `zh-Hans`, `zh-Hant` — HD-10), and Vercel starts on the
 **free Hobby plan**, which the one WAF rate-limit rule here fills to its limit (HD-3).
 
 Status: draft · seat writer-forms · 2026-08-22 · revised 2026-08-22 (HD-3, HD-4, HD-7, HD-10, HD-13, ADJ-21,
-no-analytics-tag)
+no-analytics-tag) · adjudication citations added 2026-08-23 (ADJ-24 on D-07.10; ADJ-9, ADJ-10, ADJ-18, ADJ-19
+where this doc had stated an adjudicated point unattributed)
 
 ## Decisions
 
@@ -78,16 +80,27 @@ no-analytics-tag)
 - **D-07.9 — Other integrations:** Yelp rating and count are static values in the shared config (02), edited
   by hand and shipping as provisional sample defaults (D-07.11); map is a static image plus an external
   "open in Maps" link, no embed; analytics is Vercel Web Analytics + Speed Insights (cookieless, no consent
-  banner — A-07.1) and nothing else (D-07.13); error monitoring is Vercel runtime logs at launch; fonts are
+  banner — A-07.1), which memo ADJ-10 adopted from this decision as the plan-wide launch default and 01
+  records, and nothing else (D-07.13); error monitoring is Vercel runtime logs at launch; fonts are
   Google Fonts via `next/font/google`, self-hosted at build.
-- **D-07.10 — The sending identity is content, and it ships as a sample default (HD-4 · HD-13, 2026-08-22).**
+- **D-07.10 — The sending identity is content, and it ships as a sample default (HD-4 · HD-13 · ADJ-24,
+  2026-08-22).**
   The from-address, the sending domain and the inquiry inbox are **owner facts in `content/site.json`**, not
   constants invented here and not `"TODO"`: `email.sendingDomain` = `mail.greenpasturesdaycare.com`,
   `email.fromAddress` = `no-reply@mail.greenpasturesdaycare.com`, `contact.email` =
   `hello@greenpasturesdaycare.com`, optional `email.notifyTo` overriding the recipient (02 D-02.20,
   *Provisional values*). The samples are written against the domain HD-13 names, `greenpasturesdaycare.com`,
   so the owner opens `site.json` and sees the address they will actually keep rather than a `.example`
-  stand-in. They are still **provisional**, and marked exactly as 02 marks everything else — dotted paths in
+  stand-in. That spelling is **adjudicated, not this seat's preference**: six documents had split between it
+  and `mail.greenpastures.example`, and **ADJ-24** (2026-08-22) settled the split in this doc's favour — 02
+  and 09 have moved to these three values, so a "fix" that respells them back is a regression, not a
+  correction. The adjudication preserved two facts the new sample must not blur. The first is stated nowhere
+  else in this doc: the sending domain is **a value of its own, not a derivation of the site domain** —
+  nothing at runtime reads `email.sendingDomain` from `brand.url` or `NEXT_PUBLIC_SITE_URL`, nor either of
+  those from it, so an owner who sends from a wholly unrelated host edits that one field and nothing else
+  moves; the two sharing a registrable domain today is the sample's coincidence, not a rule. The second is
+  the next sentence, and the spelling change did not touch it. They are still **provisional until Resend
+  verifies the sending domain**, and marked exactly as 02 marks everything else — dotted paths in
   `site.json.provisional`, no value prefix (D-02.20) — because a known domain settles neither the mailbox
   names (`hello@`, `no-reply@mail.`) nor the one thing that makes them send: DKIM/SPF on the sending
   subdomain and its verification in Resend, which is 09's DNS work. `INQUIRY_FROM_EMAIL`
@@ -409,11 +422,12 @@ has no DKIM/SPF records until 09 publishes them (§2 step 7). Reading against th
 sample recognisable, not real: it buys honest previews and a value the owner edits instead of invents, and
 **no** relaxation of the gate. OQ-07.6 is answered for build purposes only.
 
-`brand.url` (02, the same provisional sample origin — `https://greenpasturesdaycare.com` under HD-13) and
-`NEXT_PUBLIC_SITE_URL` are the same fact in two places; the origin check reads the env value. Which one is
-canonical is OQ-09.10 in 09's register (answered by 02 on 06's requirement), and it now interacts with
-`brand.url` being a provisional sample — whichever wins, the other must not survive as a second editable copy
-of the origin.
+`brand.url` (02, still the provisional sample `https://greenpastures.example`) and `NEXT_PUBLIC_SITE_URL` are
+the same fact in two places; the origin check reads the env value. `brand.url` did **not** travel with the
+sending identity: ADJ-24 moved the three mail samples to the real host and left this one where it was, because
+whether the field survives at all is OQ-09.10's in 09's register (answered by 02 on 06's requirement) and
+HD-13 clears it either way — by 02 replacing the sample or by the field being deleted. Whichever wins, the
+other must not survive as a second editable copy of the origin.
 
 Files: `.env.example` committed with every name — values empty except the two safe local defaults
 (`INQUIRY_TRANSPORT=log` and the Turnstile test site key); `.env.local` gitignored. Secrets live only in
@@ -564,11 +578,14 @@ Behaviour by environment:
   for the five ids (`infant`, `toddler`, `preschool`, `expecting`, `other`), `asap`/`flexible` labels, pending
   label, success panel heading/body/reset link, error banner copy, privacy line, `<noscript>` fallback text,
   "open in Maps" and Yelp link text; **02 must define a message for each of the fourteen codes this doc
-  emits**, at the scope its *Forms and email* table gives them — field-scoped: `required`, `too_short`,
+  emits**, at the scope its *Forms and email* table gives them (memo ADJ-9 fixed that division of ownership:
+  02 is the contract of record for namespaces and option sets, the five age ids above included, and 07 owns
+  the handler's error-code list) — field-scoped: `required`, `too_short`,
   `too_long`, `invalid`, `invalid_email`, `invalid_option`, `out_of_range`; form-scoped: `turnstile_failed`,
   `turnstile_unavailable`, `rate_limited`, `forbidden`, `payload_too_large`, `email_failed`, `network`.
   That table is authoritative for the key each code resolves to: wire codes are 07's snake_case spellings, key
-  segments are their camelCase forms (D-02.4, machine-checked by INV-02.2); field-scoped codes try
+  segments are their camelCase forms — the two-spelling split is memo ADJ-18's, settled against this doc's
+  earlier "the codes are the keys" (D-02.4, machine-checked by INV-02.2); field-scoped codes try
   `visit.form.fields.<field>.errors.<code>` first and fall back to `visit.form.errors.<code>`, form-scoped
   codes render as banners from `visit.form.errors.<code>`, and `invalid_email` resolves to
   `visit.form.fields.email.errors.invalid` (there is no form-level key for it). 07 keeps the wire names; 02
@@ -579,14 +596,17 @@ Behaviour by environment:
   in 02 as of 2026-08-22, nothing new requested): `yelp.rating|reviewCount|url`, `contact.email`,
   `contact.phone` + `contact.phoneDisplay` (both required now, which is what lets D-07.5 drop its branch),
   `contact.mapsUrl`, `email.sendingDomain`, `email.fromAddress`, optional `email.notifyTo`, and the
-  `provisional` registry that covers them. One value change follows HD-13: the three e-mail samples (and
-  `brand.url`) read against `greenpasturesdaycare.com`, not `.example`, so 02's *Provisional values* table and
-  its `site.json` excerpt need the same edit — 07 keeps no second copy (INV-07.9), and the owner must not meet
-  two different sample inboxes. 02 also owns the consequence for its own rationale: the reserved-TLD argument
-  for `.example` no longer applies, and what keeps a provisional identity from sending is Resend verification
-  (§2 step 7). `visit.form.directContact` keeps its `{email}` and `{phone}`
-  arguments; the formatter rule that blesses `Intl` month/date output; and — per ADJ-4 — the `visit.form.*`
-  namespace must reach the client through `NextIntlClientProvider` because `InquiryForm` is a client component.
+  `provisional` registry that covers them. One value change followed HD-13 and **ADJ-24** settled it against
+  02's and 09's `mail.greenpastures.example`: the three e-mail samples read against `greenpasturesdaycare.com`,
+  and 02 has made the edit — its *Provisional values* table and `site.json` excerpt carry this spelling now, so
+  07 keeps no second copy (INV-07.9) and the owner meets one sample inbox, not two. **`brand.url` is not part
+  of it:** ADJ-24 moved the mail samples only and left `brand.url` at `https://greenpastures.example`, whose
+  fate is OQ-09.10's — 07 asks 02 for no edit there. 02 also owns the consequence for its own rationale: the
+  reserved-TLD argument for `.example` no longer applies to the mail samples, and what keeps a provisional
+  identity from sending is Resend verification (§2 step 7). `visit.form.directContact` keeps its `{email}`
+  and `{phone}` arguments; the formatter rule that blesses `Intl` month/date output; and — per ADJ-4 — the
+  `visit.form.*` namespace must reach the client through `NextIntlClientProvider` because `InquiryForm` is a
+  client component.
 - **03** — the CJK fallback stack (`--font-cjk` under `:lang(zh)`) must name Traditional faces beside the
   Simplified ones, or `zh-Hant` renders Simplified glyph forms (ADJ-6; 02 D-02.15); input/button tokens.
 - **04** — `InquiryForm`, `Turnstile` wrapper (lazy script, explicit render), success panel and banner,
@@ -616,7 +636,8 @@ Behaviour by environment:
 - **OQ-07.5** (owner with counsel; then 06 + 02) Is a privacy-policy page required (A-07.3)? If yes: route,
   strings, footer link.
 - **OQ-07.6** (owner / 09) · **ANSWERED FOR BUILD PURPOSES 2026-08-22 (human, HD-4); the domain half ANSWERED
-  2026-08-22 (human, HD-13 — `greenpasturesdaycare.com`); still a launch blocker.**
+  2026-08-22 (human, HD-13 — `greenpasturesdaycare.com`), with the sample spelling of record fixed by ADJ-24;
+  still a launch blocker.**
   Sending domain and mailbox. Build answer: they are content with sample defaults — `email.sendingDomain`
   `mail.greenpasturesdaycare.com`, `email.fromAddress` `no-reply@mail.greenpasturesdaycare.com`, `contact.email`
   `hello@greenpasturesdaycare.com` — now written against the domain HD-13 names, edited by the owner in
