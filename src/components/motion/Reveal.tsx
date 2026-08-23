@@ -382,6 +382,22 @@ export type RevealItemProps = {
  * from the parent, which is what keeps the page down to one observer
  * (INV-05.9) — and no id, because the cascade and the registry work on the
  * block, not on its parts (05 §5.6).
+ *
+ * **Why `initial` is left undefined on a fresh item.** Motion decides whether an
+ * element belongs to its parent's variant tree by looking for a *variant label*
+ * — a string — in any of `initial`, `animate`, `whileInView`, `while*`, `exit`
+ * (`isControllingVariants`). An element that names one is taken to drive its own
+ * variants, so `VisualElement.mount` skips `parent.addVariantChild(this)`; the
+ * container's `variantChildren` stays empty and `animateVariant`'s
+ * `getChildAnimations` degrades to a no-op. A `RevealItem` that spelled its
+ * hidden state as `initial="hidden"` would therefore never be sequenced by the
+ * container and — having no `animate` of its own — would sit at `opacity: 0`
+ * forever. Leaving `initial` undefined lets the item *inherit* `"hidden"` from
+ * the container through Motion's context, which renders the identical hidden
+ * markup on the server (INV-05.7) while keeping the item in the variant tree.
+ *
+ * `false` is not a variant label, so the already-revealed branch keeps its
+ * explicit `initial={false}` — final state, no animation (`D-05.6`).
  */
 export function RevealItem({
   variant,
@@ -419,7 +435,7 @@ export function RevealItem({
       variants={variants}
       custom={custom}
       transformTemplate={transformTemplateFor(variant)}
-      initial={revealedAtMount ? false : "hidden"}
+      initial={revealedAtMount ? false : undefined}
     >
       {children}
     </Element>
