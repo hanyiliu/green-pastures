@@ -1,0 +1,31 @@
+# The `Bead:` trailer merge gate — docs/technical/11-work-tracking.md §6.
+#
+# No `push` trigger: `main` is protected, only squash merges land, and the PR
+# body check below is the line the squash commit will carry (11 §5, §6).
+# `edited` is in the trigger list because that check reads the PR body.
+# The check name required on `main` is the job id, `bead-trailer` (OQ-11.3).
+name: bead-trailer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bead-trailer-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  bead-trailer:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 so `origin/<base>` and the head commit are both present;
+      # the script walks `<base>..<head>` and reads the export at the head.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: scripts/ci/bead-trailer.sh "origin/${{ github.base_ref }}" "${{ github.event.pull_request.head.sha }}"
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
