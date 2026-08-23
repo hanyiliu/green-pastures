@@ -1,0 +1,215 @@
+/*
+ * Route View Transitions — the CSS half of `PageTransition` (05 §5.7, D-05.10).
+ *
+ * This is one of the two stylesheets allowed to declare `@keyframes` (INV-05.11)
+ * and, like `ambient.css`, it may only touch compositor-friendly properties —
+ * the `.stylelintrc.mjs` override for this exact path is the gate. Durations and
+ * easings are `--dur-*` / `--ease-*` tokens from `src/styles/tokens.css`; a raw
+ * `ms` or `cubic-bezier` here is a build failure (INV-03.2). Both tokens were
+ * confirmed to resolve inside the view-transition pseudo tree — custom
+ * properties inherit to it from `:root` — so the 500 ms and the SOFT curve the
+ * design asks for are the ones the browser actually runs.
+ *
+ * The file is imported by `PageTransition.tsx` rather than by `globals.css`,
+ * because the component is the only thing that can put a `.gp-page` class on a
+ * snapshot: the rules and the props that trigger them ship together, and a page
+ * that does not wrap itself in `PageTransition` cannot inherit half of the
+ * mechanism.
+ *
+ * ── How the groups relate ────────────────────────────────────────────────
+ *
+ * A view transition captures the document element as the group named `root`,
+ * plus one group per element React gives a name to. `PageTransition` names its
+ * subtree only when the navigation carries `subpage-enter` or `subpage-exit`
+ * (`default: "none"` everywhere else), so:
+ *
+ *   • untyped navigation  → `root` only, and §1 renders the destination with no
+ *     animation at all: the transition ends on the next frame, which is an
+ *     instant swap indistinguishable from having no View Transitions.
+ *   • `subpage-enter`     → the arriving page is a `.gp-page` group that slides
+ *     in from the right while the old `root` stays put underneath.
+ *   • `subpage-exit`      → the leaving page is a `.gp-page` group that slides
+ *     out to the right, above the already-visible new `root`.
+ *
+ * Named groups are captured after the document element, so a `.gp-page` group
+ * always paints above `root` — measured, not assumed (OQ-05.2 (b)): frozen
+ * mid-slide, the pixels left of the panel edge are the other page's, in both
+ * directions and in both engines tested.
+ *
+ * ── The one non-obvious rule ─────────────────────────────────────────────
+ *
+ * `opacity: 1` on `::view-transition-group(root)` in §1 is load-bearing and was
+ * the spike's most expensive finding. Remove the UA's own group animation and
+ * the root group computes to `opacity: 0`, so *nothing in it paints* — the
+ * outgoing page goes white and the incoming panel appears to slide over blank
+ * paper. It costs one declaration to fix and is invisible in code review, which
+ * is why it is called out here rather than left as a line among the others.
+ */
+
+/* ---------------------------------------------------------------------- *
+ * 1 · The floor: every untyped navigation is an instant swap.
+ *
+ * Browser Back/Forward, `router.refresh()`, a nav link, a Suspense reveal —
+ * none of them carries a type, so none of them animates. The three rules say
+ * "show the destination, hide the origin, run nothing", which is also what a
+ * browser that has View Transitions but not transition *types* will do with a
+ * typed navigation: it degrades to the instant swap rather than to a broken
+ * half-slide.
+ *
+ * Hiding the old snapshot outright matters as much as killing the animations.
+ * The UA composites the old and new images with `mix-blend-mode: plus-lighter`
+ * on the assumption that their opacities cross-fade and always sum to one; two
+ * snapshots left at full opacity add together into a white flash instead.
+ * ---------------------------------------------------------------------- */
+::view-transition-group(root) {
+  animation: none;
+
+  /*
+   * Not redundant, and `!important` is not defensive padding — see the header
+   * note. The value being overridden comes from a UA *animation* on the group
+   * (a Web Animation with no CSS `animation-name`, which is why `animation:
+   * none` above does not cancel it), and the cascade puts animations above
+   * normal author declarations. Only an important declaration outranks them.
+   */
+  opacity: 1 !important;
+}
+
+::view-transition-old(root) {
+  animation: none;
+  opacity: 0;
+}
+
+::view-transition-new(root) {
+  animation: none;
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 2 · Forward — "learn more →" (`transitionTypes={['subpage-enter']}`).
+ *
+ * The old page stays put underneath; the new page slides in over it. This is
+ * the one direction that has to invert §1's defaults: the page the visitor is
+ * looking at is the *old* snapshot, and the destination's own background must
+ * stay hidden until the panel has finished travelling, or it appears beside the
+ * panel as a growing blank margin.
+ * ---------------------------------------------------------------------- */
+html:active-view-transition-type(subpage-enter)::view-transition-old(root) {
+  opacity: 1;
+}
+
+html:active-view-transition-type(subpage-enter)::view-transition-new(root) {
+  opacity: 0;
+}
+
+html:active-view-transition-type(subpage-enter)::view-transition-new(.gp-page) {
+  animation: gp-slide-in var(--dur-subpage) var(--ease-soft) both;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 3 · Back — "← Back" (`router.replace(…, { transitionTypes: ['subpage-exit'] })`).
+ *
+ * The mirror image, and it needs only one rule: §1 already shows the
+ * destination and hides the origin, which is exactly right here — the home page
+ * is visible from the first frame and the page being left slides off above it.
+ * ---------------------------------------------------------------------- */
+html:active-view-transition-type(subpage-exit)::view-transition-old(.gp-page) {
+  animation: gp-slide-out var(--dur-subpage) var(--ease-soft) both;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 4 · Locale switch (`transitionTypes: ['locale-swap']`, 05 §5.6, 06 D-06.9).
+ *
+ * A root cross-fade at word-swap speed. It has to name its own keyframes: §1
+ * set `animation: none` on `root`, so restoring only a duration would restore
+ * nothing — there would be no `animation-name` left to time. `both` fill is
+ * what lets the two keyframe tracks override §1's static opacities for the
+ * length of the fade and hand them back afterwards.
+ * ---------------------------------------------------------------------- */
+html:active-view-transition-type(locale-swap)::view-transition-old(root) {
+  animation: gp-fade-out var(--dur-word-swap) var(--ease-std) both;
+}
+
+html:active-view-transition-type(locale-swap)::view-transition-new(root) {
+  animation: gp-fade-in var(--dur-word-swap) var(--ease-std) both;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 5 · Keyframes.
+ *
+ * `translate` rather than `transform: translateX()`: it is the independent
+ * transform property, so nothing a page sets on `transform` can clobber it.
+ * `103%` is the design's own figure (`docs/design/README.md` L72) — the extra
+ * 3% keeps the panel's shadow off-screen at rest.
+ * ---------------------------------------------------------------------- */
+@keyframes gp-slide-in {
+  from {
+    translate: 103% 0;
+  }
+
+  to {
+    translate: 0 0;
+  }
+}
+
+@keyframes gp-slide-out {
+  from {
+    translate: 0 0;
+  }
+
+  to {
+    translate: 103% 0;
+  }
+}
+
+@keyframes gp-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gp-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------- *
+ * 6 · Reduced motion (05 §5.9).
+ *
+ * A full-viewport horizontal slide is the single most likely thing on this site
+ * to make a motion-sensitive visitor unwell, so it is removed outright rather
+ * than shortened. `animation: none` instead of a `0s` duration is not a
+ * stylistic choice: INV-03.2 bans a raw `ms`/`s` value in this file and there is
+ * no zero-duration token to spell it with — and a removed animation is in any
+ * case a truer "instant" than a zero-length one, because it also ends the
+ * snapshot overlay on the next frame instead of holding a frozen picture of the
+ * page over it.
+ *
+ * The three opacities repeat §1 across *every* group rather than `root` alone,
+ * because under reduced motion the `.gp-page` groups exist too and must resolve
+ * to the same "destination only" picture.
+ * ---------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*) {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  ::view-transition-old(*) {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  ::view-transition-new(*) {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
