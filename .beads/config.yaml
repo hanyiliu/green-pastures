@@ -66,3 +66,8 @@
 # - github.token    → use GITHUB_TOKEN env var instead
 
 sync.remote: "git+https://github.com/hanyiliu/green-pastures.git"
+
+# JSONL auto-export ON (11 D-11.6 / §7). Equivalent to `bd config set export.auto true`;
+# flat dotted key to match how bd wrote sync.remote above. export.git-add stays off
+# (default) so the orchestrator stages .beads/issues.jsonl deliberately.
+export.auto: true
