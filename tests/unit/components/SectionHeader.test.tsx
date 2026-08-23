@@ -112,8 +112,11 @@ describe("SectionHeader", () => {
    * both spellings produced the same `hidden md:block`, so passing the flag
    * beside a short intro said nothing and was accepted anyway. The union in
    * `SectionHeaderProps` now rejects the pair, which is what the
-   * `@ts-expect-error` below asserts — `tsc --noEmit` fails if the combination
-   * ever becomes legal again.
+   * `@ts-expect-error`s below assert — an unused one is itself an error, so
+   * `tsc --noEmit` fails whichever way the guard drifts: it fails if a
+   * combination becomes legal again, and it fails if a pin stops describing a
+   * real rejection. `pnpm test` alone cannot see any of this; `pnpm typecheck`
+   * is the gate these three belong to.
    */
   describe("the two intro shapes", () => {
     it("hides a desktop-only intro below md and shows it above", () => {
@@ -153,6 +156,64 @@ describe("SectionHeader", () => {
       const rejected: SectionHeaderProps = pair;
 
       expect(rejected.introShort).toBe("Rooms.");
+    });
+
+    /**
+     * The pin above goes through a variable, which is the one spelling excess
+     * property checking never sees. Callers write JSX, so the guard is pinned
+     * there too — a union that rejects an annotated object and waves the same
+     * props through an element would be no guard at all.
+     */
+    it("rejects the pair written as the JSX callers actually write", () => {
+      render(
+        // @ts-expect-error the flag is meaningless beside `introShort`, and the
+        // union has no member that admits both.
+        <SectionHeader
+          titleId="t"
+          title="Programs"
+          intro="Rooms."
+          introShort="R."
+          introDesktopOnly
+        />,
+      );
+
+      expect(screen.getByText("R.")).toHaveClass("md:hidden");
+    });
+
+    /**
+     * `ReactNode` includes `undefined`, so declaring the pair's `intro`
+     * *required* did not stop a caller writing `intro={undefined}`: the pair
+     * type-checked and rendered only the `md:hidden` half, leaving the wide view
+     * with no intro at all. `NonNullable<ReactNode>` is what closes that, and
+     * this is the pin — the runtime case below shows what it used to produce.
+     */
+    it("rejects a pair whose wide half is nullish", () => {
+      // @ts-expect-error a pair's `intro` may not be `undefined`, or the wide
+      // view keeps a header with no intro on it.
+      const withUndefined: SectionHeaderProps = {
+        titleId: "t",
+        title: "Programs",
+        intro: undefined,
+        introShort: "Rooms.",
+      };
+
+      expect(withUndefined.introShort).toBe("Rooms.");
+    });
+
+    it("would have left the wide view intro-less, which is what that rejects", () => {
+      // The shape the type now refuses, reached the only way left: past it.
+      const nullish = {
+        titleId: "t",
+        title: "Programs",
+        intro: undefined,
+        introShort: "Rooms.",
+      } as unknown as SectionHeaderProps;
+
+      const { container } = render(<SectionHeader {...nullish} />);
+      const intros = [...container.querySelectorAll("p")];
+
+      expect(intros).toHaveLength(1);
+      expect(intros[0]).toHaveClass("md:hidden");
     });
   });
 

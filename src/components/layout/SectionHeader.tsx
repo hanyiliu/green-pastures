@@ -46,6 +46,19 @@ const INTRO = "font-body text-subhead max-w-140 font-semibold text-(color:--sect
  * The intro half of the props, as the two shapes `D-04.5` actually allows: one
  * intro that may be hidden `< md`, or a pair the `md:` toggle picks between.
  * The `never`s are what reject the third shape at the call site.
+ *
+ * **Why the pair's `intro` is `NonNullable` and the lone one is not.**
+ * `ReactNode` includes `undefined`, and a *required* property whose type admits
+ * `undefined` is satisfied by writing it — so `intro={maybeMissing}` beside an
+ * `introShort` type-checked as a well-formed pair and rendered a header whose
+ * only intro is the one `md:hidden` removes: nothing at all on the wide view.
+ * Excluding nullish here is what makes "a pair is two intros" true rather than
+ * merely stated. The lone `intro` needs no such guard, because an absent one
+ * renders an intro-less header, which is a shape the design does ask for.
+ *
+ * The `never`s themselves are untouched by any of this: they reject their
+ * combination with `ReactNode`-typed fields exactly as they would with
+ * `string`-typed ones, in JSX, through a spread, and through a variable alike.
  */
 export type SectionHeaderIntro =
   | {
@@ -55,7 +68,8 @@ export type SectionHeaderIntro =
       readonly introDesktopOnly?: boolean;
     }
   | {
-      readonly intro: ReactNode;
+      /** Nullish is excluded so the pair cannot lose its wide half — see above. */
+      readonly intro: NonNullable<ReactNode>;
       /** The `< md` twin of `intro` (`D-04.5`); both render, `md:` picks one. */
       readonly introShort: ReactNode;
       readonly introDesktopOnly?: never;
