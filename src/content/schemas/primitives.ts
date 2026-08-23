@@ -30,8 +30,12 @@ import { routing } from "@/i18n/routing";
  */
 const TAG_TOKEN = /<\/?[A-Za-z][^>]*>/;
 
-/** The same pattern, global, for collecting every tag in a rich value. */
-const ALL_TAG_TOKENS = /<\/?[A-Za-z][^>]*>/g;
+/**
+ * The same pattern, global, for collecting every tag in a rich value — derived
+ * from {@link TAG_TOKEN} rather than typed out again, so "tag-shaped" has one
+ * spelling in this file and the two cannot disagree about what a tag is.
+ */
+const ALL_TAG_TOKENS = new RegExp(TAG_TOKEN.source, "g");
 
 /**
  * 02 `D-02.5`'s closed tag allowlist, as the exact tokens a value may contain.
@@ -39,6 +43,27 @@ const ALL_TAG_TOKENS = /<\/?[A-Za-z][^>]*>/g;
  * argument at the call site, not from the string.
  */
 const RICH_TAG_TOKEN = /^<\/?(?:em|strong|link|count|day)>$/;
+
+/**
+ * Every tag-shaped token in `value`, in the order it appears.
+ *
+ * Exported, with {@link isRichTagToken}, because `scripts/validate-content.ts`
+ * splits the same two kinds of token out of an ICU message (08 §3,
+ * `html-in-value`) and used to do it with its own copy of both patterns. The
+ * schema decides what `next build` accepts and the validator decides what the
+ * PR gate accepts; a tag the two classified differently would be one gate green
+ * and the other red on the same string, so they classify through one function.
+ */
+export function tagTokensIn(value: string): readonly string[] {
+  // `String.prototype.match` with a global pattern resets `lastIndex` itself,
+  // so the shared regex carries no state between callers.
+  return value.match(ALL_TAG_TOKENS) ?? [];
+}
+
+/** Is `token` one of 02 `D-02.5`'s rich tags — `<em>`, `</link>`, `<count>`? */
+export function isRichTagToken(token: string): boolean {
+  return RICH_TAG_TOKEN.test(token);
+}
 
 const NO_HTML_MESSAGE =
   "HTML is not allowed in a content value (02 D-02.5, INV-02.8) — " +
@@ -71,7 +96,7 @@ export const RichText = z
   .string()
   .trim()
   .min(1)
-  .refine((value) => (value.match(ALL_TAG_TOKENS) ?? []).every((tag) => RICH_TAG_TOKEN.test(tag)), {
+  .refine((value) => tagTokensIn(value).every(isRichTagToken), {
     error: RICH_TAG_MESSAGE,
   });
 

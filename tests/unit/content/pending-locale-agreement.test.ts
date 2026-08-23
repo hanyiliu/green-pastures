@@ -9,16 +9,10 @@ import { afterAll, describe, expect, it } from "vitest";
 import { SiteSchema, isPendingLocalePath, type LocaleSets } from "@/content/schemas/site";
 import { routing } from "@/i18n/routing";
 
-import {
-  LOCALES,
-  RULES,
-  isPendingLocalePath as validatorIsPendingLocalePath,
-  run,
-  type LocaleConfig,
-} from "../../../scripts/validate-content";
+import { LOCALES, RULES, run } from "../../../scripts/validate-content";
 
 /**
- * One rule, two enforcers — 08 §3 rule 6 (INV-02.10, OQ-08.10).
+ * One rule, two gates — 08 §3 rule 6 (INV-02.10, OQ-08.10).
  *
  * A pending-locale entry is exempted from resolution in two places that run at
  * two different times: `pnpm validate:content` on the PR, and
@@ -27,66 +21,76 @@ import {
  * had exactly one shape: `validate:content` green and `next build` red on the
  * same registry entry.
  *
- * The rule now lives in the schema, which the validator can import. This file
- * is the guard against the two spellings drifting apart again while both exist:
- * every path below must get the same verdict from both, so a change to either
- * predicate that is not made to the other fails here rather than in CI on the
- * day D-10.12's escape hatch is used.
+ * That was first closed by giving the schema its own copy of the predicate, and
+ * this file was the guard against the two copies drifting: every path below had
+ * to get the same verdict from both. The copy is now gone — the validator
+ * imports the schema's `isPendingLocalePath` — so there is no second spelling
+ * left to compare, and a comparison of one function with itself would pass
+ * whatever the rule did. The boundary table therefore states each verdict
+ * outright rather than against a twin: it pins the same edges it always
+ * described, and stays the thing that fails when someone widens the rule. The
+ * agreement this file is named for is asserted below, where it still means
+ * something — both real gates, run over one `content/` tree.
  *
- * PR-3.9 enabled `zh-Hant`, so the project's own configuration now holds back
- * nothing and its verdict is *false* for every path here. That would make a
- * comparison of two defaults vacuous, so each case is stated twice: once
- * against the live configuration, and once against a synthetic pair that does
- * hold a locale back. The rule firing end to end through both gates is
- * `locale-withdrawal.test.ts`.
+ * PR-3.9 enabled `zh-Hant`, so the project's own configuration holds back
+ * nothing and every path here is *false* under it; the `true` verdicts need a
+ * synthetic pair that does hold a locale back. The rule firing end to end under
+ * the live configuration is `locale-withdrawal.test.ts`, which mocks
+ * `routing.locales` back to D-10.12's two ids.
  */
 
-/** A pair that holds a locale back, so the *true* verdict has cases too. */
+/** A pair that holds a locale back, so the *true* verdict has cases at all. */
 const HELD: LocaleSets = { known: ["en", "zh-Hans", "zh-Hant"], enabled: ["en", "zh-Hans"] };
-const HELD_CONFIG: LocaleConfig = { reference: "en", ...HELD };
 
-/** Paths chosen to straddle every boundary the rule draws. */
-const PATHS = [
+/**
+ * Paths chosen to straddle every boundary the rule draws, each with the verdict
+ * it must get while {@link HELD} holds `zh-Hant` back.
+ */
+const PATHS: ReadonlyArray<readonly [path: string, pending: boolean]> = [
   // The seed entries the rule exists for.
-  "brand.name.zh-Hant",
-  "brand.shortName.zh-Hant",
+  ["brand.name.zh-Hant", true],
+  ["brand.shortName.zh-Hant", true],
   // Enabled locales resolve normally.
-  "brand.name.en",
-  "brand.name.zh-Hans",
+  ["brand.name.en", false],
+  ["brand.name.zh-Hans", false],
   // Not locale suffixes at all.
-  "license",
-  "contact.address.street",
-  "routes.0.path",
-  "yelp.rating",
+  ["license", false],
+  ["contact.address.street", false],
+  ["routes.0.path", false],
+  ["yelp.rating", false],
   // Near-misses: a locale id nobody knows is a typo, not a held-back locale.
-  "brand.name.zh",
-  "brand.name.zh-Hanx",
-  "brand.name.ZH-HANT",
+  ["brand.name.zh", false],
+  ["brand.name.zh-Hanx", false],
+  ["brand.name.ZH-HANT", false],
   // Rule 2 gives these first segments the deciding vote.
-  "collections.teachers.ping.zh-Hant",
-  "messages.common.footer.zh-Hant",
-  "collections.zh-Hant",
-  "messages.zh-Hant",
-  // Degenerate shapes both must treat alike.
-  "zh-Hant",
-  "provisional.zh-Hant",
-  "",
-  ".",
-  "brand.name.",
+  ["collections.teachers.ping.zh-Hant", false],
+  ["messages.common.footer.zh-Hant", false],
+  ["collections.zh-Hant", false],
+  ["messages.zh-Hant", false],
+  // Degenerate shapes, and a head that is itself the locale id.
+  ["zh-Hant", true],
+  ["provisional.zh-Hant", true],
+  ["", false],
+  [".", false],
+  ["brand.name.", false],
 ];
 
-describe("08 §3 rule 6 is one rule in two places", () => {
-  it("has a case of each verdict, so the comparison below cannot pass vacuously", () => {
-    expect(PATHS.filter((path) => isPendingLocalePath(path, HELD)).length).toBeGreaterThan(0);
-    expect(PATHS.filter((path) => !isPendingLocalePath(path, HELD)).length).toBeGreaterThan(0);
+describe("08 §3 rule 6 draws its boundaries in one place", () => {
+  it("has a case of each verdict, so the table below cannot pass vacuously", () => {
+    expect(PATHS.some(([, pending]) => pending)).toBe(true);
+    expect(PATHS.some(([, pending]) => !pending)).toBe(true);
   });
 
-  it.each(PATHS)("the schema and the validator agree on %o, live", (path) => {
-    expect(isPendingLocalePath(path)).toBe(validatorIsPendingLocalePath(path, LOCALES));
+  it.each(PATHS)("%o → %o with zh-Hant held back", (path, pending) => {
+    expect(isPendingLocalePath(path, HELD)).toBe(pending);
   });
 
-  it.each(PATHS)("the schema and the validator agree on %o, with a locale held back", (path) => {
-    expect(isPendingLocalePath(path, HELD)).toBe(validatorIsPendingLocalePath(path, HELD_CONFIG));
+  it("is false for every path under the live configuration, which holds nothing back", () => {
+    // Also the type-level half of the seam: `LOCALES` is the validator's
+    // `LocaleConfig` — the schema's `LocaleSets` plus `reference` — and this is
+    // the call `scripts/validate-content.ts` makes on every provisional entry.
+    const pending = PATHS.filter(([path]) => isPendingLocalePath(path, LOCALES));
+    expect(pending.map(([path]) => path)).toStrictEqual([]);
   });
 
   it("reads the same locale lists — routing.ts, never a literal (INV-08.4)", () => {
