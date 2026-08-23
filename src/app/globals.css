@@ -14,3 +14,19 @@
 
 @import "tailwindcss";
 @import "../styles/tokens.css";
+
+/*
+ * Tailwind v4's automatic source detection scans every non-ignored file in the
+ * project, prose included, so a class name *written about* in `docs/` is
+ * indistinguishable from one used — 03 §11 discusses the banned arbitrary value
+ * `bg-[#…]` and Tailwind duly emitted a `.bg-\[\#…\]` rule into the production
+ * stylesheet. The docs tree is documentation, never markup; exclude it.
+ */
+@source not "../../docs";
+
+/*
+ * The bead ledger is tracked, so it is scanned too, and a bead whose *title*
+ * quotes a class name mints that class — the bead filed against the rule above
+ * spelled it out and kept a second copy alive. Tracker data, not markup.
+ */
+@source not "../../.beads";
