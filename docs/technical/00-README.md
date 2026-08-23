@@ -7,15 +7,15 @@ finished designs in `docs/design/` — what we build it with, in what order, and
 before anyone writes code. The site will be served from **`greenpasturesdaycare.com`**, apex canonical with
 `www` redirecting to it (HD-13, `D-09.5`, `D-06.11`). The set is **merged and signed off**: the human read it
 and answered at the Phase 1 gate on **2026-08-22**, signing off bead `gp-dln.4`, then answered three more
-questions the same day; the fifteen answers are cited across the plan as `HD-1`…`HD-15` (`D-12.7`), with three
-orchestrator adjudications (`ADJ-20`…`ADJ-22`), and are rolled up in `12` §5. It is still a plan, not an
-implementation — the repository holds documentation and tracker state only, there is no `src/` and no
-`content/` tree yet, and Phase 2 is where the first line of application code is written (`D-10.1`,
+questions the same day; the fifteen answers are cited across the plan as `HD-1`…`HD-15` (`D-12.7`), with four
+orchestrator adjudications (`ADJ-20`…`ADJ-22` and `ADJ-24`), and are rolled up in `12` §5. It is still a
+plan, not an implementation — the repository holds documentation and tracker state only, there is no `src/`
+and no `content/` tree yet, and Phase 2 is where the first line of application code is written (`D-10.1`,
 `INV-10.1`). This page asserts nothing of its own — every stack line, phase, gate, milestone and number is
 lifted from one of the twelve documents beside it and cited by identifier, so when the two disagree the owning
 document is right.
 
-Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…HD-15, ADJ-20…ADJ-22)
+Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…HD-15, ADJ-20…ADJ-22, ADJ-24)
 
 ## Decisions
 
@@ -41,7 +41,7 @@ Status: draft · seat writer-index · 2026-08-22 · revised 2026-08-22 (HD-1…H
   in `D-09.5` / `D-06.11` (HD-13) and the CJK stack in `D-03.5` / `D-03.14` (HD-14, which closed `OQ-03.4`);
   HD-15 confirmed `D-02.18`'s split and changed no text. `12` §5 is the roll-up. This file reflects them and
   adds nothing, which is `D-00.1` applied to a decision rather than to a fact — the same rule under which the
-  adjudications `ADJ-20`…`ADJ-22` are cited here only where the owning documents record them.
+  adjudications `ADJ-20`…`ADJ-22` and `ADJ-24` are cited here only where the owning documents record them.
 
 ## Design
 
@@ -257,5 +257,6 @@ about your availability.
 - The human's answers are cited across the set as `HD-1`…`HD-15` — `HD-1`…`HD-12` at the Phase 1 gate,
   `HD-13` (the domain), `HD-14` (the CJK stack) and `HD-15` (the `site.json` split) in the second sitting the
   same day — and the orchestrator's adjudications as `ADJ-20` (the switcher trigger carries no chevron),
-  `ADJ-21` (the 303 fallback is `/{locale}#visit`) and `ADJ-22` (`12` and `00` re-sync last). `D-12.7` defines
-  the citation and `12` §5 is the roll-up.
+  `ADJ-21` (the 303 fallback is `/{locale}#visit`), `ADJ-22` (`12` and `00` re-sync last) and `ADJ-24` (the
+  sending identity is spelled on the real domain — `07` `D-07.10`'s samples, which `02` and `09` adopted).
+  `D-12.7` defines the citation and `12` §5 is the roll-up.

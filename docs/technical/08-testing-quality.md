@@ -147,7 +147,7 @@ samples moved onto the real domain, which the release gate did not see (§3 R4, 
 - **D-08.18 Every matrix is three locales, and the bill steps when `zh-Hant` is enabled (HD-10, 2026-08-22).**
   Smoke, a11y, visual regression, Lighthouse, the unit render loop and the section-height snapshot all read
   `routing.locales` (INV-08.4), so HD-10 changes no test code — it changes the width of every loop, from 2 to
-  3, and the runner bill with it (§10: ≈ 30 → ≈ 38–40 runner-minutes per PR; §8: 68 → 102 baseline images;
+  3, and the runner bill with it (§10: 30 → 35–38 runner-minutes per PR; §8: 68 → 102 baseline images;
   §7: the production Lighthouse matrix no longer fits its timeout and is re-cut). The step happens on the
   commit that adds `zh-Hant` to `routing.locales`, **not** on the commit that creates `content/zh-Hant/`:
   INV-02.11 lets an unreviewed locale sit in the tree outside `routing.locales`, and while it does, every
@@ -457,7 +457,7 @@ the row below states three rather than two.
 | Tag | Suite (per locale unless noted) | Asserts |
 |---|---|---|
 | `@smoke` | every route × locale — `/` plus the six detail pages in `site.json.routes[]`, so **7 routes × 3 locales = 21 page URLs** at launch (14 while `zh-Hant` is out of `routing.locales`, INV-02.11); the reserved `faq` and `enroll` pages are **not** built (HD-5 answered OQ-02.7) and enter the matrix only if a `routes[]` entry ever appears; plus a not-found URL per locale | 200 (404 for not-found, localized `errors.notFound`); `<html lang>` = `LOCALE_META.htmlLang`, which for every locale **equals the URL segment** (`/zh-Hant/…` → `lang="zh-Hant"`); no `⟦` (scope: note (a) above); `hreflang` set = every enabled locale + `x-default`→`en`; canonical = self, in canonical BCP 47 casing; no `Link` header with `hreflang` (D-02.9) |
-| `@i18n` | the three-option switcher from `/en/programs?x=1#sectionId`; root `/` with `Accept-Language:` unset, `zh-CN`, `zh-TW` and `en-GB`; the lower-cased path `/zh-hans/programs` | the trigger shows `LOCALE_META[current].shortLabel` (`EN`/`简`/`繁`) and the menu lists the endonyms in `routing.locales` order with `aria-current` on the current one (D-02.10 — a two-name toggle fails); choosing 简体中文 gives URL `/zh-Hans/programs?x=1#sectionId`, `scrollY` unchanged, `NEXT_LOCALE` cookie, `lang` updated; **cascade**: every `[data-reveal]` in the new tree plays `swap` — opacity 0→1 with `min(index × 14 ms, 300 ms)` delays read from `data-reveal-index` (D-05.9; `[data-wordswap]` does not exist — `WordSwap` is only the menu sample line, checked in `@motion`); under reduced motion the cascade **still plays**, opacity-only with the `y` track dropped and the 14 ms delays kept, and only the root View-Transition crossfade is instant (05 §5.9) — a no-cascade instant swap fails; negotiation lands `zh-CN`→`/zh-Hans`, `zh-TW`→`/zh-Hant`, `en-GB` and unset→`/en` (02's table, 06 implements — the expectations are read from that table intersected with `routing.locales`, because the `zh-TW` row has no enabled target while `zh-Hant` is held out — OQ-08.11); `/zh-hans/programs` 308s to `/zh-Hans/programs` |
+| `@i18n` | the three-option switcher from `/en/programs?x=1#sectionId`; root `/` with `Accept-Language:` unset, `zh-CN`, `zh-TW` and `en-GB`; the lower-cased path `/zh-hans/programs` | the trigger shows `LOCALE_META[current].shortLabel` (`EN`/`简`/`繁`) and the menu lists the endonyms in `routing.locales` order with `aria-current` on the current one (D-02.10 — a two-name toggle fails); choosing 简体中文 gives URL `/zh-Hans/programs?x=1#sectionId`, `scrollY` unchanged, `NEXT_LOCALE` cookie, `lang` updated; **cascade**: every `[data-reveal]` in the new tree plays `swap` — opacity 0→1 with `min(index × 14 ms, 300 ms)` delays read from `data-reveal-index` (D-05.9; `[data-wordswap]` does not exist — `WordSwap` is only the menu sample line, checked in `@motion`); under reduced motion the cascade **still plays**, opacity-only with the `y` track dropped and the 14 ms delays kept, and only the root View-Transition crossfade is instant (05 §5.9) — a no-cascade instant swap fails; negotiation lands `zh-CN`→`/zh-Hans`, `en-GB` and unset→`/en`, and `zh-TW`→`/zh-Hant` **once `zh-Hant` is in `routing.locales`**; **while it is held back (D-08.18, the plan's default for most of the build) the same `zh-TW` header must land `/zh-Hans` — same language, other script — and never `/en`** (02's table read the way 06 implements it: each row an ordered preference chain filtered by `routing.locales`, first survivor wins — `D-06.15`(a), OQ-08.11 **closed**); `/zh-hans/programs` 308s to `/zh-Hans/programs` |
 | `@seo` | `sitemap.xml`, `robots.txt`, `/api/inquiry` | sitemap = every route × locale with alternates, no `/api/`; robots `Disallow: /api/`; `GET /api/inquiry` → 405 |
 | `@form` | fill → submit → success panel (focus on its heading); blank required → inline errors, `aria-invalid`, focus on first invalid; `page.route` forces 502 → `emailFailed` banner; forces 429 → `rateLimited`; forces `turnstile_failed` → its banner; honeypot filled → success panel (no-send proven in unit); pending state `aria-busy`, never `disabled`; 390 px: full-width submit, controls ≥ 44 px; keyboard-only completion. A *real* Turnstile rejection needs a different server env, so it is unit-only by design (MSW against `siteverify`, §4); Cloudflare's always-fail pair — site key `2x00000000000000000000AB`, secret `2x0000000000000000000000000000000AA` — is wired into a `workflow_dispatch` variant of `e2e` that boots a second `next start`, kept out of the PR matrix for the runner budget (OQ-08.3) | INV-07.4, D-07.4 |
 | `@nojs` | `javaScriptEnabled: false` project on `/` and the form | all section text visible (no opacity 0), count-up final values, `<noscript>` fallback visible, native validation, switcher anchor `href` = other-locale path | INV-05.10, D-07.5 |
@@ -613,8 +613,8 @@ requires. Two rows — `D-05.12` and
 `03 §5 glyph fallback` — are keyed on a decision rather than an invariant, because 05 §5.14 and 03 §5 each
 require a check their own document declares no `INV-*` for; the table is a coverage list, so they belong here.
 
-**Scope, stated honestly.** The wave-2 documents declare 32 further invariants — `INV-04.1…10`, `INV-06.1…9`,
-`INV-09.1…6`, `INV-10.1…7` — and they are **not** mapped above. Several are in fact already enforced by
+**Scope, stated honestly.** The wave-2 documents declare 37 further invariants — `INV-04.1…12`, `INV-06.1…10`,
+`INV-09.1…7`, `INV-10.1…8` — and they are **not** mapped above. Several are in fact already enforced by
 checks on this page (INV-04.7's 44 px hit areas by `@form` and `@a11y`; INV-06.4's sitemap completeness by
 `@seo`; INV-09.x by `@headers`), they simply have no row yet. Each is mapped in the phase that first
 implements it, as a §12.2 gate item; INV-08.1 is scoped to the five contract documents until then, and
@@ -671,10 +671,11 @@ Per PR, per job, rounded to the minute GitHub bills:
 | `build` | 6 | 6–7 | `generateStaticParams` emits 21 pages instead of 14; compile dominates |
 | `e2e` (2 shards) | 14 | 19 | ≈ 75 % of the suite is per-locale (`@smoke`, `@a11y`, `@visual`, `@form`, `@nojs`); `@headers`, `@thirdparty`, `@motion-obs`, `@nav-instant` are not |
 | `bead-trailer` · `audit` | 2 | 2 | unchanged |
-| **total** | **≈ 30** | **≈ 38–40** | wall time ≈ 12–15 min → **≈ 15–18 min** (critical path `build` + one `e2e` shard) |
+| **total** (sum of the rows above) | **30** | **35–38** | wall time ≈ 12–15 min → **≈ 15–18 min** (critical path `build` + one `e2e` shard) |
 
-At the build's PR rate that moves the monthly estimate from ≈ 1,000–1,500 to **≈ 1,300–2,000 runner-minutes**,
-which reaches the 2,000 free minutes a private repo gets — the reason OQ-08.3 stays open with a sharper
+At the build's PR rate (≈ 33–50 PRs/month, the rate the two-locale figures imply) that moves the monthly
+estimate from ≈ 1,000–1,500 to **≈ 1,200–1,900 runner-minutes**, which comes within about a hundred minutes of
+the 2,000 free minutes a private repo gets — the reason OQ-08.3 stays open with a sharper
 number rather than being closed. Two levers are already costed: moving `webkit-mobile` from PR to `main`-only
 returns ≈ 6 min/PR, and holding `@visual` at `en` + `zh-Hans` returns ≈ 2 min/PR and 34 baseline images.
 Neither is taken unilaterally. The step is the commit that adds `zh-Hant` to `routing.locales` (D-08.18):
@@ -823,9 +824,10 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
 - **OQ-08.3** · answerer: human (Hanyi) — **restated 2026-08-22 for HD-10, still open.** CI minutes: is the
   repo private (2,000 free GitHub minutes/month), and is the three-locale figure acceptable? The number the
   question originally carried — ≈ 30 runner-minutes per PR, ≈ 1,000–1,500/month during the build — was for two
-  locales. With `zh-Hant` in `routing.locales` the same pipeline is **≈ 38–40 runner-minutes per PR and
-  ≈ 15–18 min wall**, i.e. **≈ 1,300–2,000 minutes/month**, which reaches the free ceiling instead of sitting
-  under it (§10 breaks the increase down job by job). Levers, costed: `webkit-mobile` from PR to `main`-only
+  locales. With `zh-Hant` in `routing.locales` the same pipeline is **35–38 runner-minutes per PR and
+  ≈ 15–18 min wall**, i.e. **≈ 1,200–1,900 minutes/month**, which runs up against the free ceiling instead of
+  sitting comfortably under it (§10 breaks the increase down job by job, and its total is the sum of those
+  rows — restate it from there, never from memory). Levers, costed: `webkit-mobile` from PR to `main`-only
   returns ≈ 6 min/PR; holding `@visual` at `en` + `zh-Hans` returns ≈ 2 min/PR and 34 baseline images;
   dropping the third locale from the *PR* e2e matrix and running it only in `e2e-full` returns ≈ 5 min/PR but
   lets a `zh-Hant` regression reach `main`. Default until answered: change nothing — the estimate is an
@@ -860,13 +862,16 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   locale is not enabled is *pending locale*: reported, still blocking `--release` under R1, never an error).
   Confirm it as one line in 02's *Provisional values* rules, or name a different fix — dropping the two paths
   from the seed until the locale is enabled would also work and is 02's call, not 08's.
-- **OQ-08.11** · answerer: 06 (writer-routing) — **negotiation with a disabled locale.** 02's Accept-Language
-  table maps `zh-TW`/`zh-HK`/`zh-MO`/`zh-Hant-*` → `zh-Hant` unconditionally, but INV-02.11 allows `zh-Hant`
-  to be absent from `routing.locales`. What does the proxy do with a `zh-TW` visitor while that row has no
-  enabled target — fall back to `zh-Hans` (same language, wrong script) or to `en` (the default)? 08's `@i18n`
-  test reads the table intersected with `routing.locales` and asserts whichever 06 decides; it cannot assert
-  both. Not urgent — it only matters in the window where `zh-Hant` exists in the tree and not in the routing
-  config — but that window is the plan's stated default, so it will happen.
+- **OQ-08.11** · **closed** 2026-08-23 — **negotiation with a disabled locale.** 02's Accept-Language table
+  maps `zh-TW`/`zh-HK`/`zh-MO`/`zh-Hant-*` → `zh-Hant` unconditionally, but INV-02.11 allows `zh-Hant` to be
+  absent from `routing.locales`; the question was what the proxy then does with a `zh-TW` visitor. Answered by
+  06 `D-06.15`(a) (`docs/technical/06-routing-pages-seo.md` §6.10 / D-06.15): each row of the table is an
+  ordered **preference chain filtered by `routing.locales`, first survivor wins**, so while `zh-Hant` is held
+  back a `zh-TW` reader gets `zh-Hans` — the same language in the other script — and **never** English. 08
+  asserts both halves: the `@i18n` row above (`zh-TW` → `/zh-Hans` in the held-back window, `zh-TW` →
+  `/zh-Hant` once the locale is enabled), and 06 §6.10 already specifies the matching pure unit test — with
+  `routing.locales` = `['en','zh-Hans']` a `zh-TW` header must resolve to `zh-Hans`, not `en`. The id is
+  kept, not renumbered.
 
 ## Cross-references
 
@@ -902,7 +907,8 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   memo ADJ-17), Vercel Git settings (`deployment_status` events on — the D-08.9 trigger).
   `docs/technical/10-work-breakdown.md` — phase gates, scaffold PR (CI
   workflows, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json`), View Transitions spike.
-- `docs/technical/12-open-questions.md` — OQ-08.1…11 roll-up (OQ-08.3 restated, OQ-08.10 and OQ-08.11 new).
+- `docs/technical/12-open-questions.md` — OQ-08.1…11 roll-up (OQ-08.3 restated, OQ-08.10 new; OQ-08.11 was
+  new and is now **closed** here by 06 `D-06.15`(a), so 12's row for it needs the same closure).
 - Files this document names: `eslint.config.mjs`, `stylelint.config.mjs`, `prettier.config.mjs`,
   `vitest.config.ts`, `tests/unit/**`, `tests/e2e/playwright.config.ts`, `tests/e2e/**`,
   `tests/e2e/__screenshots__/`, `tests/e2e/visual.spec.ts`, `tests/e2e/axe-exceptions.json`,

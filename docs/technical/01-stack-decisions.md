@@ -10,7 +10,8 @@ the alternatives with their honest trade-offs, the consequences including costs,
 writer disagrees with the adjudicated decision a **Dissent** note says so with evidence; the orchestrator
 adjudicates. Decisions are challengeable only with evidence.
 
-Status: draft · seat writer-contracts · 2026-08-22
+Status: draft · seat writer-contracts · 2026-08-22 · revised 2026-08-22 (HD-3 Vercel plan, HD-10 three
+locales, HD-14 CJK, the gate's analytics answer — OQ-01.1, OQ-01.2 and OQ-01.4 marked answered in place)
 
 ## Decisions
 
@@ -27,9 +28,9 @@ Status: draft · seat writer-contracts · 2026-08-22
 - **D-01.6** ADR-006 — Inquiry form = Next.js Route Handler on the Node.js runtime + Zod ≥ 4 (`z.email()`,
   `z.uuid()`) + Resend + Cloudflare Turnstile + honeypot.
 - **D-01.7** ADR-007 — Vercel hosting: preview per PR, production from `main`; never a static export.
-- **D-01.8** ADR-008 — Locale routing `localePrefix: 'always'` (`/en/...`, `/zh/...`), per `D-02.9`; the toggle
-  is a same-path `router.replace(pathname, { locale, scroll: false })` with an enter-only per-block cascade,
-  per `D-02.10`.
+- **D-01.8** ADR-008 — Locale routing `localePrefix: 'always'` (`/en/...`, `/zh-Hans/...`, `/zh-Hant/...`),
+  per `D-02.9`; the switcher is a same-path `router.replace(pathname, { locale, scroll: false })` with an
+  enter-only per-block cascade, per `D-02.10`.
 - **D-01.9** ADR-009 — GSAP ScrollTrigger is not adopted at launch; adoption trigger = pinning across sections,
   labelled timeline scrubs, or horizontal scroll (source: 05's GSAP decision).
 
@@ -40,9 +41,10 @@ Status: draft · seat writer-contracts · 2026-08-22
 **Status.** Accepted 2026-08-22 (tier 0, memo ADR-001; versions corrected by memo ADJ-1). Challengeable with
 evidence; the orchestrator adjudicates.
 
-**Context.** A bilingual (English / 中文) marketing site for a daycare: one long homepage of eight animated
-sections, six detail subpages, an inquiry form, SEO-indexable per-locale URLs, and a client who plans many more
-scroll/interaction animations (`docs/design/README.md`). The previous site was a Create React App (stale
+**Context.** A three-locale (`en`, `zh-Hans`, `zh-Hant` — English, 简体中文, 繁體中文; HD-10, 02 `D-02.1`)
+marketing site for a daycare: one long homepage of eight animated sections, six detail subpages (HD-5), an
+inquiry form, SEO-indexable per-locale URLs, and a client who plans many more scroll/interaction animations
+(`docs/design/README.md`). The previous site was a Create React App (stale
 `README.md`); the owner knows React. Greenfield — no application code exists.
 
 **Decision.** Next.js App Router on the current Active LTS major — **16.x** (16.3 at 2026-08; the memo's
@@ -56,8 +58,10 @@ CI; default smooth scrolling is opt-in via `data-scroll-behavior="smooth"` on `h
 `default.js`. Quality toolchain (detail in 08): Vitest + React Testing Library, Playwright e2e per locale, ESLint
 with `react/jsx-no-literals`, and the key-parity + content-schema gates (`pnpm validate:content`, `D-02.7`) — all
 GitHub Actions gates. Analytics launch default (adjudicated, 07 D-07.9): Vercel Web Analytics + Speed Insights
-(cookieless, so no consent banner — 07 A-07.1, assumed for a California site pending counsel); the human may
-override (OQ-01.1).
+(cookieless, so no consent banner — 07 A-07.1, assumed for a California site pending counsel), and **nothing
+else**: the human's gate answer "no tag is necessary" is read as no third-party analytics tag — no GA4, Tag
+Manager, Plausible or pixel (07 `D-07.13`, `INV-07.8`; OQ-01.1 answered 2026-08-22). A later override stays
+the human's call, at the price of a new ADR here and a consent story in all three locales.
 
 **Alternatives considered.**
 
@@ -71,7 +75,8 @@ override (OQ-01.1).
   routing-only). Applies partially; **not decisive**.
 - *Vite React SPA (CRA successor).* Wins when SEO and a server are irrelevant: with client-state locale, a
   client router and `AnimatePresence`, both the per-string crossfade and the subpage slide are trivial. Does
-  not apply: the site needs indexable `/en` and `/zh` pages, `hreflang`, and a backend for the form anyway.
+  not apply: the site needs indexable `/en`, `/zh-Hans` and `/zh-Hant` pages, `hreflang`, and a backend for
+  the form anyway.
 - *Remix / React Router v7 framework mode.* Comparable SSR and routing; no first-class equivalent of
   next-intl's locale-routing layer (knowledge); the owner's history and the ecosystem favour Next.
 
@@ -88,7 +93,8 @@ the locale toggle is a navigation, not an in-place swap (ADR-008); the App Route
 split must be designed (02 decides which messages reach the client, `D-02.16`); framework majors move yearly,
 so the pinned major is revisited at each LTS change.
 
-**Open questions.** OQ-01.1 (analytics override).
+**Open questions.** None — OQ-01.1 (analytics) is answered: Vercel Web Analytics + Speed Insights only, no
+third-party tag (2026-08-22, human; 07 `D-07.13`).
 
 ### ADR-002 · i18n library: next-intl
 
@@ -169,8 +175,10 @@ D-03.5): Fredoka at weights 500/600 and Nunito at 600/700/800 via `next/font/goo
 `subsets: ["latin"]`; the CJK fallback is the font-family stack ending in a **system CJK stack** exposed as
 `--font-cjk` (per-glyph browser fallback) — no self-hosted CJK web font at launch; the
 documented alternative is Noto Sans SC via `next/font/google` with `preload: false, adjustFontFallback: false`,
-loaded only in the `zh` layout. `next/font` cannot assign a face per script (no `unicode-range` option); the
-CJK typeface itself is an open question 03 surfaces to the human.
+loaded only in the Chinese layouts. `next/font` cannot assign a face per script (no `unicode-range` option).
+The CJK typeface itself is **answered, not open**: the design names no CJK face (HD-11), and HD-14
+(2026-08-22) confirmed the system stack as the shipping decision for both Chinese scripts — `--font-cjk`
+resolves per script into `--font-cjk-sc` / `--font-cjk-tc` (03 `D-03.5`, `D-03.14`, `OQ-03.4`).
 
 **Alternatives considered.**
 
@@ -183,9 +191,11 @@ CJK typeface itself is an open question 03 surfaces to the human.
 **Consequences.** Positive: tokens live in one CSS file that mirrors the design README; utilities keep
 components terse; v4 needs no config file. Costs: Tailwind v4's browser floor is modern (Safari 16.4+,
 Chrome 111+, Firefox 128+ per its compatibility docs — assumption to re-verify at scaffold); utility-heavy
-markup needs discipline in 04; `:lang(zh)` overrides for CJK typography live in CSS, not utilities.
+markup needs discipline in 04; `:lang(zh)` overrides for CJK typography live in CSS, not utilities (the shared
+`:root:lang(zh)` rules match both Chinese scripts and are not split — 03 §3.3).
 
-**Open questions.** OQ-01.2 (CJK typeface — human via 03).
+**Open questions.** None — OQ-01.2 (CJK typeface) is answered by HD-14: the system stack for both Chinese
+scripts, no webfont at launch (2026-08-22; 03 `D-03.5`).
 
 ### ADR-005 · Animation: Motion for in-page motion; route transitions decided by 05
 
@@ -272,8 +282,9 @@ proxy and the Route Handler running as Functions. **Never `output: 'export'`**: 
 under static export, which would drop Accept-Language/cookie locale negotiation on unprefixed URLs; all
 pages are still statically generated per locale (`D-06.4`), so the Function footprint is the proxy and the form.
 Analytics on the same platform: Vercel Web Analytics + Speed Insights as the launch default (cookieless, so no
-consent banner — 07 D-07.9, on the assumption 07 records as A-07.1 pending counsel); a GA4/Plausible override
-is the human's call (OQ-01.1).
+consent banner — 07 D-07.9, on the assumption 07 records as A-07.1 pending counsel) **and nothing else** — the
+human answered "no tag is necessary" at the Phase 1 gate, so no GA4, Tag Manager or Plausible snippet ships
+(07 `D-07.13`; OQ-01.1 answered 2026-08-22). A later override remains the human's call, via a new ADR.
 
 **Alternatives considered.**
 
@@ -283,25 +294,33 @@ is the human's call (OQ-01.1).
   Next features need adapters (knowledge); more friction for a small team.
 - *Static export to any CDN.* Cheapest, but rejected by ADJ-2 (no proxy → no negotiation).
 
-**Consequences.** Positive: zero-config previews, env management, logs for `onError` reporting (09). Costs: a
-commercial site needs a paid plan (Vercel's Hobby tier is non-commercial — assumption to confirm, OQ-01.4);
-vendor coupling of the proxy/Functions runtime.
+**Consequences.** Positive: zero-config previews, env management, logs for `onError` reporting (09). Costs:
+the project starts and builds on the **free Hobby plan** (HD-3, 09 `D-09.2`), and Hobby's terms restrict it to
+non-commercial, personal use [verified: Vercel Hobby plan docs, 2026-08-22] while a daycare's marketing site is
+commercial — so "upgrade to Pro, or confirm eligibility with Vercel in writing" is a **launch-checklist item
+gating the DNS cutover** (09 §5.1 item 3a), not a reason to start on Pro; Hobby also allows one WAF custom rule
+per project and 07's rate limit consumes exactly that one (09 `D-09.2`), so there is no second rule until the
+upgrade; vendor coupling of the proxy/Functions runtime.
 
-**Open questions.** OQ-01.4 (plan/cost — human).
+**Open questions.** OQ-01.4 — the plan half is answered (Hobby at start, upgrade before the cutover; 09
+`D-09.2`); billing owner, seat count and budget cap stay 09 `OQ-09.1`'s.
 
 ### ADR-008 · Locale routing: prefix always; toggle = navigation
 
 **Status.** Accepted 2026-08-22 (ADJ-4 applied; detail in 02).
 
-**Context.** Two launch locales, SEO-indexable URLs, shareable links, the design's "EN · 中文" toggle with a
-per-string crossfade (`docs/design/README.md`, Interactions).
+**Context.** Three launch locales (HD-10, 02 `D-02.1`), SEO-indexable URLs, shareable links, the design's
+"EN · 中文" toggle with a per-string crossfade (`docs/design/README.md`, Interactions) — which with a third
+locale becomes a three-option switcher menu (02 `D-02.10`).
 
-**Decision.** `localePrefix: 'always'` — every page is `/en/...` or `/zh/...`; the bare root redirects via the
-proxy (prefix → `NEXT_LOCALE` cookie → Accept-Language → `en`); `<html lang>` and `hreflang` use `en` /
-`zh-Hans`; `x-default` points at the English URL; canonical per locale; sitemap with alternates — all as
-specified by `D-02.1` and `D-02.9`, implemented by 06. The toggle is a next-intl `Link` to the same pathname in
-the other locale whose handler calls `router.replace(pathname, { locale, scroll: false })` passing 05's
-`transitionTypes` — a client navigation that **remounts the `[locale]` subtree**; the prototype's in-place
+**Decision.** `localePrefix: 'always'` — every page is `/en/...`, `/zh-Hans/...` or `/zh-Hant/...`; the bare
+root redirects via the proxy (prefix → `NEXT_LOCALE` cookie → Accept-Language → `en`); the locale id, the URL
+segment, `<html lang>` and `hreflang` are the same string for each locale — `en`, `zh-Hans`, `zh-Hant` — so the
+plain `zh` identifier exists nowhere (02 `D-02.1`); `x-default` points at the English URL; canonical per
+locale; sitemap with alternates — all as specified by `D-02.1` and `D-02.9`, implemented by 06. Each switcher
+option is a next-intl `Link` to the same pathname under that locale whose handler calls
+`router.replace(pathname, { locale, scroll: false })` passing 05's `transitionTypes` — a client navigation
+that **remounts the `[locale]` subtree**; the prototype's in-place
 crossfade is therefore an enter-only staggered cascade **per text block** on the new tree (`D-02.10`: every
 mounted `Reveal` plays 05's `swap` variant, `D-05.9`), under a 200 ms root View-Transition crossfade (type
 `locale-swap`; browsers without View Transitions get the cascade alone) — 05 `D-05.9` owns the mechanism and
@@ -310,9 +329,9 @@ rejected.
 
 **Alternatives considered.**
 
-- *`localePrefix: 'as-needed'`* (`/about` for English, `/zh/about` for Chinese). Shorter default URLs, but the
-  proxy must redirect `/en/...` to unprefixed and remember the preference by cookie; `hreflang` pairs become
-  asymmetric and URL meaning depends on state. Rejected for a two-locale site where symmetry is cheaper.
+- *`localePrefix: 'as-needed'`* (`/about` for English, `/zh-Hans/about` for Chinese). Shorter default URLs, but
+  the proxy must redirect `/en/...` to unprefixed and remember the preference by cookie; `hreflang` sets become
+  asymmetric and URL meaning depends on state. Rejected for a three-locale site where symmetry is cheaper.
 - *Domain per locale.* Unnecessary for one brand/region.
 - *Client-state language (no locale in URL).* Exact prototype effect, but not indexable/shareable per language;
   rejected by the memo and ADJ-4.
@@ -357,17 +376,32 @@ keep decorative elements individually addressable (already a design requirement)
 
 ## Open questions
 
-- **OQ-01.1** · answerer: human (Hanyi); 09 wires it — The launch default is Vercel Web Analytics + Speed
-  Insights (cookieless, so no consent banner; 07 D-07.9, assumed pending counsel as 07 A-07.1). Override with
-  GA4 or Plausible (which would bring consent implications)?
-- **OQ-01.2** · answerer: human (Hanyi); surfaced and tokenised by 03 — CJK typeface for `zh` (Noto Sans SC vs
-  system CJK stack); the design names none.
+- **OQ-01.1** · **answered 2026-08-22 (human, "no tag is necessary"; 07 `D-07.13` / `OQ-07.9`, memo ADJ-10)** ·
+  answerer: human (Hanyi); 09 wires it — Was: override the launch default (Vercel Web Analytics + Speed
+  Insights, cookieless, so no consent banner; 07 D-07.9, assumed pending counsel as 07 A-07.1) with GA4 or
+  Plausible? Answer: **no third-party analytics tag** — no GA4, no Google Tag Manager, no Plausible, no pixel.
+  Vercel Web Analytics + Speed Insights remains the launch default and nothing else is embedded. The human may
+  still override; doing so costs a new ADR here, a consent story in all three locales and an amendment to 07
+  `INV-07.8`.
+- **OQ-01.2** · **answered 2026-08-22 (human, HD-14; 03 `D-03.5`, `D-03.14`, `OQ-03.4`)** · answerer: human
+  (Hanyi); surfaced and tokenised by 03 — CJK typeface for Chinese (Noto Sans SC vs system CJK stack); the
+  design names none — HD-11 had already found the premise of "the typeface used in the designs" false.
+  Answer: **the system CJK stack ships for both Chinese scripts and no CJK webfont is loaded at launch**;
+  `--font-cjk-sc` / `--font-cjk-tc` / `--font-cjk` stand as 03 §3.1 and `D-03.14` declare them. Naming a face
+  later is a one-token change and future brand work, not a pending answer. This is one question with 03's
+  `OQ-03.4` and 04's `OQ-04.9`; each document marks its own copy, and 12 keeps the three as one register row.
 - **OQ-01.3** · answerer: the scaffold/spike task in 10 (check-stack verifies the result) — Confirm that React
   `<ViewTransition>` and `<Link transitionTypes>` are available and behave as documented at the pinned Next.js
   version (≥ 16.2); if not, the subpage slide falls back to an instant swap until they are.
-- **OQ-01.4** · not open here — the Vercel plan and the monthly budget for Vercel + Resend + domain are 09's
-  `OQ-09.1` (answerer: human (owner / Hanyi); cost model in 09 `D-09.20`), which supersedes this entry for the
-  plan question. 01 records the outcome: **Pro**, because Hobby is non-commercial.
+- **OQ-01.4** · **plan half answered 2026-08-22 (human, HD-3)** · not open here — the Vercel plan and the
+  monthly budget for Vercel + Resend + domain are 09's `OQ-09.1` (answerer: human (owner / Hanyi); cost model
+  in 09 `D-09.20`), which supersedes this entry for the plan question. 01 records the outcome from its owning
+  decision, 09 `D-09.2`: **Hobby at the start, Pro before the DNS cutover.** The project starts on the free
+  Hobby plan — enough for Phases 2–7 (builds, previews, a `*.vercel.app` production URL) and no budget concern
+  while the site is not public. Hobby's non-commercial term is therefore not a reason to start on Pro: it is
+  the reason "upgrade to Pro, or confirm eligibility with Vercel in writing" is a **launch-checklist item that
+  gates the DNS cutover** (09 §5.1 item 3a). What stays open is 09's: who holds the billing, how many paid
+  seats, the monthly budget cap, and which of those two answers ticks item 3a.
 - **OQ-01.5** · answerer: human (Hanyi) with the seat writing 05 — Which post-launch animation request first
   trips ADR-009's trigger (pinning, labelled scrub, horizontal scroll), if any?
 
