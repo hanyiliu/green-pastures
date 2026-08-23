@@ -1,0 +1,6 @@
+# Tracker files — see docs/technical/11-work-tracking.md (D-11.6, §5).
+
+# Append-only audit of field changes: keep both sides' new lines, never conflict.
+.beads/interactions.jsonl merge=union
+# Projection of the bd graph: never text-merged — on conflict regenerate with `bd export`.
+.beads/issues.jsonl merge=binary
