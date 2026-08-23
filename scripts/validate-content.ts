@@ -452,8 +452,35 @@ function brandLiterals(site: unknown): readonly string[] {
  * 08 §3 — the four release rules
  * -------------------------------------------------------------------------- */
 
-/** R2: a sentinel that is a *value*. Keys and raw file text are 08 §2's grep. */
-const R2_SENTINEL = /\b(TODO|TBD|FIXME|XXX)\b/i;
+/**
+ * R2: a sentinel that is a *value*. Keys and raw file text are 08 §2's grep.
+ *
+ * The vocabulary is listed once here and both the pattern and the message the
+ * editor reads are derived from it, so a fifth sentinel cannot be added to one
+ * and forgotten in the other.
+ *
+ * It is spelt **lower case on purpose**, and that is not cosmetic. CI's
+ * `check:todo` step (08 §2) greps tracked source under `src/`, `tests/` and
+ * `scripts/` for work markers, which are written shouted — and `git grep` is
+ * case-sensitive unless asked otherwise. Lower case is therefore how the file
+ * that *implements* R2 gets to name what R2 looks for without the sibling gate
+ * having to look away: no pathspec exclusion for this file, no allowlist, no
+ * pattern glued together out of fragments, and a genuine work marker written
+ * on any of these 1,700 lines still fails the PR exactly as it would anywhere
+ * else in the tree. That holds for the prose in these comments too, which is
+ * why none of them shouts a marker either.
+ *
+ * Do not "tidy" the spelling to upper case. It reds `static` and buys nothing:
+ * the pattern below is built with `i`, so the case written here has never been
+ * part of what R2 matches.
+ */
+export const R2_SENTINELS: readonly string[] = ["todo", "tbd", "fixme", "xxx"];
+
+/** Case-insensitive by construction: `TBD`, `TbD` and `tbd` all match. */
+const R2_SENTINEL = new RegExp(String.raw`\b(${R2_SENTINELS.join("|")})\b`, "i");
+
+/** The vocabulary as the editor should read it back — shouted, slash-joined. */
+const R2_SENTINEL_LABEL = R2_SENTINELS.map((word) => word.toUpperCase()).join("/");
 
 /** R3: the placeholders that can never be real. */
 const R3_PATTERNS: readonly RegExp[] = [
@@ -1274,7 +1301,7 @@ function checkRelease(
         severity: "error",
         file: homes[0]?.file,
         key: homes[0]?.path,
-        message: `R2: the value ${JSON.stringify(value)} is a sentinel (TODO/TBD/FIXME/XXX) — ${where}.`,
+        message: `R2: the value ${JSON.stringify(value)} is a sentinel (${R2_SENTINEL_LABEL}) — ${where}.`,
       });
     }
 

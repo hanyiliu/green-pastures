@@ -8,6 +8,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import {
   LOCALES,
+  R2_SENTINELS,
   R4_LITERALS,
   R4_PATHS,
   RULES,
@@ -722,6 +723,45 @@ describe("--release", () => {
     const outcome = gate(root, "--release");
     expect(fired(outcome, RULES.R2_SENTINEL)).toBe(true);
     expect(outcome.code).toBe(1);
+  });
+
+  it("R2 fires on every word of its vocabulary in either case, and only whole words", () => {
+    // The spellings are derived from the export, never typed out. Two reasons:
+    // a shouted work marker written literally on this page would trip CI's
+    // `check:todo` (08 §2) — the very collision the gate's lower-case
+    // vocabulary resolves — and iterating means a fifth sentinel is covered the
+    // day it is added, not the day someone remembers to widen this test.
+    //
+    // Three properties are pinned, each with its own way of failing open: the
+    // `i` flag (an editor shouts the sentinel, the gate stores it lower case),
+    // the `\b` either side (dropped in a rewrite, R2 starts flagging ordinary
+    // prose), and the message naming the vocabulary the pattern really matches.
+    const sentinel = (value: string): Outcome =>
+      gate(
+        fixture(({ en }) => {
+          const file = en("messages/common.json");
+          const json = readJson(file) as unknown as { nav: Record<string, string> };
+          json.nav.philosophy = value;
+          writeJson(file, json);
+        }),
+        "--release",
+      );
+
+    for (const word of R2_SENTINELS) {
+      const shouted = word.toUpperCase();
+
+      for (const spelling of [word.toLowerCase(), shouted]) {
+        const outcome = sentinel(spelling);
+        expect(fired(outcome, RULES.R2_SENTINEL), `${spelling} must fire R2`).toBe(true);
+        expect(outcome.out, `R2's message must name ${shouted}`).toContain(shouted);
+      }
+
+      const embedded = sentinel(`un${word}able`);
+      expect(
+        fired(embedded, RULES.R2_SENTINEL),
+        `un${word}able is one word, not the sentinel ${shouted}`,
+      ).toBe(false);
+    }
   });
 
   it("R3 fails on a placeholder that can never be real, even with an empty registry", () => {
