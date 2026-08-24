@@ -17,14 +17,18 @@ samples moved onto the real domain, which the release gate did not see (§3 R4, 
 2026-08-23 — §2's TODO gate was specified with a glibc-only `\b`, which matches nothing under Apple git and
 so failed open; it now reads `-nwE`, matching the shipped workflow; **reconciled with the repository
 2026-08-23** — §10 and §11 described a toolchain that is largely still plan (`check:tokens`, `check:secrets`,
-`check:env`, `check:todo` as a script, the flaky-tag lint, the dependency allowlist and `lhci` are not in
+`check:env`, the flaky-tag lint, the dependency allowlist and `lhci` are not in
 `package.json`, and four jobs are not in `.github/workflows/**`), and gave `pnpm verify` a formula that was
 neither what the script runs nor honest about the `--warn-locale` flags it carries. Both tables now carry a
 build-status column, the future rows keep their place with the PR that brings them, `pnpm verify` is quoted
 verbatim from `package.json`, and the stale "the build has never passed" note is retired; **ruleset ground
 truth re-verified against the GitHub API 2026-08-23** — the include list *does* name the default branch, so
 push, force-push and non-squash-merge protection on `main` is live; what is missing is any
-`required_status_checks` rule, so none of the six checks is required (D-08.19, INV-08.2, §12.3)
+`required_status_checks` rule, so none of the six checks is required (D-08.19, INV-08.2, §12.3);
+**INV-08.6's open divergence closed 2026-08-24** — §2's two greps moved out of `ci.yml` into
+`scripts/ci/todo-grep.sh`, which `static` and `pnpm verify` both call, they now search `--untracked`, and §2
+records what two files had each worked out on their own: prose *about* a marker is source text and trips the
+gate (`gp-dln.206`–`.208`)
 
 ## Decisions
 
@@ -286,15 +290,56 @@ push, force-push and non-squash-merge protection on `main` is live; what is miss
 - **TODO grep** (TRAP-11.9), two commands, each of which must produce no output:
 
 ```sh
-git grep -nwE 'TODO|FIXME|HACK' -- 'src/**' 'tests/**' 'scripts/**'
-git grep -nE '"(_comment|todo)"[[:space:]]*:' -- 'content/**'
+git grep --untracked -nwE 'TODO|FIXME|HACK' -- 'src/**' 'tests/**' 'scripts/**'
+git grep --untracked -nE '"(_comment|todo)"[[:space:]]*:' -- 'content/**'
 ```
+
+  Both live in **`scripts/ci/todo-grep.sh`**, which is the only copy of them, and both callers run that
+  script: `static`'s `check:todo` step and `pnpm verify`, each as `pnpm run check:todo` (§10, §11). Shipping
+  them inlined in `ci.yml` *was* the INV-08.6 divergence — the gate ran in CI and nowhere else, so
+  `pnpm verify` reported clean over a tree the PR was about to go red on, and `main` broke that way on
+  2026-08-23. One script and two callers is what makes the two verdicts the same verdict rather than two
+  that happen to agree.
+
+  **A gate that cannot run must not report clean.** Every fail-open this check has had came from something
+  that *could not scan* reporting what something that scanned and found nothing reports: `\b` compiling to a
+  pattern that matched no line, tracked-only greps not seeing an untracked file. Two more doors were open
+  until review found them and are shut in the script. `cd "$(git rev-parse --show-toplevel)"` fails open —
+  command substitution used as an argument hides its exit status from `set -e`, so outside a repository the
+  substitution yields nothing, `cd ""` succeeds, and the script sails on to exit 0 having scanned nothing;
+  the path is assigned and checked instead. And `if git grep …; then` cannot tell a failure from a clean
+  tree — `git grep` exits 0 on a match, 1 on none and **>1 on a real error** (a broken repository, a pattern
+  it cannot compile), and the `if` shape reads all of them as "no match"; the script discriminates, and
+  anything above 1 is fatal. Exit codes are 0 clean, 1 fired, **2 could not run**.
+
+  **`--untracked`, deliberately.** `git grep` reads tracked files only. On a CI checkout every file is
+  tracked, so the flag costs nothing there; locally it is the difference between catching a marker and
+  waiting for someone to `git add`. Without it a brand-new file full of markers passes the local gate
+  silently — a local-only fail-open of the same class as the `\b` bug below, and one that defeats the point
+  of running the gate locally at all. Ignored files stay out (no `--no-exclude-standard`), so build output
+  and `node_modules` are never scanned, and no CI verdict changes.
+
+  **Prose about a marker is source text, and trips the gate.** The rule is *this word does not appear under
+  these paths* — textual, trivially checkable, impossible to game — not *this word does not appear as a
+  marker*, which would need a reader of intent. So a comment that merely **describes** the rule fires it
+  exactly as a real marker would, and the fix is to reword the comment: never a backtick exemption, a prose
+  heuristic or an allowlist, each of which is cheaper to abuse than opening a bead is to do (`gp-dln.205`
+  proved it by probe — a marker in backticks reads as prose and stands in for real work just as well). The
+  repository reached this conclusion twice before writing it down: `scripts/validate-content.ts` spells R2's
+  vocabulary lower case on purpose so the file implementing it needs no exemption, and `src/lib/seo/json-ld.ts`
+  was reworded rather than exempted. `todo-grep.sh` itself is the third and the cleanest demonstration — it
+  stores its own vocabulary lower case and shouts it once at match time, so the file that defines the gate
+  states what it forbids in full while containing none of it, and is scanned like every other file under
+  `scripts/`.
 
   **`-w`, never `\b(…)\b` — the `\b` form fails open.** `\b` is a glibc regex extension, not POSIX ERE:
   git's regex engine honours it where glibc supplies it and silently matches nothing everywhere else.
   Verified 2026-08-23 on Apple Git 2.50.1 — against a file holding `// TODO: x`, `FIXME` and `HACK`, the
   `\b` form matched **zero** lines, while `-nwE` matched all three and still skipped `TODOLIST` and
-  `TODOS`. A word-boundary gate that matches nothing reports green over a tree full of TODOs, which is the
+  `TODOS`. What `-w` counts as a boundary is every non-word character, punctuation included, so
+  `a-TODO-ish-name`, `(TODO)` and a URL path segment all fire — documented git behaviour, and the behaviour
+  wanted here: a marker does not stop being one for being punctuated. Only letters, digits and `_` extend a
+  word, which is why an identifier that merely *starts* with a marker word does not fire. A word-boundary gate that matches nothing reports green over a tree full of TODOs, which is the
   one failure this check exists to prevent — so `-w`, which is git's own flag, means the same thing and
   behaves identically on every platform, is not to be "simplified" back to `\b`. (`-P` also works, but
   needs a git built with PCRE2: no more guaranteed than glibc.)
@@ -709,7 +754,7 @@ rewrote that sentence in the past tense on the day it landed. The `Built?` colum
 
 | Job | Built? | Trigger | Needs | Steps (abridged) | Timeout | Artifacts | Required |
 |---|---|---|---|---|---|---|---|
-| `static` | **partly** | PR, push `main` | — | **Running today:** checkout · `pnpm/action-setup` → `setup-node` (cache) · `install --frozen-lockfile` · `typecheck` · `lint` · `lint:css` · `format:check` · the §2 TODO grep, as a step named `check:todo` whose body is the two `git grep` commands **inlined** — `scripts/ci/todo-grep.sh` does not exist, so the step is shell, not a script call. **Specified, not built:** `check:tokens` (PR-4.x — `check-tokens.ts` has no `tokens.css` to scan until the tokens PR lands), `check:todo` *as a script* (the same two greps, moved out of the workflow so `pnpm verify` and CI share one implementation per INV-08.6), `check:env` (`env-example.ts`), the `@flaky-known` tag lint (D-08.13 — it reads `.beads/issues.jsonl`, and it has no tagged test to lint yet) and the dependency allowlist (`deps-allowlist.sh`, INV-05.11). A step that calls a script `package.json` does not define fails on every PR, which is why each one waits for the PR that writes its script | 10 min | — | yes |
+| `static` | **partly** | PR, push `main` | — | **Running today:** checkout · `pnpm/action-setup` → `setup-node` (cache) · `install --frozen-lockfile` · `typecheck` · `lint` · `lint:css` · `format:check` · `check:todo`, the §2 marker gate, now a one-line call to `scripts/ci/todo-grep.sh` that `pnpm verify` makes too (INV-08.6 — the greps were inlined shell here until `gp-dln.206`). **Specified, not built:** `check:tokens` (PR-4.x — `check-tokens.ts` has no `tokens.css` to scan until the tokens PR lands), `check:env` (`env-example.ts`), the `@flaky-known` tag lint (D-08.13 — it reads `.beads/issues.jsonl`, and it has no tagged test to lint yet) and the dependency allowlist (`deps-allowlist.sh`, INV-05.11). A step that calls a script `package.json` does not define fails on every PR, which is why each one waits for the PR that writes its script | 10 min | — | yes |
 | `content` | yes | PR, push | — | `validate:content --report` plus one `--warn-locale` per lagging locale — the same flag list `pnpm verify` carries and never a different one (§11 (b)) — run under `continue-on-error` · job summary · sticky comment · upload report · a final step that re-raises the validator's exit code (the earlier steps have to run even on a red gate — a red run is when the editor most needs the report) | 5 min | `content-coverage.md` | yes |
 | `unit` | yes | PR, push | — | `pnpm test:coverage` (= `vitest run --coverage`) · upload `coverage/` | 10 min | `coverage/` | yes |
 | `build` | **partly** | PR, push | — | **Running today:** restore `.next/cache` · `next build` · upload `.next` (minus cache, `include-hidden-files: true`). **Specified, not built:** the route summary into `$GITHUB_STEP_SUMMARY` (§7) and `bundle-secrets.sh` (D-08.11) — both arrive with the PR that writes `scripts/ci/bundle-secrets.sh` | 15 min | `next-build` | yes |
@@ -730,19 +775,37 @@ pass. `lighthouse-preview` and `lighthouse-prod` were never the gap — PR-8.5 h
 workflow file, `lighthouserc*` and the `package.json` line that adds `@lhci/cli` — but they are Phase 8, which
 is why §12.2's Lighthouse clause is now scoped too.
 
-**What remains unscheduled is three scripts, and it is a gap in 10's tables rather than in this section.**
+**What remains unscheduled is two scripts, and it is a gap in 10's tables rather than in this section.**
 `scripts/ci/bundle-secrets.sh` and `scripts/ci/env-example.ts` (D-08.11, INV-07.3): the `build` and `static`
 rows above each wait on "the PR that writes" them, D-08.11 sits in 10's Phase 2 *Scope* line, and no row's
-*Files* column carries either path. `scripts/ci/todo-grep.sh` (INV-08.6): the check itself runs today as an
-inlined shell step in `static`, which is precisely the CI-versus-`pnpm verify` divergence that invariant
-names — shipping the greps inlined is the divergence, not its close — and no row schedules the extraction.
-For each of the three, everything a row needs is already fixed on this page: the file path, the job it runs
-in, the `package.json` script that calls it (§11) and the invariant it serves. The only missing thing is a PR
-number, which is 10's to mint, so 08 re-specifying them would produce nothing. One wrinkle is worth naming
-before the rows are written: `bundle-secrets.sh` adds a *step* to `ci.yml`'s existing `build` job, and 10 §7's
-rule for that file is that additions are new jobs and never edits to an existing one — so either that rule
-takes a named exception for it (as it already does for the `--warn-locale` flags) or the grep runs as its own
-job that downloads the `next-build` artifact, and the row should say which.
+*Files* column carries either path. For both, everything a row needs is already fixed on this page: the file
+path, the job it runs in, the `package.json` script that calls it (§11) and the invariant it serves. The only
+missing thing is a PR number, which is 10's to mint, so 08 re-specifying them would produce nothing. One
+wrinkle is worth naming before the rows are written: `bundle-secrets.sh` adds a *step* to `ci.yml`'s existing
+`build` job, and 10 §7's rule for that file is that additions are new jobs and never edits to an existing one
+— so either that rule takes a named exception for it (as it already does for the `--warn-locale` flags) or
+the grep runs as its own job that downloads the `next-build` artifact, and the row should say which.
+
+**`scripts/ci/todo-grep.sh` is written, and 10's rule took the named exception rather than a new job.**
+The third script on that list shipped with `gp-dln.206`. The same wrinkle applied and harder: the greps were
+an inlined body *inside* `static`'s `check:todo` step, so extraction is unavoidably an edit to an existing
+job. **The exception is taken, and it is narrow: `check:todo`'s step body, once.** Two reasons, in order of
+weight.
+
+1. **The alternative silently demotes a required check.** `static` is required on `main` by D-08.12;
+   a new job is not, until a human adds its name to the ruleset. Moving the marker gate into its own job
+   would take a gate that blocks merges today and make it advisory for as long as it took someone to notice
+   — the same shape of failure as the `\b` bug and this PR's own divergence, arriving by a different door.
+   §10's `static` row also names `check:todo` as a step of `static`, so a separate job contradicts this page.
+2. **The rule's stated purpose is not engaged.** 10 gives it in one clause — "so two lanes never touch the
+   same lines". No scheduled PR touches these lines: PR-3.4's `content` job has landed, PR-8.5 appends the
+   Lighthouse job, and this is the only work that has ever had reason to edit `check:todo`. The rule guards
+   against merge conflicts between parallel lanes, not against improving a step; enforcing it here would
+   trade a real gate for a conflict that cannot occur.
+
+The exception is recorded in `ci.yml`'s header alongside the `--warn-locale` one. **10 is owed the matching
+line in its own `ci.yml` rule** — that file is another lane's and out of this PR's set, so the pointer is
+here rather than the edit there.
 
 **`seo-smoke.ts` is retired as a file name.** Earlier revisions of the `lighthouse-prod` row and of §12.3
 named a script by that path, which no PR writes and which duplicated checks §5 already has tags for. The
@@ -810,23 +873,28 @@ cell in the same PR. Rows marked `yes` are the shipped entries, read off `packag
 | `pnpm lint` / `lint:css` / `format` / `format:check` | yes | ESLint · Stylelint · Prettier | `lint:fix` and `lint:css:fix` exist; `format:check` is `prettier --check .` scoped by `.prettierignore` |
 | `pnpm validate:content [--report] [--warn-locale <id>] [--release [--accept-sample <path>]]` | yes | `tsx scripts/validate-content.ts` | §3. `--warn-locale zh-Hans` / `zh-Hant` while a tree is being translated; `--release` is the launch gate and ignores it. `--accept-sample` is R4-only, repeatable, names one path, and is typed by a human at the launch gate — never baked into a workflow without §12.3 recording why |
 | `pnpm test` / `test:watch` / `test:coverage` | yes | Vitest | |
-| `pnpm test:e2e [--project …] [--grep @tag]` / `test:e2e:ui` | yes | Playwright, host-native, with `--grep-invert @visual` baked in | `--grep @smoke` is the 2-minute local check. `@visual` is excluded because a macOS host cannot reproduce the container's fonts (D-08.10) — this is the one *intended* gap in INV-08.6 (the missing `check:todo` script two rows down is the unintended one), and `pnpm test:e2e:docker` closes it |
+| `pnpm test:e2e [--project …] [--grep @tag]` / `test:e2e:ui` | yes | Playwright, host-native, with `--grep-invert @visual` baked in | `--grep @smoke` is the 2-minute local check. `@visual` is excluded because a macOS host cannot reproduce the container's fonts (D-08.10) — this is the one *intended* gap in INV-08.6, and now the only one: the missing `check:todo` script two rows down was the unintended one and it is written. `pnpm test:e2e:docker` closes this one |
 | `pnpm test:e2e:docker` / `test:e2e:update` | yes | the same `playwright test` inside `mcr.microsoft.com/playwright:v<version>-noble` with the repo mounted; `:update` adds `--grep @visual --update-snapshots` | D-08.10; Docker required. `:docker` is what to run before touching anything the baselines cover |
 | `pnpm verify` / `verify:e2e` | yes | the formula below | the local twin of `static`+`content`+`unit`+`build`; `verify:e2e` is `verify && test:e2e`. Not `ci`: `pnpm ci` is a reserved pnpm command — an undocumented alias for `clean-install` (`pnpm clean` + `pnpm install --frozen-lockfile`) — so `pnpm ci` would wipe and reinstall instead of running the gate. It is absent from `pnpm help -a`, so scanning the command list does not catch the collision; do not rename this script back |
 | `pnpm check:tokens` | **no** · PR-4.x | `tsx scripts/ci/check-tokens.ts` + `vitest run tests/unit/design` | CSS scans + parity/snapshot. Nothing to scan until `src/styles/tokens.css` and `src/design/tokens.ts` exist, which is the tokens PR |
 | `pnpm check:secrets` / `check:env` | **no** · with their scripts | `scripts/ci/bundle-secrets.sh` (needs a build) · `env-example.ts` | `scripts/ci/` holds only `bead-trailer.sh` today; each arrives with the PR that writes it, and joins `verify` and `static` in that same PR |
-| `pnpm check:todo` | **no** · the check itself runs | `scripts/ci/todo-grep.sh` | The **check** is live — the two §2 `git grep` commands are inlined in `static`'s `check:todo` step. What is missing is the *script*, so today the gate exists in CI and not in `pnpm verify`. That is the live INV-08.6 divergence that invariant now names, and extracting the shell into `todo-grep.sh` (called by both) is what closes it |
+| `pnpm check:todo` | yes | `scripts/ci/todo-grep.sh` | §2. The two greps, in the one file that holds them; `static`'s step and `pnpm verify` both call it. Closing the INV-08.6 divergence *was* this row — the gate used to be an inlined body in `ci.yml`, so it ran in CI and not locally, which is how `main` went red on a violation the author's `pnpm verify` had reported clean. `--untracked`, so a marker in a not-yet-added file fails now rather than after `git add` |
 | `pnpm lhci` | **no** · PR-8.5 | `lhci autorun --collect.url=http://localhost:3000/en` | local sanity only; numbers differ from the preview. `@lhci/cli` is not a dependency yet — PR-8.5 adds it with the Lighthouse jobs (§10) |
 
-**`pnpm verify`, exactly** (`package.json`, verified 2026-08-23):
+**`pnpm verify`, exactly** (`package.json`, verified 2026-08-24):
 
 ```sh
 pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:check \
+  && pnpm run check:todo \
   && pnpm run validate:content --report --warn-locale zh-Hans --warn-locale zh-Hant \
   && pnpm run test && pnpm run build
 ```
 
-Two things about that line are load-bearing and neither is obvious from reading it.
+`check:todo` sits where it does because `static` runs it last, after `prettier` — this line reads as that
+job's steps in that job's order, which is what makes a drift between the two visible on sight. It is also by
+far the cheapest link in the chain, so nothing is bought by moving it earlier.
+
+Three things about that line are load-bearing and none is obvious from reading it.
 
 **(a) The `--warn-locale` flags are deliberate, and deleting them reds the gate.** They are §3's phased-
 translation mechanism (D-08.5, HD-12): each one demotes *that locale's parity findings* to warnings while its
@@ -848,10 +916,20 @@ locale that is **both** in `routing.locales` and still being translated, so it g
 (PR-3.9) and shrinks when one is finished (PR-8.1, PR-8.8) or taken back out (D-10.12) — read it off
 `package.json` rather than from this page if the two ever disagree, and then fix this page.
 
+**(c) `check:todo` is not duplicated — it is the same file run twice, and that is the stronger form.** (b)'s
+discipline is two copies of a string that a reviewer has to keep equal; `check:todo` has no second copy to
+drift from, because `static`'s step and this line both run `scripts/ci/todo-grep.sh`. Every gate that can be
+a script rather than a workflow body should be, for exactly this reason: what INV-08.6 asks for is one
+command set, and a shared script is the only way to get it without asking anyone to remember. The gate was
+inlined in `ci.yml` until `gp-dln.206`, and the cost of that was not hypothetical — `main` went red on a
+marker while the author's own `pnpm verify` reported clean, because the check the PR needed did not exist on
+their machine.
+
 Earlier revisions of this section gave `verify` a formula built on `check:tokens`, `check:todo`, `check:env`
-and `check:secrets`, and left the `--warn-locale` flags out. None of those four scripts exists; the flags have
-been in the script since PR-3.4 put `validate:content` into it. So the formula named four checks that could
-not run and hid the one flag that changes what the gate asserts. The formula above is the script.
+and `check:secrets`, and left the `--warn-locale` flags out. Three of those four scripts still do not exist
+(`check:todo` is the one that since has been written, and it is in the formula above); the flags have been in
+the script since PR-3.4 put `validate:content` into it. So the formula named four checks of which none could
+run and hid the one flag that changes what the gate asserts. The formula above is the script.
 
 **Status, 2026-08-23 — `pnpm build` now completes locally; the earlier blocker is closed.** An earlier
 revision of this section recorded that the `build` step of `pnpm verify` had never passed in this worktree,
@@ -987,12 +1065,14 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   `packageManager` pin, `.nvmrc`); a check that exists only in CI, or only locally, is a bug. One named
   exception: `@visual` is font-dependent and runs in the Playwright container both in CI and locally
   (`pnpm test:e2e:docker`), so the host-native `pnpm test:e2e` excludes it rather than fail it (§11, D-08.10).
-  **One known open divergence, 2026-08-23** — not an exception, a bug this invariant is naming so it gets
-  fixed: the §2 TODO grep runs in CI only, as an inlined shell step in `static`, because
-  `scripts/ci/todo-grep.sh` does not exist for `pnpm verify` to call (§11). It closes when that script is
-  written and both callers point at it. Two flags are checked the other way round and *do* agree today —
-  `validate:content`'s `--warn-locale` list is the same string in `verify` and in the `content` job, and
-  §11 (b) says a PR changing one changes the other.
+  **The one known open divergence is closed, 2026-08-24 (`gp-dln.206`).** The §2 TODO grep used to run in CI
+  only, as an inlined shell body in `static`, with no `scripts/ci/todo-grep.sh` for `pnpm verify` to call —
+  and it cost what this invariant exists to prevent: `main` went red on a marker the author's own
+  `pnpm verify` had reported clean, because that gate did not exist on their machine. The script is written,
+  both callers run it as `pnpm run check:todo`, and there is now no second copy to drift from (§11 (c)).
+  Two flags are checked the other way round and *do* agree today — `validate:content`'s `--warn-locale` list
+  is the same string in `verify` and in the `content` job, and §11 (b) says a PR changing one changes the
+  other.
 - **INV-08.7 No secrets in PR CI.** PR workflows use only `GITHUB_TOKEN`, Cloudflare's published test keys
   and `INQUIRY_TRANSPORT=log`; no real key is ever a repository secret for PR runs; artifacts contain no env.
 - **INV-08.8 Baselines and thresholds move with a reason.** Screenshot baselines, section-height baselines,
@@ -1100,13 +1180,13 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
 - Files this document names, split the same way §10 and §11 split their tables — **shipped** (present in the
   repository, verified 2026-08-23): `eslint.config.mjs`, `.stylelintrc.mjs`, `.prettierrc.json`,
   `.prettierignore`, `vitest.config.ts`, `playwright.config.ts` (root), `tests/unit/**`, `e2e/**`,
-  `scripts/validate-content.ts`, `scripts/ci/bead-trailer.sh`,
+  `scripts/validate-content.ts`, `scripts/ci/{bead-trailer.sh, todo-grep.sh}`,
   `.github/workflows/{ci.yml, bead-trailer.yml}`, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json`
   (09 D-09.17, shipped by 10's PR-2.9), `reports/content-coverage.md`, `.editorconfig`, `.nvmrc`.
   **Specified, not built:** `e2e/visual.spec.ts`, `e2e/axe-exceptions.json`, `tests/e2e/__screenshots__/`
   (the one path deliberately outside `e2e/` — the shipped config's `snapshotPathTemplate` already points
-  there, D-08.10), `lighthouserc.cjs`, `scripts/ci/{todo-grep.sh, bundle-secrets.sh, env-example.ts,
-  check-tokens.ts, deps-allowlist.sh}` — the first three of those five are the ones no PR schedules (§10);
+  there, D-08.10), `lighthouserc.cjs`, `scripts/ci/{bundle-secrets.sh, env-example.ts,
+  check-tokens.ts, deps-allowlist.sh}` — the first two of those four are the ones no PR schedules (§10);
   an earlier revision listed a sixth, `seo-smoke.ts`, which is retired: the launch SEO and header checks are
   the `@seo` and `@headers` tags of §5, not a script,
   `.github/workflows/{preview.yml, production.yml, nightly.yml, audit.yml}`, `.vscode/{settings,extensions}.json`,
