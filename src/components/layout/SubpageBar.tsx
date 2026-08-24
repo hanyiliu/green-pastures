@@ -145,9 +145,26 @@ export type SubpageBarProps = {
   readonly className?: string;
   /** Extra classes on the centred content column, under the same contract. */
   readonly contentClassName?: string;
+  /**
+   * Custom properties for the centred content column.
+   *
+   * A page whose blocks are sized by properties 03 mints no token for — the
+   * Menu page's table, cards and note — declares them once here and lets them
+   * inherit, rather than repeating a `style` on every block that reads them
+   * (and, for a list, on every item). It is the column and not the panel
+   * because these are the *content's* numbers; the panel's own two pairs are
+   * this file's.
+   */
+  readonly contentStyle?: StyleWithCustomProperties;
 };
 
-export function SubpageBar({ routeId, children, className, contentClassName }: SubpageBarProps) {
+export function SubpageBar({
+  routeId,
+  children,
+  className,
+  contentClassName,
+  contentStyle,
+}: SubpageBarProps) {
   const t = useTranslations();
   const common = useTranslations("common");
 
@@ -192,6 +209,7 @@ export function SubpageBar({ routeId, children, className, contentClassName }: S
 
       <main
         id="main"
+        style={contentStyle}
         className={withOverrides("SubpageBar's content column", CONTENT, contentClassName)}
       >
         {children}

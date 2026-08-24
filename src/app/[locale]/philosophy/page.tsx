@@ -5,7 +5,7 @@ import { SubpageBar } from "@/components/layout/SubpageBar";
 import { SubpageHeader } from "@/components/layout/SubpageHeader";
 import { PageTransition } from "@/components/motion/PageTransition";
 import { DailyTimeline } from "@/components/pages/philosophy/DailyTimeline";
-import { PHILOSOPHY_COLUMN, PHILOSOPHY_HEADER } from "@/components/pages/philosophy/layout";
+import { PHILOSOPHY_COLUMN } from "@/components/pages/philosophy/layout";
 import { PhilosophyBadges } from "@/components/pages/philosophy/PhilosophyBadges";
 import { PrinciplesList } from "@/components/pages/philosophy/PrinciplesList";
 import { getSite } from "@/content/site";
@@ -28,8 +28,8 @@ import { buildMetadata } from "@/lib/seo/metadata";
  * route has a distinct composition and its own metadata, and a `[slug]` page
  * would move the route set into runtime data.
  *
- * The two class overrides are this page's config, not the shell's — the
- * reference draws a 940px column here and 880px on Programs — and both live in
+ * The one class override is this page's config, not the shell's — the
+ * reference draws a 940px column here and 880px on Programs — and it lives in
  * `components/pages/philosophy/layout.ts` beside the rest of the geometry
  * (04 `D-04.6`).
  */
@@ -78,7 +78,7 @@ export default function PhilosophyPage() {
   return (
     <PageTransition>
       <SubpageBar routeId={ROUTE_ID} contentClassName={PHILOSOPHY_COLUMN}>
-        <SubpageHeader page={ROUTE_ID} className={PHILOSOPHY_HEADER} />
+        <SubpageHeader page={ROUTE_ID} />
         <PrinciplesList />
         <DailyTimeline />
         <PhilosophyBadges />

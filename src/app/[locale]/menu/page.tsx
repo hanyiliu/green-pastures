@@ -9,9 +9,8 @@ import { DayCards } from "@/components/pages/menu/DayCards";
 import {
   MENU_CHIPS_ROW,
   MENU_COLUMN,
-  MENU_HEADER,
+  MENU_COLUMN_VARS,
   MENU_NOTE,
-  MENU_NOTE_VARS,
 } from "@/components/pages/menu/layout";
 import { WeeklyMenuTable } from "@/components/pages/menu/WeeklyMenuTable";
 import { DietaryChips } from "@/components/sections/menu/DietaryChips";
@@ -94,8 +93,14 @@ export default async function MenuPage() {
 
   return (
     <PageTransition>
-      <SubpageBar routeId={ROUTE_ID} contentClassName={MENU_COLUMN}>
-        <SubpageHeader page={ROUTE_ID} className={MENU_HEADER} />
+      <SubpageBar routeId={ROUTE_ID} contentClassName={MENU_COLUMN} contentStyle={MENU_COLUMN_VARS}>
+        {/*
+          04 §4's Menu-page row marks `menu.intro` desktop-only, and the mobile
+          reference draws the header with two lines rather than three
+          (M L329–331). `SectionHeader` renders the string once and lets `md:`
+          hide it, so the copy is never a branch in code (`D-04.5`).
+        */}
+        <SubpageHeader page={ROUTE_ID} introDesktopOnly />
 
         <WeeklyMenuTable menu={menu} />
         <DayCards menu={menu} />
@@ -104,15 +109,8 @@ export default async function MenuPage() {
           <DietaryChips items={menu.dietary} />
         </Reveal>
 
-        {/*
-          The `<p>` is inside the `Reveal` rather than being it, because the
-          note's two sizes are custom properties and `Reveal` takes no `style`
-          (it computes its own transform origin) — see `MENU_NOTE_VARS`.
-        */}
-        <Reveal id="menu.note" variant="rise">
-          <p style={MENU_NOTE_VARS} className={MENU_NOTE}>
-            {t("note")}
-          </p>
+        <Reveal id="menu.note" variant="rise" as="p" className={MENU_NOTE}>
+          {t("note")}
         </Reveal>
       </SubpageBar>
     </PageTransition>

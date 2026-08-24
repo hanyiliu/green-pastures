@@ -17,7 +17,7 @@ import { installIntersectionObserverStub, installMatchMedia } from "../motion/ha
 /**
  * The subpage shell (PR-6.1; 04 §1, §3.1; 05 §5.7; 06 `D-06.3`, `D-06.6`).
  *
- * Four contracts are worth a test, and each is checked against `content/` or
+ * Six contracts are worth a test, and each is checked against `content/` or
  * against 03's tokens rather than against a value typed in here:
  *
  * - **the bar reads the page's own namespace and `site.routes[]`** — the kicker
@@ -31,17 +31,42 @@ import { installIntersectionObserverStub, installMatchMedia } from "../motion/ha
  *   branch on the page id (INV-04.4);
  * - **the wait for the origin heading refuses the element it started with** —
  *   four routes share an id with their home section, so "an element with this
- *   id exists" is true before the navigation has happened at all.
+ *   id exists" is true before the navigation has happened at all;
+ * - **the shell makes the header's three shared decisions** — the registry key
+ *   that keeps `gallery`, `programs` and `menu` from spending their entrance on
+ *   the home section of the same name, the bottom margin a gapped column does
+ *   not want, and `introDesktopOnly`;
+ * - **a message tree the two intro shapes cannot describe fails loudly** rather
+ *   than rendering a header with no intro in it.
  */
 
 const EN = routing.defaultLocale;
 
-function renderShell(node: ReactNode) {
+function renderShell(node: ReactNode, messages: typeof reference = reference) {
   return render(
-    <NextIntlClientProvider locale={EN} messages={reference}>
+    <NextIntlClientProvider locale={EN} messages={messages}>
       <MotionProvider>{node}</MotionProvider>
     </NextIntlClientProvider>,
   );
+}
+
+/** The `en` tree with one key taken out of one namespace. */
+function referenceWithout(page: "philosophy", key: "intro"): typeof reference {
+  const messages = structuredClone(reference);
+  Reflect.deleteProperty(messages[page], key);
+  return messages;
+}
+
+/** The registry key of the one `Reveal` a rendered header is wrapped in. */
+function headerRevealId(container: HTMLElement): string | null {
+  return container.querySelector("[data-reveal-id]")?.getAttribute("data-reveal-id") ?? null;
+}
+
+/** The `SectionHeader` stack — the box the `h1` sits in. */
+function headerStack(): HTMLElement {
+  const stack = screen.getByRole("heading", { level: 1 }).parentElement;
+  if (stack === null) throw new Error("The h1 has no parent, so there is no header stack.");
+  return stack;
 }
 
 beforeAll(() => {
@@ -95,6 +120,19 @@ describe("SubpageBar", () => {
 
     expect(panel?.style.getPropertyValue("--section-bg")).toBe("var(--color-bg-testimonials)");
     expect(panel?.style.getPropertyValue("--section-link")).toBe("var(--color-link-testimonials)");
+  });
+
+  it("declares the page's own custom properties on the content column", () => {
+    // Custom properties inherit, so the column is one declaration where the
+    // Menu page used to carry seven — one per block, five of them day cards.
+    const { container } = renderShell(
+      <SubpageBar routeId="menu" contentStyle={{ "--menu-cell": "13px" }}>
+        {null}
+      </SubpageBar>,
+    );
+
+    const column = container.querySelector<HTMLElement>("main#main");
+    expect(column?.style.getPropertyValue("--menu-cell")).toBe("13px");
   });
 
   it("renders the one #main landmark the skip link targets", () => {
@@ -156,6 +194,63 @@ describe("SubpageHeader", () => {
     expect(paragraphs).toHaveLength(1);
     expect(paragraphs[0]).toHaveTextContent(reference.menu.intro);
     expect(paragraphs[0]).not.toHaveClass("md:hidden");
+  });
+
+  it("forwards introDesktopOnly, so 04 §4's Menu row is a prop and not a selector", () => {
+    const { container } = renderShell(<SubpageHeader page="menu" introDesktopOnly />);
+
+    const paragraphs = container.querySelectorAll("p");
+    expect(paragraphs).toHaveLength(1);
+    expect(paragraphs[0]).toHaveTextContent(reference.menu.intro);
+    expect(paragraphs[0]).toHaveClass("hidden", "md:block");
+  });
+
+  it("sheds SectionHeader's bottom margin itself, on both views and on every page", () => {
+    // The margin is additive on `SubpageBar`'s gapped column, and the answer is
+    // the same on all six pages — so the shell gives it rather than each page
+    // repeating `mb-0! md:mb-0!`. Both halves: an important base class does not
+    // outrank its own `md:` twin.
+    for (const page of ["philosophy", "menu", "gallery"] as const) {
+      const view = renderShell(<SubpageHeader page={page} />);
+      expect(headerStack()).toHaveClass("mb-0!", "md:mb-0!");
+      view.unmount();
+    }
+  });
+
+  it("keys the header's Reveal by a namespace of its own, not by the page id", () => {
+    // `gallery`, `programs` and `menu` are home *section* ids as well as page
+    // ids, and the registry is once per session by id (05 `D-05.6`): an
+    // unprefixed `gallery.header` is already spent by the time a reader who
+    // scrolled the home page opens `/gallery`, and the entrance never plays.
+    for (const page of ["gallery", "programs", "menu", "philosophy", "reviews", "team"] as const) {
+      const view = renderShell(<SubpageHeader page={page} />);
+      expect(headerRevealId(view.container)).toBe(`subpage.${page}.header`);
+      view.unmount();
+      resetRevealRegistry();
+    }
+  });
+
+  it("refuses a namespace with an introShort and no intro (04 D-04.5)", () => {
+    // Dormant in `content/` today and silent before this check: the pair branch
+    // needs both keys, so the lone `introShort` fell through to the other shape
+    // and the header rendered with no intro on either view.
+    const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(() =>
+      renderShell(<SubpageHeader page="philosophy" />, referenceWithout("philosophy", "intro")),
+    ).toThrow(/introShort and no intro/u);
+
+    errors.mockRestore();
+  });
+
+  it("refuses introDesktopOnly beside an introShort, which SectionHeader's types also do", () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(() => renderShell(<SubpageHeader page="philosophy" introDesktopOnly />)).toThrow(
+      /introDesktopOnly, but its namespace carries an introShort/u,
+    );
+
+    errors.mockRestore();
   });
 });
 

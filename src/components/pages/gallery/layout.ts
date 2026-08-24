@@ -54,13 +54,6 @@
  */
 export const GALLERY_COLUMN = "max-w-255! gap-4! md:gap-6!" as const;
 
-/**
- * The header stack sheds its bottom margin. `SectionHeader` reserves 28px/44px
- * under itself for a home section; here the column's own gap is the whole
- * separation the design draws (D L485, M L388), so both halves are zeroed.
- */
-export const GALLERY_HEADER = "mb-0! md:mb-0!" as const;
-
 /** The filter row — centred, wrapping, 6px/8px apart (M L393, D L489). */
 export const FILTER_ROW = "flex flex-wrap items-center justify-center gap-1.5 md:gap-2" as const;
 

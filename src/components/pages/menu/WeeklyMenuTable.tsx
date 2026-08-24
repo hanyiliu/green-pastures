@@ -12,7 +12,6 @@ import {
   MENU_TABLE,
   MENU_TABLE_CARD,
   MENU_TABLE_LABEL_COL,
-  MENU_TABLE_VARS,
   MENU_TH_DAY,
   MENU_TH_MEAL,
 } from "./layout";
@@ -69,7 +68,7 @@ export async function WeeklyMenuTable({ menu }: WeeklyMenuTableProps) {
 
   return (
     <Reveal id={TABLE_REVEAL_ID} variant="rise" className={MENU_TABLE_CARD}>
-      <table style={MENU_TABLE_VARS} className={MENU_TABLE}>
+      <table className={MENU_TABLE}>
         <caption className="sr-only">{t("eyebrow")}</caption>
 
         <colgroup>

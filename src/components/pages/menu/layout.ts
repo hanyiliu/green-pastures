@@ -22,10 +22,11 @@ import type { CSSProperties } from "react";
  * and the reason the subpage bar writes its own 12/13px pair.
  *
  * So the three `*_VARS` blocks below do what the shell already does on this
- * surface: the design's own values, once, as component config, declared on the
- * element that consumes them. Nothing here is a raw px in markup (INV-03.2) and
- * nothing is a raw colour (INV-03.1) — every colour below is a 03 token or a
- * `color-mix` of one. See this row's report for the request back to 03.
+ * surface: the design's own values, once, as component config, declared where
+ * every consumer inherits them ({@link MENU_COLUMN_VARS}). Nothing here is a
+ * raw px in markup (INV-03.2) and nothing is a raw colour (INV-03.1) — every
+ * colour below is a 03 token or a `color-mix` of one. See this row's report for
+ * the request back to 03.
  *
  * Line numbers are `docs/design/desktop/Green Pastures - Homepage.dc.html` (D)
  * and `docs/design/mobile/Green Pastures - Homepage Mobile.dc.html` (M).
@@ -39,20 +40,13 @@ type StyleWithCustomProperties = CSSProperties & Partial<Record<`--${string}`, s
  * -------------------------------------------------------------------------- */
 
 /**
- * The table's own sizes, declared on the `<table>` and inherited by its cells.
+ * The table's own sizes, inherited by its cells.
  *
  * Every one of them carries a **single** value rather than a `< md` / `≥ md`
  * pair, because the table exists on one view only (`D-04.11`) and is never
  * drawn at another size.
- *
- * They ride the element rather than the page's content column because
- * `SubpageBar` — the shell's file, not this row's — exposes a
- * `contentClassName` but no `contentStyle`, and a wrapper `<div>` added only to
- * hold them would become a flex child of that column and swallow one of its
- * gaps. Attaching each block's config to the block is the smaller change and
- * keeps the declaration next to its only consumer.
  */
-export const MENU_TABLE_VARS: StyleWithCustomProperties = {
+const MENU_TABLE_VARS: StyleWithCustomProperties = {
   /** The meal-label column; the five day columns share the rest (D L444). */
   "--menu-label-col": "120px",
   /** The cells' and row labels' corner (D L451, L452). */
@@ -66,8 +60,8 @@ export const MENU_TABLE_VARS: StyleWithCustomProperties = {
   "--menu-cell-lh": "1.4",
 };
 
-/** One day card's sizes, declared on its `<section>`. Narrow view only. */
-export const DAY_CARD_VARS: StyleWithCustomProperties = {
+/** One day card's sizes. Narrow view only. */
+const DAY_CARD_VARS: StyleWithCustomProperties = {
   /** The day's heading — Fredoka 600 (M L332). */
   "--menu-daycard-title": "17px",
   /** The meal pill — Nunito 700 (M L334). */
@@ -82,9 +76,29 @@ export const DAY_CARD_VARS: StyleWithCustomProperties = {
  * inline style; `D-04.5`, and `SubpageBar` writes its kicker's pair the same
  * way).
  */
-export const MENU_NOTE_VARS: StyleWithCustomProperties = {
+const MENU_NOTE_VARS: StyleWithCustomProperties = {
   "--menu-note": "11px", // M L378
   "--menu-note-md": "13px", // D L476
+};
+
+/**
+ * The three blocks' config, declared once on the content column.
+ *
+ * Custom properties inherit, and `SubpageBar`'s column is the ancestor of the
+ * table, the five day cards and the note alike — so one declaration on the
+ * column is the same computed value on every consumer as a `style` on each of
+ * them, with a seventh copy saved every time the card list grows. That is what
+ * `contentStyle` is for; before the shell exposed it, each block carried its
+ * own and the day cards carried five.
+ *
+ * The three names below stay separate so each value is still documented beside
+ * the block it belongs to. They do not collide: `--menu-*`, `--menu-daycard-*`
+ * and `--menu-note*` are three families with one consumer each.
+ */
+export const MENU_COLUMN_VARS: StyleWithCustomProperties = {
+  ...MENU_TABLE_VARS,
+  ...DAY_CARD_VARS,
+  ...MENU_NOTE_VARS,
 };
 
 /* -------------------------------------------------------------------------- *
@@ -102,29 +116,6 @@ export const MENU_NOTE_VARS: StyleWithCustomProperties = {
  * `md:` twin.
  */
 export const MENU_COLUMN = "gap-4! md:gap-6!" as const;
-
-/**
- * What the page changes about `SubpageHeader`.
- *
- * Two overrides, both of which the shell leaves to the page.
- *
- * **`mb-0!`** — `SectionHeader`'s 28px/44px of clearance is additive on a
- * gapped column; see `programs/layout.ts`, which carries the full note.
- *
- * **The intro is `≥ md` only.** 04 §4's Menu-page row marks `menu.intro`
- * desktop-only and the mobile reference draws the header with two lines rather
- * than three (M L329–331). `SectionHeader` expresses exactly that with its
- * `introDesktopOnly` prop — but `SubpageHeader`, which is the shell's file and
- * not this row's, does not forward it, and `menu` has no `introShort` for the
- * other shape to catch. So the toggle is applied from outside, on the header's
- * last paragraph: with one intro that is the intro, and if a locale ever gains
- * `menu.introShort` the *short* one is the earlier `<p>` and keeps its own
- * `md:hidden`, so the selector stays correct in both worlds. Forwarding
- * `introDesktopOnly` from `SubpageHeader` is the better fix and belongs to the
- * shell; see this row's report.
- */
-export const MENU_HEADER =
-  "mb-0! md:mb-0! [&>p:last-of-type]:hidden md:[&>p:last-of-type]:block" as const;
 
 /* -------------------------------------------------------------------------- *
  * The weekly table — `>= md` only (D-04.11; D L443–472)
