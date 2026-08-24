@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import type { ReactNode } from "react";
@@ -12,6 +13,7 @@ import { fredoka, nunito } from "@/design/fonts";
 import { clientMessages } from "@/i18n/messages";
 import { notFound } from "@/i18n/navigation";
 import { LOCALE_META, routing } from "@/i18n/routing";
+import { buildRootMetadata } from "@/lib/seo/metadata";
 
 /**
  * The root layout (06 §6.2, 02 `D-02.16`, 04 §1).
@@ -22,7 +24,8 @@ import { LOCALE_META, routing } from "@/i18n/routing";
  * PR-3.1 owned the locale plumbing (`<html lang>`, `generateStaticParams`, the
  * unknown-locale guard, the client provider) and PR-4.1 the font classes;
  * PR-4.5 attaches the rest of 04 §1's stack — `MotionProvider`, `SkipLink`,
- * `SiteHeader`, `{children}`, `SiteFooter`. The metadata block is still PR-6.8's.
+ * `SiteHeader`, `{children}`, `SiteFooter`; PR-6.8 added `generateMetadata`,
+ * which is the whole of this file's SEO surface (06 `D-06.10`).
  *
  * **`MotionProvider` is mounted here and nowhere else** (05 `D-05.5`). It has
  * to sit above `SiteHeader`, not merely above `{children}`: the nav links are
@@ -43,6 +46,30 @@ import { LOCALE_META, routing } from "@/i18n/routing";
  */
 export function generateStaticParams(): Array<{ locale: string }> {
   return routing.locales.map((locale) => ({ locale }));
+}
+
+/**
+ * The metadata every page inherits (06 `D-06.10`, `D-06.11`) — `metadataBase`,
+ * the `"%s · {brandName}"` title template, the shared social card, the robots
+ * and format defaults. Each `page.tsx` adds its own title, description,
+ * canonical and `hreflang` set through the same helper.
+ *
+ * `metadataBase` has to be set here and nowhere else: it is what lets every
+ * page return a *relative* canonical and still emit an absolute URL, and a
+ * relative canonical without it is a build error rather than a warning.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  // Same guard as the layout body: `generateMetadata` runs first, so an unknown
+  // prefix that reached here would index `LOCALE_META` with a key it has not
+  // got before `notFound()` ever ran.
+  if (!hasLocale(routing.locales, locale)) notFound();
+
+  return buildRootMetadata(locale);
 }
 
 export default async function LocaleLayout({
