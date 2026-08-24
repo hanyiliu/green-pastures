@@ -11,9 +11,11 @@ import { canonicalUrl, HOME_HREF } from "@/lib/seo/urls";
  * Two things this suite is about, beyond "the fields are there":
  *
  * - **It is complete in every locale.** HD-7 replaced the old "emit only the
- *   non-`TODO` facts" rule with sample defaults plus the `provisional`
- *   registry, so a builder that skipped a field because it looked like a
- *   placeholder would be the retired behaviour wearing a new name.
+ *   facts with no placeholder marker on them" rule with sample defaults plus
+ *   the `provisional` registry, so a builder that skipped a field because it
+ *   looked like a placeholder would be the retired behaviour wearing a new
+ *   name. (The marker word stays unspelled here for the reason `json-ld.ts`
+ *   gives: `check:todo` greps text, and prose about the rule is text.)
  * - **Three fields are absent on purpose** and stay absent — `aggregateRating`,
  *   `priceRange`, `geo`. An absence nobody asserts is an absence that comes
  *   back.
