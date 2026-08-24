@@ -19,7 +19,10 @@ OQ-11.3 is live; what is missing is a `required_status_checks` rule, and that is
 turns on — §2, §12, §14) · revised 2026-08-23 (PR-5.3's `MenuDayChips` cell re-read against
 `src/i18n/messages.ts` and 04 `D-04.10`: it claimed a client `menu` namespace and a default day picked after
 hydration, and neither has ever been true of either the decision or the code — §1 now carries the citation rule
-that clause broke)
+that clause broke) · revised 2026-08-24 (that rule applied as a deliberate sweep rather than incidentally: four
+more cells re-read against `origin/main` and their owning documents — PR-4.3a's variant count, PR-6.1's route
+group and its focus target, PR-7.1's root-layout path, §1's kickoff snapshot — and the §10 and §14 lines 08 has
+since discharged)
 
 Notes: pass 1 was drafted while 04, 06, 08 and 09 were still being written; pass 2 reconciled every phase with
 them by decision id (§2–§8), added the rows their artifacts need, and rebuilt the open-question roll-up against
@@ -325,9 +328,12 @@ and the cell is the defect.
 `check-<topic>`, where `<topic>` is the row's slug listed under each phase table; the orchestrator is neither
 and closes the bead on the verdict (W-11.6, TRAP-11.8).
 
-**Starting state.** The tree today is `README.md` (stale CRA boilerplate), `docs/**`, `.claude/**`, `.beads/`
-and `.gitignore`. There is no `package.json`, no `.github/`, no `.gitattributes` and no `.beads/issues.jsonl`
-— the first Phase 2 PRs create all four, which is why PR-2.1 and PR-2.4 have no code dependencies.
+**Starting state — a snapshot of 2026-08-22, kept for the dependency it explains.** At kickoff the tree was
+`README.md` (stale CRA boilerplate), `docs/**`, `.claude/**`, `.beads/` and `.gitignore`; there was no
+`package.json`, no `.github/`, no `.gitattributes` and no `.beads/issues.jsonl`. The first Phase 2 PRs create
+all four, which is why PR-2.1 and PR-2.4 have no code dependencies — and that, not the inventory, is the
+paragraph's job. **All four exist on `main` today and the README no longer carries CRA text**, so read this as
+history: the tree is whatever `git ls-files` says, never whatever this line last said.
 
 ### 2 · Phase 2 · Foundation
 
@@ -483,7 +489,7 @@ navigation is hash-first), D-06.9 (language switcher = same-path `Link` with `lo
 |---|---|---|---|---|---|---|---|
 | PR-4.1 | Tokens: `tokens.css` (`@theme static` + `:root` `--dur-*`/`--stagger-*`/`--section-*`/`--tap-*`/`--nav-h`, `:root:lang(zh)` — one selector still serves both Chinese locales — focus ring), `globals.css` import, `fonts.ts` (Fredoka 500/600, Nunito 600/700/800, and the CJK stack **resolving per script** per 03 D-03.14 — `--font-cjk-sc` and `--font-cjk-tc` as separate token values, `--font-cjk` selecting between them under `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)`; no webfont, HD-14), `src/design/tokens.ts` mirror + parity test (INV-03.4), `public/brand/logo.png` | new: *Phase 4 · design tokens* | `src/styles/tokens.css`, `src/app/globals.css`, `src/design/fonts.ts`, `src/design/tokens.ts`, `public/brand/**` | PR-2.4 (*early-start*) | M | 4.4 | Every 03 §2–§7 token present with the quoted value; parity test fails when one side changes; no `--duration-*` in `@theme`; `bg-sage` etc. generated; `--font-cjk-sc` and `--font-cjk-tc` each list a face per platform and the `:lang()` selectors pick the right one, so `/zh-Hant` does not render Simplified glyph forms (screenshot at the gate — `MC-08.1`, not an automated check); no `next/font` loader is added for either Chinese script (HD-14) |
 | PR-4.2 | Layout shell + primitives (04): `Section` (bg/padding tokens, `scroll-snap-align`, `scroll-margin-top: var(--nav-h)`, id from `site.routes[].homeAnchor`), container, `Eyebrow`, `SectionTitle` (heading/subhead recipes), `LearnMoreLink`, pill `Button`, `Chip`, `Emoji` (D-03.8), `PhotoSlot` (03 §9), card radii | new: *Phase 4 · layout shell & primitives* | `src/components/ui/**` and `src/components/layout/{Section,SectionHeader}.tsx` (04 §2's tree) | PR-4.1, PR-3.1 | M | 4.3a, 4.3b | Token-only (INV-03.1–3 lint green); `uppercase` only via the eyebrow recipe; `PhotoSlot` fill is `color-mix` of the section bg; 44 px hit areas |
-| PR-4.3a | Motion core (05 §5.1–5.3, 5.9): `MotionProvider` (`LazyMotion` + `MotionConfig reducedMotion="user"`), `Reveal`/`RevealItem`, `variants.ts` (11 entries, keyframe `times`, `reduced`), `registry.ts`, noscript stylesheet, unit tests for catalogue fidelity | new: *Phase 4 · Reveal & variants* | `src/components/motion/{MotionProvider,Reveal}.tsx`, `src/components/motion/registry.ts`, `src/components/motion/variants.ts`, tests (04 §2's tree, ADJ-15) | PR-4.1 | M | 4.2, 4.3b, 4.4 | `variants.ts` equals 05 §5.2 (values, `times`, origins); reveal once survives a client navigation; reduced motion yields opacity-only; one IntersectionObserver |
+| PR-4.3a | Motion core (05 §5.1–5.3, 5.9): `MotionProvider` (`LazyMotion` + `MotionConfig reducedMotion="user"`), `Reveal`/`RevealItem`, `variants.ts` (05 §5.2's catalogue row for row — keyframe `times`, `reduced`; twelve rows today, and the number is 05's to change, not this cell's to keep), `registry.ts`, noscript stylesheet, unit tests for catalogue fidelity | new: *Phase 4 · Reveal & variants* | `src/components/motion/{MotionProvider,Reveal}.tsx`, `src/components/motion/registry.ts`, `src/components/motion/variants.ts`, tests (04 §2's tree, ADJ-15) | PR-4.1 | M | 4.2, 4.3b, 4.4 | `variants.ts` equals 05 §5.2 (values, `times`, origins); reveal once survives a client navigation; reduced motion yields opacity-only; one IntersectionObserver |
 | PR-4.3b | Text, numbers, decorations: `WordSwap` (D-05.9), `CountUp` (D-05.8), `Sun`/`Leaf`/`ScrollCue` two-layer components + `ambient.css` loops paused off-screen (D-05.7, INV-05.5) | new: *Phase 4 · WordSwap, CountUp, decorations* | `src/components/motion/{WordSwap,CountUp}.tsx`, `src/components/motion/ambient.css`, `src/components/decor/**` (04 §2's tree) | PR-4.3a | M | 4.2, 4.4 | Cascade delay `min(i×14, 300)` ms; count-up final value in SSR HTML; loops `animation: none` under reduced motion; outer layer has stable `id` + forwarded `ref` |
 | PR-4.4 | View Transitions spike (OQ-05.2 a–f) on a throwaway branch, then land `PageTransition` + `view-transitions.css` per the verdict (VT or F1, D-10.5) | new: *Phase 4 · View Transitions spike & PageTransition* | `src/components/motion/PageTransition.tsx`, `src/components/motion/view-transitions.css` (04 §2's tree); spike routes never merged | PR-2.4 (*early-start*), PR-4.1 | M | 4.1–4.3 | Bead note answers (a)–(f) with browser matrix; typed forward/back animate, untyped instant, reduced motion instant; next-intl `Link`/`useRouter` pass `transitionTypes` (or the F1 wrapper is in place and 01 amended) |
 | PR-4.5 | Sticky nav (links from `site.nav` + `common.nav.*`, "Book a tour" → `#visit`; `LangSwitcher` (04 §3.1's name) is now a **three-option menu**, not a two-name toggle — trigger renders `LOCALE_META[current].shortLabel` (`EN`/`简`/`繁`), the list renders every id in `routing.locales` by endonym with `aria-current` on the current one, labels from `common.localeSwitcher.ariaLabel` + `optionAriaLabel` (the `.label` template is retired), each option a next-intl `Link` + `router.replace(pathname, {locale, scroll:false})` + `transitionTypes` + `markLocaleSwap()` — D-02.10, HD-10; its *appearance* is OQ-06.10 / OQ-04.11, whose defaults ship if unanswered and whose every answer is a class change inside this one component, so the row is not blocked on it), mobile hamburger sheet (default motion per OQ-05.3) with the full link set incl. Contact + the switcher, `SiteFooter` (`LogoCard`, `site.nav.footer[]` = six links + Contact on both views per OQ-04.6, copyright taking `{brandName}` + `{brandNameOther}` — never `{brandNameZh}`, which is retired — and the licence-number line on both views — `gp-dln.9`, whose decision belongs to 02 and 12; 10 only schedules where it renders) | new: *Phase 4 · nav, switcher, footer* | `src/components/layout/{SiteHeader,PrimaryNav,LangSwitcher,BookTourButton,TrackedLink,Hamburger,MobileMenu,SiteFooter,LogoCard,FooterLinks,Copyright,SkipLink}` (04 §2's tree; `Section`/`SectionHeader` in the same folder are PR-4.2's and the subpage trio is PR-6.1's), `src/app/[locale]/layout.tsx` | PR-4.2, PR-4.3b, PR-4.4 | L | 4.6 (after 4.5 merges: none) | The menu is built from `routing.locales` with no literal locale list and no `locale === …` comparison (INV-02.9), so adding or dropping `zh-Hant` changes nothing here; keyboard a11y of the menu (roving focus, Esc, `aria-current`); switch keeps path/hash, no full reload, cascade plays, CLS ≤ 0.02 and no font request on toggle (03 §3.3); hamburger a11y (focus trap, `menuOpen/menuClose` labels); the footer renders both brand names from `brandPairLocale`; `--nav-h` matches rendered height |
@@ -573,7 +579,7 @@ config items); 07 §9 requirements on 06 (`#visit`, `/api` exclusions, robots, p
 
 | PR | Title | Primary bead | Files / areas | Depends on | Size | Parallel with | Verifier check |
 |---|---|---|---|---|---|---|---|
-| PR-6.1 | Subpage shell: kicker/eyebrow/heading/intro/footnote recipe, sticky subnav bar + Back pill (`common.back.*`, `router.replace(home#anchor, {transitionTypes:['subpage-exit']})`, focus `h1`), `PageTransition` on every `page.tsx` incl. home, `transitionTypes={['subpage-enter']}` on section links; the `[...rest]` catch-all that calls `notFound()` (D-06.3) | new: *Phase 6 · subpage shell & transitions* | `src/app/[locale]/(subpages)/**` layout (06's tree), `src/components/layout/{SubpageBar,BackLink,SubpageHeader}` (04 §2's tree — the only `layout/` files this phase touches), `src/app/[locale]/[...rest]/page.tsx`, `src/app/[locale]/page.tsx` | PR-4.4 (`PageTransition`, `view-transitions.css`), PR-5.7 (the last section, so `src/app/[locale]/page.tsx` is complete before the shell wraps it) | M | 6.8, 6.10, 6.11 | Typed forward/back slide 103 %/500 ms/`--ease-soft`; browser Back instant; hash landing on the origin section; reduced motion instant; `/{locale}/nope` reaches the localised 404 through `[...rest]` and is never linked or prefetched |
+| PR-6.1 | Subpage shell: kicker/eyebrow/heading/intro/footnote recipe, sticky subnav bar + Back pill (`common.back.*`, `router.replace(home#anchor, {transitionTypes:['subpage-exit']})`, focus moved per 05 §5.7 — which on **Back** is the **origin section's heading** on the home page, an `h2`; the detail page's `h1` is the *forward* half of that same decision), `PageTransition` on every `page.tsx` incl. home, `transitionTypes={['subpage-enter']}` on section links; the `[...rest]` catch-all that calls `notFound()` (D-06.3) | new: *Phase 6 · subpage shell & transitions* | `src/components/layout/{SubpageBar,BackLink,SubpageHeader}` (04 §2's tree — the only `layout/` files this phase touches), `src/app/[locale]/[...rest]/page.tsx`, `src/app/[locale]/page.tsx`. **No route group and no shared `layout.tsx`:** 06 `D-06.3` gives each detail page its own folder and 06 §6.2 rules route groups out by name, so the shell is components that PR-6.2…6.7 each compose — those rows' own folders are the only `app/[locale]/` additions this phase makes | PR-4.4 (`PageTransition`, `view-transitions.css`), PR-5.7 (the last section, so `src/app/[locale]/page.tsx` is complete before the shell wraps it) | M | 6.8, 6.10, 6.11 | Typed forward/back slide 103 %/500 ms/`--ease-soft`; browser Back instant; hash landing on the origin section; reduced motion instant; `/{locale}/nope` reaches the localised 404 through `[...rest]` and is never linked or prefetched |
 | PR-6.2 | Philosophy page: principles (keyed messages + `site.principles[].icon`), daily rhythm (`timeShort`), badges, meta | new: *Phase 6 · Philosophy page* | `src/app/[locale]/philosophy/**` (incl. its `generateMetadata`) | PR-6.1 (subpage shell), PR-6.8 (`buildMetadata()`) | M | 6.3–6.7 | Times from `site.dailyRhythm[]`; `riseChild` stagger; both views |
 | PR-6.3 | Programs page: per-room cards with `ratioLabel`, highlights, footnote, meta | new: *Phase 6 · Programs page* | `src/app/[locale]/programs/**` (incl. its `generateMetadata`) | PR-6.1 (subpage shell), PR-6.8 (`buildMetadata()`) | S | 6.2, 6.4–6.7 | Highlights arrays equal length per locale (validator) |
 | PR-6.4 | Menu page: desktop table (meals × Mon–Fri), mobile per-day cards, three dietary chips, note, meta | new: *Phase 6 · Menu page* | `src/app/[locale]/menu/**` (incl. its `generateMetadata`) | PR-6.1 (subpage shell), PR-6.8 (`buildMetadata()`) | M | 6.2, 6.3, 6.5–6.7 | Weekday headers via `weekdayShort`/`weekdayLong`; same collection as the home sample line |
@@ -623,7 +629,7 @@ OQ-01.1 / OQ-07.9 decide the analytics provider PR-7.1 wires.
 | OPS-7.1 | Resend: account ownership, sending domain verified (SPF/DKIM/DMARC), `INQUIRY_FROM_EMAIL`, `INQUIRY_TO_EMAIL` per scope (Preview = test inbox), sending-only key (OQ-07.6, OQ-07.4); the verified domain and from-address are then written into `content/site.json` (`email.sendingDomain`, `email.fromAddress`) and their `provisional` entries deleted — a content edit landing with PR-8.2, not a dashboard-only change (HD-4, INV-10.7) | new chore: *Phase 7 · Resend* | Resend + DNS (no code); the `site.json` half rides PR-8.2 | owner | S | 7.2, 7.3 | Domain shows verified; a preview submission lands in the test inbox; the address the site sends from is the one in `site.json`, not one that exists only in the Resend dashboard |
 | OPS-7.2 | Turnstile: production widget with production hostnames, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` per scope (test keys on preview/dev) | new chore: *Phase 7 · Turnstile* | Cloudflare + Vercel env | owner | S | 7.1, 7.3 | Real-key manual submission from production passes `siteverify`; the `2x…` test pair fails on preview |
 | OPS-7.3 | Vercel: env scopes per 07 §5, WAF rule `POST /api/inquiry` IP 5 / 10 min → 429 (production), Deployment Protection on previews, log drain decision, domain added (not cut over); **the plan decision is taken or deliberately deferred here** — the rate-limit rule consumes Hobby's single custom rule — Hobby 1, Pro 40 [verified: Vercel WAF docs, 2026-08-22; 07 `D-07.12`, 09 `D-09.2`] — so the bead records whether the project upgraded to Pro now or is publishing the rule on Hobby and upgrading at OPS-8.1 (OQ-10.7, D-10.13) | new chore: *Phase 7 · Vercel env, WAF, logs* | Vercel dashboard / CLI | OPS-2.1 (the project it configures); the domain name — **answered, `greenpasturesdaycare.com`** (HD-13, D-10.14), so the "domain added, not cut over" half waits only on registrar access, not on OQ-09.2; OQ-09.1 reopened by HD-3 | S | 7.1, 7.2 | Sixth POST in 10 min returns 429 and the client shows `rateLimited`; no secret in the client bundle; the tier the rule was published on is written in the bead, and the Rate Limiting Pricing dialog's text is recorded next to it (09 §5.1 item 8) |
-| PR-7.1 | Analytics: `@vercel/analytics/next` + `@vercel/speed-insights/next` in the root layout (or the provider OQ-01.1 / OQ-07.9 names — GA4 would add a consent UI, a scope change), events per 07 §4 without PII | new: *Phase 7 · analytics & events* | `src/app/layout.tsx`, `src/lib/analytics.ts`, call sites, `package.json` (adds `@vercel/analytics`, `@vercel/speed-insights`) | PR-5.9 (`InquiryForm`, the only component with events), OQ-01.1 answered | S | ops (no other dependency-adding PR at the same time) | Events fire with only the listed properties (INV-07.5); no third-party script beyond Turnstile + Analytics (INV-07.8) |
+| PR-7.1 | Analytics: `@vercel/analytics/next` + `@vercel/speed-insights/next` in the root layout (or the provider OQ-01.1 / OQ-07.9 names — GA4 would add a consent UI, a scope change), events per 07 §4 without PII | new: *Phase 7 · analytics & events* | `src/app/[locale]/layout.tsx` — the root layout is inside `[locale]` (06 `D-06.4`, §6.2: `<html lang>` must be the locale's and Next allows one `<html>`, so there is no `src/app/layout.tsx` to add a provider to), `src/lib/analytics.ts`, call sites, `package.json` (adds `@vercel/analytics`, `@vercel/speed-insights`) | PR-5.9 (`InquiryForm`, the only component with events), OQ-01.1 answered | S | ops (no other dependency-adding PR at the same time) | Events fire with only the listed properties (INV-07.5); no third-party script beyond Turnstile + Analytics (INV-07.8) |
 | PR-7.2 | Form go-live: `INQUIRY_TRANSPORT` defaults to `resend` outside dev, `INQUIRY_AUTOACK` per OQ-07.2, e-mail templates reviewed from `log` output in `en` and `zh-Hans` (the two locales that can receive a real submission at this point), 429 mapping verified against the WAF, manual real-key submission recorded in the bead | new: *Phase 7 · form go-live* | `src/lib/inquiry/**` (config only), `.env.example` | OPS-7.1–7.3, PR-5.10 | S | — | A production submission reaches the inbox with `reply_to` = parent; logs carry no PII; auto-ack behaves per flag |
 
 **Seats** (`writer-<topic>` / `check-<topic>`): 7.1 `analytics` · 7.2 `form-golive` · OPS-7.1 `resend` ·
@@ -760,7 +766,7 @@ flowchart LR
 | Content | `content/**` only | everything from Phase 3 on | `en` authoring (PR-3.2), the editor guide (PR-3.8), the Chinese trickle, owner facts and the `provisional` array, `en` alt keys; `content/zh-Hans/**` and `content/zh-Hant/**` each have exactly one writer per phase (PR-3.5/PR-8.1 and PR-3.9/PR-8.8); never touches `src/` except for the one `routing.ts` line that adds or removes a locale id |
 | Forms | `src/lib/inquiry/**`, `src/app/api/inquiry/**`, `src/components/forms/**`, `e2e/form*` | Phases 4–5 | Reads keys 02 already defines; no content edits |
 | Design tokens / motion | `src/styles/**`, `src/design/**`, `src/components/motion/**` and `src/components/decor/**` (04 §2's tree), `src/app/globals.css` (PR-4.1 only, which is why the App lane excludes it) | Phase 3 (early-start) | Lands after Phase 3 gate (D-10.2) |
-| Quality | `.github/**`, `scripts/**`, `lighthouserc*`, test configs, `e2e/**` except `e2e/form*` (`e2e/smoke*` PR-3.6, `e2e/routes*` PR-6.10, `e2e/a11y*` PR-8.4, `e2e/visual*` PR-8.6) | everything | e2e scaffolding and gates grow with each phase; each family has one owning PR. **One owning PR per workflow file too**, which is what keeps four `.github/workflows/**` files out of each other's way: `bead-trailer.yml` PR-2.3, `ci.yml` PR-2.6 (the one shared file, rule below), `audit.yml` PR-2.10, `nightly.yml` PR-5.11 |
+| Quality | `.github/**`, `scripts/**`, `lighthouserc*`, test configs, `e2e/**` except `e2e/form*` (`e2e/scaffold*` PR-2.5, `e2e/smoke*` PR-3.6, `e2e/routes*` PR-6.10, `e2e/headers*` PR-6.11, `e2e/a11y*` PR-8.4, `e2e/visual*` PR-8.6) | everything | e2e scaffolding and gates grow with each phase; each family has one owning PR. **One owning PR per workflow file too**, which is what keeps four `.github/workflows/**` files out of each other's way: `bead-trailer.yml` PR-2.3, `ci.yml` PR-2.6 (the one shared file, rule below), `audit.yml` PR-2.10, `nightly.yml` PR-5.11 |
 | Ops | Vercel / Resend / Cloudflare / DNS | Phases 2, 6–8 | Beads without PRs; owner-paced |
 | Tracker / skill | `.beads/**`, `.claude/skills/**`, `.gitattributes` | Phase 2 | `issues.jsonl` conflicts between parallel PRs are regenerated, never hand-merged (11 §5) |
 
@@ -772,12 +778,16 @@ Three files sit outside every lane because more than one lane must edit them; ea
 - `next.config.ts` — PR-2.4 (scaffold), PR-3.1 (next-intl plugin), PR-6.11 (06 §6.9 + D-09.18 headers), PR-8.7
   (`redirects()`). **Rule:** one owner per phase, in that order; a later phase never reopens an earlier block.
 - `.github/workflows/ci.yml` — PR-2.6 creates it, PR-3.4 and PR-8.5 add a job each. **Rule:** additions are new
-  jobs, never edits to an existing job, so two lanes never touch the same lines. One exception, named because
-  it is unavoidable: the `--warn-locale` flags on PR-3.4's content job are turned on by PR-3.9 and off again by
-  PR-8.1 (`zh-Hans`) and PR-8.8 (`zh-Hant`). Those are one-token edits to a single line, they are serialised by
-  phase, and no other PR may touch that line. `audit.yml` (PR-2.10) and `nightly.yml` (PR-5.11) are
-  deliberately **not** jobs inside this file: each carries a `schedule`/`workflow_dispatch` trigger `ci.yml`
-  does not have, and a single-owner file needs no serialisation rule at all (D-10.15).
+  jobs, never edits to an existing job, so two lanes never touch the same lines. **Two exceptions, each confined
+  to one step and serialised by phase** — the file's own header names both. (a) The `--warn-locale` flags on
+  PR-3.4's content job are turned on by PR-3.9 and off again by PR-8.1 (`zh-Hans`) and PR-8.8 (`zh-Hant`):
+  one-token edits to a single line, and no other PR may touch that line. (b) `static`'s `check:todo` step, whose
+  inlined greps became a call to `scripts/ci/todo-grep.sh` when that script was written — 08 §10 owns the
+  choice, records why the alternative (a job of its own) was worse, and asked here for the matching line.
+  Extraction was unavoidably an edit to an existing job, so the exception is that step's body, once.
+  `audit.yml` (PR-2.10) and `nightly.yml` (PR-5.11) are deliberately **not** jobs inside this file: each
+  carries a `schedule`/`workflow_dispatch` trigger `ci.yml` does not have, and a single-owner file needs no
+  serialisation rule at all (D-10.15).
 
 ### 11 · Roadmap
 
@@ -893,28 +903,29 @@ that HD-4 made it content). None of the six is answered *by this document*; each
 owns it, and where that owner has since answered — OQ-08.11, by 06 `D-06.15(a)` — the row records the answer
 in place rather than a default.
 
-**Gate-condition sweep (2026-08-23), the general form of the `e2e-full` gap.** D-10.15 fixed one gate item
-whose workflow nothing scheduled. Since one instance of that is rarely alone, every clause of 08 §12.2 and
-§12.3 was read against these tables to see whether a job, script or spec family stands behind it. Two rows
-were genuinely unscheduled and are now PR-2.10 and PR-5.11. **Four more clauses are scheduled but
-mis-scoped**, and all four are 08's to fix, not 10's — 10 records them here so the next reader does not
-re-derive them:
-(i) §12.2's `lighthouse-preview` clause applies to every phase gate, but PR-8.5 builds that workflow in
-**Phase 8**, so gates 2–7 carry a condition with no runner behind it;
-(ii) §12.2's `@a11y` "0 violations across the matrix" likewise — `e2e/a11y*` is PR-8.4, and the axe coverage
-before it is the form's (PR-5.10) and PR-6.5's, not the route × locale × viewport matrix;
-(iii) §12.2's `@visual` clause carries a scope note that is **wrong rather than missing**: it says "from 04's
-phase", but `e2e/visual*` is PR-8.6, and §14's own OQ-08.9 row already says "the baselines it describes are
-PR-8.6's";
-(iv) §12.3's `seo-smoke.ts` and `@headers` "on the real domain" are satisfied in substance (PR-6.10's
-assertions and PR-6.11's headers, executed by `lighthouse-prod`), but no row names either file, so the
-launch checklist's spelling and the plan's are not the same words.
-Two further items are named by 08 and scheduled by nobody, though neither is a gate condition, so neither
-got a row here: `scripts/ci/bundle-secrets.sh` and `env-example.ts` — D-08.11 sits in Phase 2's **Scope**
-line and INV-07.3 maps to both, yet no row's *Files* column carries either path — and
-`scripts/ci/todo-grep.sh`, which INV-08.6 names as a knowingly open CI-versus-`pnpm verify` divergence that
-"closes when that script is written". PR-2.6 ships the greps inlined, which is the divergence, not its close.
-All of this is reported to 08's seat rather than acted on unilaterally.
+**Gate-condition sweep (2026-08-23), the general form of the `e2e-full` gap — its findings discharged, re-read
+against `origin/main` 2026-08-24.** D-10.15 fixed one gate item whose workflow nothing scheduled. Since one
+instance of that is rarely alone, every clause of 08 §12.2 and §12.3 was read against these tables to see
+whether a job, script or spec family stands behind it. Two rows were genuinely unscheduled and are now PR-2.10
+and PR-5.11. Four more clauses were scheduled but mis-scoped, and all four were **08's** to fix: (i) §12.2's
+`lighthouse-preview` clause applied to every phase gate while PR-8.5 builds that workflow in Phase 8; (ii) its
+`@a11y` "0 violations across the matrix" likewise, `e2e/a11y*` being PR-8.4; (iii) its `@visual` clause was
+scoped "from 04's phase" while `e2e/visual*` is PR-8.6; (iv) §12.3 named a `seo-smoke.ts` no row writes.
+**08 has fixed all four, so this note is history and not an outstanding ask.** §12.2 now opens "Four of the
+clauses below named a runner no PR builds until a late phase, so each now carries the gate it starts at …
+after the 2026-08-23 gate-condition sweep (10 §14)", and (i), (ii) and (iii) each read "from the Phase 8 gate
+onward" — (iii) recording in place that "an earlier revision of this clause read 'from 04's phase'". For (iv),
+08 §10 retires the file name: the launch checks it stood for are §5's `@seo` and `@headers` tags run against
+the production base URL, whose assertions are PR-6.10's and PR-6.11's, both scheduled, and "no new row is owed
+for it". A future sweep re-reads the clauses; it does not re-open these.
+Of the three scripts 08 named that no row scheduled, **one has since been written**: `scripts/ci/todo-grep.sh`
+shipped under `gp-dln.206`, `static`'s `check:todo` step and `pnpm verify` both call it, and 08 records
+INV-08.6's CI-versus-local divergence as closed on 2026-08-24. The older reading here — that PR-2.6 ships the
+greps inlined, which is the divergence rather than its close — was true when written and is not now; §10's
+`ci.yml` rule carries the second named exception the extraction required. **Still named by 08 and scheduled by
+nobody:** `scripts/ci/bundle-secrets.sh` and `env-example.ts` — D-08.11 sits in Phase 2's **Scope** line and
+INV-07.3 maps to both, yet no row's *Files* column carries either path. That one stays reported to 08's seat
+rather than acted on unilaterally.
 
 **Answered at the Phase 1 gate (2026-08-22).** Rows below marked **answered** keep their id and their place so
 that nothing is silently dropped, and record the answer instead of a default. A block closed at once:
@@ -1087,8 +1098,11 @@ lands; **A-10.3** the orchestrator creates the phase epics, task beads and gate 
 - `docs/technical/08-testing-quality.md` — D-08.1…19, OQ-08.1…11; the gate inventory and DoD behind every
   "Verifier check" cell; PR-2.5/2.6 build it, PR-8.4/8.5/8.6 finish it. §10's two `no · unscheduled` rows are
   scheduled by D-10.15 — `audit.yml` at PR-2.10, `nightly.yml` at PR-5.11 — and both PRs flip their `Built?`
-  cell there in the same PR. What 08 owes in return is the scope note on §12.2's `e2e-full` clause
-  (D-10.15 (d)) and the four mis-scoped gate clauses in §14's sweep note.
+  cell there in the same PR. **Both debts 08 owed in return are paid** (verified against `origin/main`
+  2026-08-24): §12.2's `e2e-full` clause carries its scope note, "from the Phase 5 gate onward" (D-10.15 (d)),
+  and the four mis-scoped gate clauses of §14's sweep note each carry the gate they start at. One cell of §10
+  is still behind its own tree and it is 08's, not this document's: the `audit` row reads `no · PR-2.10` while
+  `.github/workflows/audit.yml` is on `main`.
 - `docs/technical/09-deployment-operations.md` — D-09.1…22, INV-09.1…7, OQ-09.1…11; Vercel settings, env scopes,
   WAF, DNS, security headers, governance files, budgets, §5.1's launch checklist, editor workflow; OPS rows.
 - `docs/technical/11-work-tracking.md` — W-11.1…12, INV-11.1…5, D-11.1…8, TRAP-11.9/11.12/11.13; gate beads,
