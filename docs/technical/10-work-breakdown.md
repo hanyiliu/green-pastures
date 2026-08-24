@@ -16,7 +16,10 @@ Status: draft · seat writer-breakdown · 2026-08-22 · revised 2026-08-22 (HD-2
 HD-10; second round the same day: HD-13 domain, HD-14 CJK stack) · revised 2026-08-23 (ruleset ground truth
 re-read from the GitHub API: the include list *does* name the default branch, so the protection half of HD-2 /
 OQ-11.3 is live; what is missing is a `required_status_checks` rule, and that is what the Phase 2 gate now
-turns on — §2, §12, §14)
+turns on — §2, §12, §14) · revised 2026-08-23 (PR-5.3's `MenuDayChips` cell re-read against
+`src/i18n/messages.ts` and 04 `D-04.10`: it claimed a client `menu` namespace and a default day picked after
+hydration, and neither has ever been true of either the decision or the code — §1 now carries the citation rule
+that clause broke)
 
 Notes: pass 1 was drafted while 04, 06, 08 and 09 were still being written; pass 2 reconciled every phase with
 them by decision id (§2–§8), added the rows their artifacts need, and rebuilt the open-question roll-up against
@@ -311,6 +314,13 @@ second seat authors before seeing the implementation (W-11.11); the CI gates it 
 Paths below are the owning documents' (02 content and i18n, 03 tokens, 04 components, 05 motion, 06 routes,
 07 form, 08 gates, 09 operations, 11 tracker); the TS token mirror is `src/design/tokens.ts` (memo ADJ-8).
 
+**A row cites; it does not paraphrase.** Where a cell restates the *mechanism* an owning document decides, the
+restatement is a second copy that can go stale while the decision stands still — or, as PR-5.3's
+client-boundary clause did, be wrong on the day it was written and survive two editing passes over the same
+sentence because each pass was looking for something else. So a cell names the decision by id and adds only
+what the *schedule* needs from it; where a cell and its owning document disagree, the owning document is right
+and the cell is the defect.
+
 **Seats.** Two seats work every row (W-11.11, INV-11.3): implementer `writer-<topic>` and verifier
 `check-<topic>`, where `<topic>` is the row's slug listed under each phase table; the orchestrator is neither
 and closes the bead on the verdict (W-11.6, TRAP-11.8).
@@ -517,7 +527,7 @@ serialisation point; the component files are disjoint, so the rows below are oth
 |---|---|---|---|---|---|---|---|
 | PR-5.1 | Philosophy: quote block `ink` (rich `<em>`), badges `ink`, photo, link (`Link transitionTypes` to `site.routes.philosophy`), mobile `Leaf` | new: *Phase 5 · Philosophy section* | `src/components/sections/Philosophy*`, one line in `src/app/[locale]/page.tsx` | PR-4.2 (`Section`, `Eyebrow`, `PhotoSlot`, `LearnMoreLink`), PR-4.3a (`Reveal`, `variants.ts` `ink`), PR-4.6 (`src/app/[locale]/page.tsx`) | M | 5.2–5.9 | Quote mark/colour tokens; `ink` reduced = opacity only; link target from `site.routes[]` |
 | PR-5.2 | Programs: three `SteppingStone` from `collections.programs` × `site.programs[]`, `sprout` stagger, `featured` raised, `ratioLabel` ICU, mobile alternating path, `lg:` three columns | new: *Phase 5 · Programs section* | `src/components/sections/Programs*`, `SteppingStone`, one line in `src/app/[locale]/page.tsx` | PR-4.2 (`Section`, `Chip`, `PhotoSlot`), PR-4.3a (`variants.ts` `sprout` stagger), PR-4.6 (`src/app/[locale]/page.tsx`) | M | 5.1, 5.3–5.9 | Stone sizes 150/188/150 ≥ `lg`, 104/122/104 < `md`; highlights slice per view; no locale branching |
-| PR-5.3 | Menu: `Plate` + dots, `MenuDayChips` (client, `menu` + `common` namespaces; default day in `America/Los_Angeles` after hydration, weekend → `mon`), `WordSwap` sample line (`home.menu.sampleLine` with `<day>`), `roll`/`drop`, dietary chips slicing, weekday via `weekdayShort` | new: *Phase 5 · Menu section* | `src/components/sections/Menu*`, `Plate`, `MenuDayChips`, one line in `src/app/[locale]/page.tsx` | PR-4.2 (`Section`, `Chip`), PR-4.3a (`variants.ts` `roll`/`drop`), PR-4.3b (`WordSwap`), PR-4.6 (`src/app/[locale]/page.tsx`) | L | 5.1, 5.2, 5.4–5.9 | No SSR/CSR day mismatch; chip hit area ≥ 44 px; sample line text from the collection only; swap is `WordSwap` |
+| PR-5.3 | Menu: `Plate` + dots, `MenuDayChips` (client, and **props only** — 04 `D-04.10` owns the boundary: no message namespace crosses it, which is why `menu` is absent from `CLIENT_NAMESPACES`, and `defaultDay` is computed **on the server** in `site.timeZone` by `src/lib/menu-day.ts`, weekend → `mon`, so the pre-hydration and no-JS paint already name the right day — which is what this row's "No SSR/CSR day mismatch" asks for), `WordSwap` sample line (`home.menu.sampleLine` with `<day>`), `roll`/`drop`, dietary chips slicing, weekday via `weekdayShort` | new: *Phase 5 · Menu section* | `src/components/sections/Menu*`, `Plate`, `MenuDayChips`, one line in `src/app/[locale]/page.tsx` | PR-4.2 (`Section`, `Chip`), PR-4.3a (`variants.ts` `roll`/`drop`), PR-4.3b (`WordSwap`), PR-4.6 (`src/app/[locale]/page.tsx`) | L | 5.1, 5.2, 5.4–5.9 | No SSR/CSR day mismatch; chip hit area ≥ 44 px; sample line text from the collection only; swap is `WordSwap` |
 | PR-5.4 | Gallery: `Polaroid` ×7 desktop / ×5 mobile from `onHome`/`onMobile`, `polaroid` variant by index parity, resting tilt on the inner frame, hover straighten, link | new: *Phase 5 · Gallery section* | `src/components/sections/Gallery*`, `Polaroid`, one line in `src/app/[locale]/page.tsx` | PR-4.2 (`Section`, `PhotoSlot`), PR-4.3a (`variants.ts` `polaroid`), PR-4.6 (`src/app/[locale]/page.tsx`) | M | 5.1–5.3, 5.5–5.9 | Fly-in bleed absorbed by `html { overflow-x: clip }` (INV-05.2); alt from collection; positions/rotations from data |
 | PR-5.5 | Testimonials: `Bubble` tails per view, `bubble` origin by tail, two `CountUp`s (rating, count), Yelp badge + new-tab link (`common.links.newTab`), locale quote marks, surface flags (`karenT` desktop only) | new: *Phase 5 · Testimonials section* | `src/components/sections/Testimonials*`, `Bubble`, one line in `src/app/[locale]/page.tsx` | PR-4.2 (`Section`, `Eyebrow`), PR-4.3a (`variants.ts` `bubble`), PR-4.3b (`CountUp`), PR-4.6 (`src/app/[locale]/page.tsx`) | M | 5.1–5.4, 5.6–5.9 | Count-up reads `site.yelp`; plural `countLine` per locale; `aria-hidden` stars + rating text |
 | PR-5.6 | Teachers: `TeacherFrame` ×3, `swing`, `PhotoSlot` for `ping` only, icon dots, roles via eyebrow recipe, desktop order Reyes·Ping·Chen / mobile `head` first | new: *Phase 5 · Teachers section* | `src/components/sections/Teachers*`, `TeacherFrame`, one line in `src/app/[locale]/page.tsx` | PR-4.2 (`Section`, `Eyebrow`, `PhotoSlot`), PR-4.3a (`variants.ts` `swing`), PR-4.6 (`src/app/[locale]/page.tsx`) | M | 5.1–5.5, 5.7–5.9 | No assistant photo slot; `team.roles.*` uppercase by CSS only; `introShort` on mobile |
