@@ -81,7 +81,7 @@
       "height": 1200
     },
     "map": { "src": "/images/map.jpg", "width": 1200, "height": 800 },
-    "og": { "src": "/og/cover.png", "width": 1200, "height": 630 }
+    "og": { "src": "/og/placeholder.png", "width": 1200, "height": 630 }
   },
   "hero": {
     "mealsIcon": "🍎"
@@ -253,6 +253,7 @@
     "email.sendingDomain",
     "email.fromAddress",
     "license",
+    "images.og.src",
     "yelp.rating",
     "yelp.reviewCount",
     "yelp.url",

@@ -52,7 +52,13 @@ export type SiteRoute = {
   readonly homeAnchor: string;
 };
 
-type SiteJson = { readonly routes: readonly SiteRoute[] };
+/** One `content/site.json` `images.*` entry (02 `D-02.13`). */
+type SiteImage = { readonly src: string; readonly width: number; readonly height: number };
+
+type SiteJson = {
+  readonly routes: readonly SiteRoute[];
+  readonly images: { readonly og: SiteImage };
+};
 
 const site = JSON.parse(readFileSync(join(REPO_ROOT, "content", "site.json"), "utf8")) as SiteJson;
 
@@ -286,6 +292,58 @@ export function canonicalHref(html: string): string | null {
   const tag = /<link\b[^>]*\brel="canonical"[^>]*>/i.exec(html)?.[0];
   const href = tag === undefined ? undefined : /\bhref="([^"]*)"/i.exec(tag)?.[1];
   return href === undefined ? null : decodeEntities(href);
+}
+
+/**
+ * The `content` of one `<meta property="…">`, or `null` when the document
+ * declares none.
+ *
+ * Open Graph addresses its tags with `property`, not `name`, and the value is
+ * matched with its quotes so `og:image` cannot also match `og:image:width`.
+ */
+export function metaProperty(html: string, property: string): string | null {
+  const pattern = new RegExp(`<meta\\b[^>]*\\bproperty="${escapeForRegExp(property)}"[^>]*>`, "i");
+  const tag = pattern.exec(html)?.[0];
+  const content = tag === undefined ? undefined : /\bcontent="([^"]*)"/i.exec(tag)?.[1];
+  return content === undefined ? null : decodeEntities(content);
+}
+
+/* -------------------------------------------------------------------------- *
+ * The share image (06 §6.5, `OQ-06.7`)
+ * -------------------------------------------------------------------------- */
+
+/** What `site.json` `images.og` promises a crawler about the share image. */
+export const SHARE_IMAGE: SiteImage = site.images.og;
+
+/** The eight bytes every PNG starts with. */
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+/** `IHDR` holds the two 32-bit big-endian dimensions at these offsets. */
+const IHDR_WIDTH_OFFSET = 16;
+const IHDR_HEIGHT_OFFSET = 20;
+const IHDR_END = 24;
+
+/**
+ * A PNG's own idea of its size, read from `IHDR`, or `null` when the bytes are
+ * not a PNG at all.
+ *
+ * Deliberately decoded here rather than imported from
+ * `src/lib/seo/share-card.tsx`, which has a reader of its own. This family
+ * derives what it asserts a second time on purpose (see the header): a check
+ * that measured the served bytes with the same function that drew them would
+ * agree with the implementation by construction, which is the one thing an
+ * end-to-end assertion must not do.
+ */
+export function pngDimensions(
+  bytes: Buffer,
+): { readonly width: number; readonly height: number } | null {
+  if (bytes.length < IHDR_END || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
+    return null;
+  }
+  return {
+    width: bytes.readUInt32BE(IHDR_WIDTH_OFFSET),
+    height: bytes.readUInt32BE(IHDR_HEIGHT_OFFSET),
+  };
 }
 
 /* -------------------------------------------------------------------------- *

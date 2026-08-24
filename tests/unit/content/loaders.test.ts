@@ -87,8 +87,15 @@ describe("getSite (02 D-02.12)", () => {
 
   it("still exposes the registry to the validator through its own accessor", () => {
     expect(getProvisionalPaths()).toStrictEqual(siteJson.provisional);
-    // 02's Phase 3 seed: PR-3.2's 21 paths plus PR-3.9's two `zh-Hant` brand paths.
-    expect(getProvisionalPaths()).toHaveLength(23);
+    // 02's Phase 3 seed: PR-3.2's 21 paths plus PR-3.9's two `zh-Hant` brand
+    // paths, plus `images.og.src` — the share image is a generated placeholder
+    // until `OQ-06.7` supplies the artwork (`gp-dln.196`).
+    //
+    // The literal is the point: the line above compares the accessor against
+    // the file, so only a written-down count notices the registry being
+    // quietly emptied. A PR that registers or retires a sample default edits
+    // this number and says which one in the comment.
+    expect(getProvisionalPaths()).toHaveLength(24);
   });
 
   it("parses once and memoises the result", () => {
