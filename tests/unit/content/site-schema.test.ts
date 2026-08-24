@@ -274,13 +274,14 @@ describe("cross-references (INV-02.3)", () => {
 });
 
 describe("the provisional registry (02 D-02.20, INV-02.10)", () => {
-  it("ships 24 paths and every one of them resolves", () => {
+  it("ships 32 paths and every one of them resolves", () => {
     // 02's Phase 3 seed in full: PR-3.2's 21 plus the two brand paths PR-3.9
     // added with the `zh-Hant` locale, plus `images.og.src` — the share image
     // is a generated placeholder until `OQ-06.7` supplies the artwork
-    // (`gp-dln.196`).
+    // (`gp-dln.196`) — plus PR-6.9's eight privacy paragraphs, which stand in
+    // for copy only the owner's counsel can write (`OQ-07.5`).
     const site = SiteSchema.parse(siteJson);
-    expect(site.provisional).toHaveLength(24);
+    expect(site.provisional).toHaveLength(32);
     expect(site.provisional).toContain("brand.name.zh-Hant");
     expect(site.provisional).toContain("brand.shortName.zh-Hant");
     expect(site.provisional).toContain("images.og.src");

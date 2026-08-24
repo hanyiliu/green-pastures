@@ -44,19 +44,31 @@ import { LOCALE_META, routing, type Locale } from "../src/i18n/routing";
 
 const REPO_ROOT = fileURLToPath(new URL("../", import.meta.url));
 
-/** One `content/site.json` `routes[]` entry (02 `D-02.12`). */
-export type SiteRoute = {
+/**
+ * One `content/site.json` `routes[]` entry (02 `D-02.12`).
+ *
+ * `homeAnchor` is optional, and its absence is what makes a route **standalone**
+ * rather than a detail page: `/privacy` is reachable by URL and from the footer,
+ * expands no home-page section, and so has no "learn more →" to enter through
+ * and no section hash to come back to. {@link DETAIL_ROUTES} is the half of
+ * `routes[]` that does, which is why every matrix built on the slide reads that
+ * list and not this file's raw JSON.
+ */
+export type RouteEntry = {
   readonly id: string;
   readonly path: string;
   /** The home section this detail page was opened from (06 `D-06.8`). */
-  readonly homeAnchor: string;
+  readonly homeAnchor?: string;
 };
+
+/** A `routes[]` entry that expands a home section — the shape the slide needs. */
+export type SiteRoute = RouteEntry & { readonly homeAnchor: string };
 
 /** One `content/site.json` `images.*` entry (02 `D-02.13`). */
 type SiteImage = { readonly src: string; readonly width: number; readonly height: number };
 
 type SiteJson = {
-  readonly routes: readonly SiteRoute[];
+  readonly routes: readonly RouteEntry[];
   readonly images: { readonly og: SiteImage };
 };
 
@@ -68,8 +80,23 @@ export const HOME_PATH = "/";
 /** `x-default`, the sentinel `hreflang` for readers no locale claims (`D-02.9`). */
 export const X_DEFAULT = "x-default";
 
-/** The six detail routes, in the order the owner wrote them. */
-export const DETAIL_ROUTES: readonly SiteRoute[] = site.routes;
+/**
+ * The detail routes — every `routes[]` entry that expands a home section, in
+ * the order the owner wrote them. Six today.
+ *
+ * Standalone routes are filtered out rather than listed as exceptions: they are
+ * in `sitemap.xml`, in {@link ROUTE_PATHS} and in the `@smoke` and link-crawl
+ * matrices like any other page, and out of everything that is *about* the
+ * home ↔ subpage slide, because there is no such pair to measure.
+ */
+export const DETAIL_ROUTES: readonly SiteRoute[] = site.routes.filter(
+  (route): route is SiteRoute => route.homeAnchor !== undefined,
+);
+
+/** Every `routes[]` entry that expands no home section — `/privacy` today. */
+export const STANDALONE_ROUTES: readonly RouteEntry[] = site.routes.filter(
+  (route) => route.homeAnchor === undefined,
+);
 
 /** Every page path, locale-less: the home page plus `site.json` `routes[]`. */
 export const ROUTE_PATHS: readonly string[] = [HOME_PATH, ...site.routes.map((r) => r.path)];

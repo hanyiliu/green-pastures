@@ -14,14 +14,34 @@ import { getSite } from "@/content/site";
 describe("Section", () => {
   describe("section ids", () => {
     it("is site.routes[].homeAnchor in scroll order, between the two bookends", () => {
-      const anchors = getSite().routes.map((route) => route.homeAnchor);
+      const anchors = getSite()
+        .routes.map((route) => route.homeAnchor)
+        .filter((anchor) => anchor !== undefined);
 
       expect(SECTION_IDS).toEqual(["hero", ...anchors, "visit"]);
     });
 
     it("covers every route's home anchor, so no section can lose its colours", () => {
       for (const route of getSite().routes) {
+        if (route.homeAnchor === undefined) continue;
         expect(SECTION_IDS).toContain(route.homeAnchor);
+      }
+    });
+
+    /**
+     * A standalone route — one with no `homeAnchor`, `/privacy` today — expands
+     * no section and must contribute none. Without this the list would grow a
+     * phantom id the home page never renders, and `HomePage.test`'s "in
+     * SECTION_IDS order" assertion would be comparing against a longer site
+     * than the one that ships.
+     */
+    it("leaves a standalone route out, because it expands no section", () => {
+      const standalone = getSite().routes.filter((route) => route.homeAnchor === undefined);
+
+      expect(standalone).not.toHaveLength(0);
+      expect(SECTION_IDS).toHaveLength(getSite().routes.length - standalone.length + 2);
+      for (const route of standalone) {
+        expect(SECTION_IDS).not.toContain(route.id);
       }
     });
   });

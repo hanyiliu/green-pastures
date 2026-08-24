@@ -17,6 +17,7 @@ import { flushSync } from "react-dom";
 import { track } from "@/components/layout/TrackedLink";
 import { buttonRecipe } from "@/components/ui/Button";
 import { withOverrides } from "@/components/ui/class-names";
+import { Link } from "@/i18n/navigation";
 import { childAgeOptionKey, desiredStartOptionKey } from "@/lib/inquiry/labels";
 import { DESIRED_START_KEYWORDS, monthOptionIds } from "@/lib/inquiry/months";
 import {
@@ -98,6 +99,17 @@ export type InquiryFormProps = {
   readonly contact: InquiryContact;
   /** `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, read by the server component above. */
   readonly turnstileSiteKey: string;
+  /**
+   * Where the privacy line's link goes — `site.routes[privacy].path`, resolved
+   * by the server component above (07 §4, 10 PR-6.9).
+   *
+   * A prop rather than a `getSite()` call, for the reason every other piece of
+   * `content/` reaches this component as one (04 `D-04.2`): this is a client
+   * component, and the slug is one string, not a reason to send `site.json`
+   * across the boundary. INV-06.1 is satisfied either way — the literal is
+   * never typed, it is looked up in `content/site.json`.
+   */
+  readonly privacyHref: string;
   /** The server-rendered `<NoscriptFallback>`, passed as a node (04 §3.5). */
   readonly noscript: ReactNode;
   /** Extra classes; an override of a property the recipe sets must be important. */
@@ -226,6 +238,17 @@ const PAIR_CLASS = "grid grid-cols-2 gap-2.5 md:gap-3";
 const LEGEND_CLASS = "font-body text-form-label text-muted";
 const PRIVACY_CLASS = "font-body text-form-label text-muted";
 
+/**
+ * The privacy line's link to `/privacy` (07 §4: "this doc only needs a link
+ * target for the notice"; 10 PR-6.9).
+ *
+ * `--color-form-link` and an underline, the same pair `FormAlert` and
+ * `NoscriptFallback` already use for a link inside this white card and for the
+ * contrast reason they record — sage on white measures 3.83:1 and this line is
+ * 11px, which AA reads at the 4.5:1 threshold.
+ */
+const PRIVACY_LINK_CLASS = "font-bold text-form-link underline";
+
 /** 44px desktop / 46px mobile, radius 11, cream fill, one-pixel divider border. */
 const CONTROL_CLASS =
   "w-full rounded-input border border-divider bg-cream px-3 font-body text-input text-ink transition-colors duration-(--dur-word-swap) ease-soft aria-invalid:border-yelp md:px-3.5";
@@ -246,6 +269,7 @@ export function InquiryForm({
   source,
   contact,
   turnstileSiteKey,
+  privacyHref,
   noscript,
   className,
 }: InquiryFormProps) {
@@ -764,7 +788,15 @@ export function InquiryForm({
         <noscript dangerouslySetInnerHTML={{ __html: NOSCRIPT_HIDE_SUBMIT }} />
         {noscript}
 
-        <p className={PRIVACY_CLASS}>{t("privacy")}</p>
+        <p className={PRIVACY_CLASS}>
+          {t.rich("privacy", {
+            link: (chunks) => (
+              <Link href={privacyHref} className={PRIVACY_LINK_CLASS}>
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
 
         {/*
           The polite outcome announcement (`D-07.4`). It stays empty for the

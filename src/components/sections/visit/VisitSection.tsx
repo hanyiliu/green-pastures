@@ -6,6 +6,7 @@ import { InquiryForm } from "@/components/forms/InquiryForm";
 import { NoscriptFallback } from "@/components/forms/NoscriptFallback";
 import { Section } from "@/components/layout/Section";
 import { Reveal } from "@/components/motion/Reveal";
+import { routeHref } from "@/components/pages/route-href";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getSite } from "@/content/site";
 import { hoursDayRange, openingTimeDate } from "@/lib/hours";
@@ -81,6 +82,14 @@ const VISIT_TITLE_ID = "visit-title";
 /** Which placement submitted, for the handler's log and the e-mail (07 §1). */
 const INQUIRY_SOURCE = "home" satisfies InquirySource;
 
+/**
+ * The route the privacy line under the submit button links to (07 §4, PR-6.9).
+ * The id, not the slug: `routeHref` looks the path up in `content/site.json`,
+ * so a renamed slug moves this link with the canonical and the sitemap
+ * (02 `D-02.12`, INV-06.1).
+ */
+const PRIVACY_ROUTE_ID = "privacy";
+
 export default function VisitSection() {
   const t = useTranslations("home.visit");
   const tCommon = useTranslations("common");
@@ -134,6 +143,7 @@ export default function VisitSection() {
             source={INQUIRY_SOURCE}
             contact={contact}
             turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
+            privacyHref={routeHref(PRIVACY_ROUTE_ID)}
             noscript={<NoscriptFallback contact={contact} />}
           />
         </Reveal>

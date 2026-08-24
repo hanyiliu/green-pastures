@@ -60,7 +60,7 @@
       }
     },
     "submit": "Request a tour →",
-    "privacy": "We use your details only to answer your inquiry. We never sell or share them.",
+    "privacy": "We use your details only to answer your inquiry. We never sell or share them. <link>How we handle your information</link>",
     "noscript": "JavaScript is switched off, so this form cannot be sent from here.",
     "directContact": "Or email us at {email} or call {phone}.",
     "status": {

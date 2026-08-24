@@ -52,6 +52,13 @@ const CONTACT: InquiryContact = {
   phoneDisplay: "(510) 555-0142",
 };
 
+/**
+ * What `VisitSection` resolves out of `site.routes[]` and hands down (07 §4).
+ * A fixture, not a lookup: what is under test here is that the privacy line
+ * renders a link to whatever it is given, not where `content/site.json` points.
+ */
+const PRIVACY_HREF = "/privacy";
+
 const VALID = {
   parentName: "Wei Chen",
   email: "wei@example.test",
@@ -70,6 +77,7 @@ function renderForm() {
         source="home"
         contact={CONTACT}
         turnstileSiteKey="site-key"
+        privacyHref={PRIVACY_HREF}
         noscript={<div data-testid="noscript-node" />}
       />
     </NextIntlClientProvider>,
@@ -211,6 +219,20 @@ describe("what the form renders (07 §1, 04 §3.5)", () => {
     expect(screen.getByTestId("noscript-node")).toBeInTheDocument();
     const styles = [...container.querySelectorAll("noscript")].map((node) => node.innerHTML);
     expect(styles.some((html) => html.includes("[data-inquiry-submit]"))).toBe(true);
+  });
+
+  /**
+   * 07 §4's notice, and the link target `OQ-07.5` unblocked (10 PR-6.9). The
+   * assertion is on the anchor rather than on the sentence: the words are the
+   * owner's to change, the link is the contract.
+   */
+  it("links the privacy line at the href it was handed", () => {
+    renderForm();
+
+    const label = visitForm.privacy.replace(/^.*<link>|<\/link>.*$/gu, "");
+    const link = screen.getByRole("link", { name: new RegExp(label, "u") });
+
+    expect(link).toHaveAttribute("href", `/${routing.defaultLocale}${PRIVACY_HREF}`);
   });
 
   it("offers the month options plus the two keywords, and no month is a raw id", () => {

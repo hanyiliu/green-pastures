@@ -223,8 +223,14 @@ const PILL =
   "inline-flex items-center rounded-pill bg-white px-3.5 py-2.25 font-body font-bold text-(length:--subnav-back) text-(color:--section-link) shadow-back md:px-4 md:text-(length:--subnav-back-md)";
 
 export type BackLinkProps = {
-  /** `site.routes[].homeAnchor` — the home section this page was opened from. */
-  readonly homeAnchor: string;
+  /**
+   * `site.routes[].homeAnchor` — the home section this page was opened from,
+   * and `undefined` on a standalone page that expands no section (`/privacy`).
+   * Absent, the pill goes to the top of the home page and there is no origin
+   * heading to hand focus to on the way back; the label is the same either way,
+   * because "← Back home" is still where it goes.
+   */
+  readonly homeAnchor?: string;
   /**
    * The id of this page's `h1`, focused on arrival. `SubpageBar` passes
    * `subpageTitleId(routeId)`.
@@ -266,7 +272,11 @@ export function BackLink({ homeAnchor, titleId, children }: BackLinkProps) {
     // heading is deliberately not a React effect: `focusHeadingWhenPresent`
     // schedules itself, and the timer belongs to the module rather than to a
     // tree that is about to be replaced.
-    focusHeadingWhenPresent(homeHeadingId(homeAnchor));
+    //
+    // A standalone page has no origin section, so there is no heading to land
+    // on and nothing to schedule: the home page loads at the top and its own
+    // first heading is where a reader arrives.
+    if (homeAnchor !== undefined) focusHeadingWhenPresent(homeHeadingId(homeAnchor));
   }
 
   return (

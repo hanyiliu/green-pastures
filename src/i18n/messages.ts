@@ -12,6 +12,7 @@ import gallery from "../../content/en/messages/gallery.json";
 import home from "../../content/en/messages/home.json";
 import menu from "../../content/en/messages/menu.json";
 import philosophy from "../../content/en/messages/philosophy.json";
+import privacy from "../../content/en/messages/privacy.json";
 import programs from "../../content/en/messages/programs.json";
 import reviews from "../../content/en/messages/reviews.json";
 import team from "../../content/en/messages/team.json";
@@ -45,6 +46,7 @@ const referenceMessages = {
   home,
   menu,
   philosophy,
+  privacy,
   programs,
   reviews,
   team,
@@ -82,6 +84,7 @@ export const MESSAGE_NAMESPACES = [
   "home",
   "menu",
   "philosophy",
+  "privacy",
   "programs",
   "reviews",
   "team",
