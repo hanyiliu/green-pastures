@@ -889,9 +889,24 @@ lacks the `@smoke` + `@form` subset the row specifies: `e2e/form*` belongs to an
 whole end-to-end suite at a local production build rather than a preview, and a `@form` run against a live
 preview posts real inquiries — the step arrives with the pull request that reconciles those three facts.
 `lighthouse-prod` lacks the `@seo` and `@headers` tags run against the production base URL, whose specs are
-PR-6.10's and PR-6.11's. Neither job has ever fired: no Vercel project is connected (OPS-2.1), so there is no
-`deployment_status` event and no `VERCEL_AUTOMATION_BYPASS_SECRET` to send, which is why both carry a
-`workflow_dispatch` with an explicit URL — the first real run is something a human starts and watches.
+PR-6.10's and PR-6.11's.
+
+**What the first run taught, and it was not what PR-8.5 expected.** A Vercel project *is* connected and
+previews deploy, so `lighthouse-preview` fired on the pull request that wrote it — GitHub ran the workflow
+from the deployment's own ref rather than from `main` — and `lighthouse-prod` skipped, which is the
+`production_environment` discriminator working. Two defects came out of that run and neither would have been
+visible from reading the file. The artifact upload found nothing: `.lighthouseci` is a dot-directory and
+`actions/upload-artifact` skips hidden files unless `include-hidden-files: true`, the same trap this section
+already documents for `.next` in the `build` row — and `if-no-files-found: error` is the only reason it
+surfaced rather than leaving an empty artifact behind a green tick, which is the property `gp-dln.224` argued
+for on a different job. Second and worse: `VERCEL_AUTOMATION_BYPASS_SECRET` is not provisioned (OPS-2.1,
+OQ-08.4), so the collector followed Vercel's protection redirect and measured `vercel.com/login`, then
+reported `categories:performance 0.39` and `resource-summary:script:size 1373281` **about a page this project
+does not own**. A confident verdict about the wrong page is worse than a red one and worse than no verdict,
+and it is a fail-open of the same family as the seven this repository has catalogued — the gate looks like it
+ran. The job now runs a preflight probe of `$URL/en` and refuses to collect at all on a 401, a 403 or a
+redirect to `vercel.com/login`, naming the missing secret. Both jobs still carry a `workflow_dispatch` with
+an explicit URL, which is how a human re-runs either against a chosen deployment (09 §5.1 item 16).
 
 **What remains unscheduled is two scripts, and it is a gap in 10's tables rather than in this section.**
 `scripts/ci/bundle-secrets.sh` and `scripts/ci/env-example.ts` (D-08.11, INV-07.3): the `build` and `static`

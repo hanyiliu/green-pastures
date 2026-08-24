@@ -24,24 +24,32 @@
 # or failed Lighthouse run never blocks a merge"; `lighthouse-prod` becomes a
 # gate at launch by way of 08 §12.3's checklist, not by way of the ruleset.
 #
-# **`deployment_status` runs on the default branch.** Like `repository_dispatch`,
-# it exists only there and runs the default branch's copy of this file
-# [verified: GitHub Actions "Events that trigger workflows", 2026-08-22]. Two
-# consequences, both deliberate. Neither job can be exercised from the pull
-# request that writes it — which is why `workflow_dispatch` below takes an
-# explicit URL, so the first real run is something a human starts and watches
-# rather than something that fires unattended weeks later. And the check run
-# `lighthouse-preview` creates is attached to `github.event.deployment.sha`,
-# which is how a workflow running on `main` reports against the commit under
-# review.
+# **What the first run showed, on the pull request that wrote this file.** A
+# Vercel project *is* connected, previews deploy, and the `deployment_status`
+# event arrived — GitHub ran this file from the deployment's own ref rather than
+# from `main`, so the workflow was exercised before it merged.
+# `lighthouse-preview` ran its full four-URL matrix; `lighthouse-prod` skipped,
+# which is the `production_environment` discriminator working. Two things went
+# wrong and both are fixed above rather than described here: the artifact upload
+# found nothing, because `.lighthouseci` is a dot-directory and
+# `upload-artifact` skips hidden files unless told not to (the same trap
+# `ci.yml`'s `build` job documents for `.next`, and `if-no-files-found: error`
+# is what surfaced it); and with no `VERCEL_AUTOMATION_BYPASS_SECRET` the
+# collector followed Vercel's protection redirect and measured
+# `vercel.com/login` — reporting `performance 0.39` and `script.size 1373281`
+# about a page that is not ours. A red verdict about the wrong page is worse
+# than either a green one or an honest red, so the preflight step now refuses to
+# collect at all in that state and says which secret is missing.
 #
-# **Nothing here has fired yet.** No Vercel project is connected (OPS-2.1), so
-# there is no `deployment_status` event to receive and no
-# `VERCEL_AUTOMATION_BYPASS_SECRET` to send. 08 §10's `Built?` cells read
-# `partly` for both rows and name what is missing, per that section's own
-# convention. The half that is exercised on every pull request today is
-# `ci.yml`'s `budget` job, which asserts the same `resource-summary` byte counts
-# a build directory can decide without a CDN.
+# The check run `lighthouse-preview` creates is attached to
+# `github.event.deployment.sha` rather than to `github.ref`, which is what makes
+# it land on the commit under review whichever ref the workflow itself ran from.
+#
+# 08 §10's `Built?` cells read `partly` for both rows and name what is missing,
+# per that section's own convention. The half that is exercised on every pull
+# request regardless of Vercel is `ci.yml`'s `budget` job, which asserts the
+# same `resource-summary` byte counts a build directory can decide without a
+# CDN.
 name: lighthouse
 
 on:
@@ -131,6 +139,7 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
           DISPATCH_URL: ${{ inputs.url }}
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           set -euo pipefail
           url="${DEPLOYMENT_URL:-$DISPATCH_URL}"
@@ -138,6 +147,23 @@ jobs:
             echo "::error::no deployment URL in the payload and none dispatched — nothing would be measured."
             exit 1
           fi
+
+          # 09 D-09.4: previews are protected. Without the bypass secret the
+          # collector follows the redirect and measures `vercel.com/login`,
+          # which produced a confident `performance 0.39` about a page this
+          # project does not own on this file's own first run. A wrong verdict
+          # is worse than no verdict, so the run stops here and names the
+          # secret. `-o /dev/null` because only the status line matters.
+          probe=$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' \
+            -H "x-vercel-protection-bypass: ${BYPASS:-}" "$url/en")
+          status=${probe%% *}
+          redirect=${probe#* }
+          echo "preflight: $url/en -> $status ${redirect:-(no redirect)}"
+          if [ "$status" = "401" ] || [ "$status" = "403" ] || case "$redirect" in *vercel.com/login*) true ;; *) false ;; esac; then
+            echo "::error::$url is behind Vercel Deployment Protection and VERCEL_AUTOMATION_BYPASS_SECRET is not set (09 D-09.4, OQ-08.4, OPS-2.1). Lighthouse would follow the redirect, measure the login page and report budget failures about a page this project does not own. Nothing was measured."
+            exit 1
+          fi
+
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: lhci autorun
@@ -173,10 +199,17 @@ jobs:
         with:
           name: lighthouse-preview
           path: .lighthouseci
+          # Required, and this file learned it the hard way: every path in the
+          # artifact lives under the dot-directory `.lighthouseci`, and
+          # `upload-artifact` skips hidden files by default — the same trap
+          # `ci.yml`'s `build` job documents for `.next`.
+          include-hidden-files: true
           # `error`, not `warn`. The lesson PR #79 wrote down, and this job's own
           # case for it: an upload step that shrugs at an empty directory
           # publishes nothing and stays green, and the report is the entire
-          # output of an advisory job.
+          # output of an advisory job. It is also what caught the missing
+          # `include-hidden-files` above, on the first run, instead of leaving
+          # an empty artifact behind a green tick.
           if-no-files-found: error
           retention-days: 7
 
@@ -291,5 +324,6 @@ jobs:
         with:
           name: lighthouse-prod
           path: .lighthouseci
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
