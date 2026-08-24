@@ -31,10 +31,12 @@
  * `data-speed`       the leaf's 7 s / 8 s / 9 s instances (05 §5.4).
  *
  * The pause hook is `[data-ambient="paused"]` on the enclosing section, set by
- * the single `useInView` 05 §5.4 asks for. That observer is `AmbientScope`,
- * which 04 §3.3 places in `components/motion/` and no Phase 4 row builds; the
- * CSS side is here and inert until it lands, which is the safe order — an
- * unpaused loop is a wasted frame, a paused-but-never-resumed one is a bug.
+ * the single observer 05 §5.4 asks for. That observer is `AmbientScope`, which
+ * 04 §3.3 places in `components/motion/` and which now sits beside this file.
+ * What is still outstanding is its *placement*: no section mounts it yet, so
+ * the rule below is correct and reachable but nothing on the shipping site has
+ * paused. The order is the safe one either way — an unpaused loop is a wasted
+ * frame, a paused-but-never-resumed one is a bug.
  */
 
 /* ---------------------------------------------------------------------- *
@@ -140,7 +142,7 @@
 /* ---------------------------------------------------------------------- *
  * 3 · Paused off-screen (05 §5.4, INV-05.9).
  *
- * One `useInView` per looping section toggles the attribute; a hidden tab
+ * One `AmbientScope` per looping section toggles the attribute; a hidden tab
  * needs no rule at all, because a browser that is not painting is not running
  * the animation either.
  * ---------------------------------------------------------------------- */
