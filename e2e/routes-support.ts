@@ -557,7 +557,11 @@ export async function spyOnViewTransitions(page: Page): Promise<void> {
             durSubpageToken: rootStyle.getPropertyValue("--dur-subpage").trim(),
           });
 
-          if (!spy.freeze) return;
+          // Only a *typed* transition is worth holding still: an untyped one
+          // has no `.gp-page` group and therefore nothing to look at, and
+          // freezing it would hand the two regression tests a picture of the
+          // fallback path instead of the slide (05 §5.7).
+          if (!spy.freeze || types.length === 0) return;
           for (const animation of document.getAnimations()) {
             animation.pause();
             animation.currentTime = freezeAt;
@@ -591,7 +595,7 @@ export async function removeViewTransitions(page: Page): Promise<void> {
   });
 }
 
-/** Arm the spy so the next transition is paused at {@link FREEZE_AT_MS}. */
+/** Arm the spy so the next *typed* transition is paused at {@link FREEZE_AT_MS}. */
 export async function armFreeze(page: Page): Promise<void> {
   await page.evaluate(() => {
     const spy = globalThis.__gpViewTransitions;
@@ -599,21 +603,124 @@ export async function armFreeze(page: Page): Promise<void> {
   });
 }
 
-/** Wait until `count` transitions have been recorded, then return them all. */
-export async function transitionRecords(
-  page: Page,
-  count: number,
-): Promise<readonly TransitionRecord[]> {
-  await page.waitForFunction(
-    (expected: number) => (globalThis.__gpViewTransitions?.records.length ?? 0) >= expected,
-    count,
-  );
+/** Every transition recorded so far, without waiting for any. */
+export function allTransitions(page: Page): Promise<readonly TransitionRecord[]> {
   return page.evaluate(() => globalThis.__gpViewTransitions?.records ?? []);
 }
 
-/** Wait until a transition has been frozen mid-slide. */
+/** How many transitions have been recorded so far. */
+export function transitionCount(page: Page): Promise<number> {
+  return page.evaluate(() => globalThis.__gpViewTransitions?.records.length ?? 0);
+}
+
+/**
+ * Wait for, and return, the transition a navigation of `type` started.
+ *
+ * **Selected by type rather than by position, because position is not stable.**
+ * A navigation whose destination is not in hand starts an *untyped* transition
+ * first — 05 §5.7's un-prefetched fallback — and on a slower runner that one
+ * arrives before the typed one. Indexing into the record list then reads the
+ * fallback and reports it as a missing feature, which is what the first CI run
+ * of this file did. {@link waitForRoutePrefetch} removes the cause; this
+ * removes the sensitivity to it.
+ */
+export async function typedTransition(page: Page, type: string): Promise<TransitionRecord> {
+  try {
+    await page.waitForFunction(
+      (wanted: string) =>
+        (globalThis.__gpViewTransitions?.records ?? []).some((record) =>
+          record.types.includes(wanted),
+        ),
+      type,
+      { timeout: TYPED_TRANSITION_TIMEOUT_MS },
+    );
+  } catch {
+    throw new Error(await missingTypeReport(page, type));
+  }
+
+  const records = await allTransitions(page);
+  const found = records.find((record) => record.types.includes(type));
+  if (found === undefined) throw new Error(await missingTypeReport(page, type));
+  return found;
+}
+
+/**
+ * How long to wait for a typed transition before reporting what did happen.
+ *
+ * Shorter than the test timeout on purpose, and it buys a message rather than
+ * patience: `waitForFunction` running out says only that a predicate never
+ * became true, which is the least useful thing a run in a container the author
+ * cannot attach to could say. Ten seconds is twenty times the 500 ms slide.
+ */
+const TYPED_TRANSITION_TIMEOUT_MS = 10_000;
+
+/**
+ * What to say when the type never arrived.
+ *
+ * The three possibilities are genuinely different findings and the message has
+ * to separate them: **no transition at all** (the engine has no
+ * `startViewTransition`, or React never started one — the navigation fell back
+ * to an instant swap); **transitions but none typed** (React started one and
+ * passed no types, which is 05 §5.7's untyped path arriving where a typed one
+ * was expected); or a typed one carrying some *other* type. A test that just
+ * timed out would leave all three looking identical.
+ */
+async function missingTypeReport(page: Page, type: string): Promise<string> {
+  const records = await allTransitions(page);
+  const available = await hasViewTransitions(page);
+  const summary = records.map((record) => ({
+    types: record.types,
+    slides: record.slides.map((slide) => slide.name),
+  }));
+
+  return (
+    `No view transition carried the type "${type}". ` +
+    `document.startViewTransition is ${available ? "present" : "absent"}; ` +
+    `${String(records.length)} transition(s) were started: ${JSON.stringify(summary)}. ` +
+    "An empty list means the navigation never started one (05 §5.7's instant swap); " +
+    "a list of untyped entries means React started one without the link's transitionTypes."
+  );
+}
+
+/**
+ * Wait until the page has fetched `path`'s RSC payload.
+ *
+ * A synchronisation on an app event rather than a longer clock (`D-08.13`), and
+ * the one 05 §5.7 names outright: "if the destination suspends before it has
+ * rendered, the old and new sides never form a pair, so there is no `.gp-page`
+ * enter to animate and the navigation is instant with no animation". That is a
+ * fourth silent-fallback path beside untyped navigation, reduced motion and an
+ * unsupporting browser — and a slide test that raced it would report the
+ * fallback as a broken feature. Next prefetches a `Link` when it enters the
+ * viewport, so scrolling the link into view and then waiting for its payload is
+ * what puts the destination in hand before the click.
+ */
+export async function waitForRoutePrefetch(page: Page, path: string): Promise<void> {
+  await page.waitForFunction(
+    (target: string) =>
+      performance
+        .getEntriesByType("resource")
+        .some((entry) => entry.name.includes(`${target}?_rsc`)),
+    path,
+  );
+}
+
+/** Wait until a typed transition has been frozen mid-slide. */
 export async function waitForFrozenSlide(page: Page): Promise<void> {
-  await page.waitForFunction(() => (globalThis.__gpViewTransitions?.frozen ?? 0) >= 1);
+  try {
+    await page.waitForFunction(
+      () => (globalThis.__gpViewTransitions?.frozen ?? 0) >= 1,
+      undefined,
+      {
+        timeout: TYPED_TRANSITION_TIMEOUT_MS,
+      },
+    );
+  } catch {
+    // The same three possibilities as {@link typedTransition}, and the same
+    // reason to tell them apart: only a typed transition is frozen, so nothing
+    // being held means no typed transition ran.
+    throw new Error(await missingTypeReport(page, "any subpage type"));
+  }
 }
 
 /** What the snapshot tree computes to, read live rather than from a record. */

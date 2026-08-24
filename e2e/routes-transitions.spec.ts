@@ -20,11 +20,14 @@ import {
   removeViewTransitions,
   scrollY,
   settleFrames,
+  allTransitions,
   spyOnViewTransitions,
   timeToMs,
-  transitionRecords,
+  transitionCount,
+  typedTransition,
   urlFor,
   waitForFrozenSlide,
+  waitForRoutePrefetch,
   type SiteRoute,
 } from "./routes-support";
 
@@ -242,6 +245,15 @@ async function clickLearnMore(page: Page, locale: Locale, route: SiteRoute): Pro
     (element) => element.getBoundingClientRect().top + window.scrollY,
   );
 
+  // Bringing the link into view is what makes Next prefetch it, and the wait
+  // that follows is what puts the destination in hand before the click. See
+  // `waitForRoutePrefetch`: without it the click can land on a route that has
+  // not rendered, React starts an *untyped* transition instead, and the slide
+  // this file is about never runs. Measured in CI, not feared — three tests
+  // failed that way on this file's first run there.
+  await link.scrollIntoViewIfNeeded();
+  await waitForRoutePrefetch(page, urlFor(locale, route.path));
+
   await link.click();
   await page.waitForURL(`**${urlFor(locale, route.path)}`);
   return linkTop;
@@ -323,15 +335,15 @@ test.describe("typed subpage slide", () => {
       const historyBefore = await historyLength(page);
       const linkTop = await clickLearnMore(page, locale, route);
 
-      const [enter] = await transitionRecords(page, 1);
+      const enter = await typedTransition(page, ENTER_TYPE);
 
       /* -- forward: the typed enter -------------------------------------- */
 
-      expect(enter?.types, "the forward navigation carried no transition type").toEqual([
+      expect(enter.types, "the forward navigation carried no transition type").toEqual([
         ENTER_TYPE,
       ]);
 
-      const inSlide = enter?.slides.find((slide) => slide.name === SLIDE_IN);
+      const inSlide = enter.slides.find((slide) => slide.name === SLIDE_IN);
       expect(inSlide, `${SLIDE_IN} did not run on the arriving panel`).toBeDefined();
 
       // The panel, not the root: `PageTransition` names its subtree only for
@@ -340,9 +352,9 @@ test.describe("typed subpage slide", () => {
 
       // 500 ms and SOFT, both read from `:root` and both therefore 03's values
       // rather than this file's.
-      expect(inSlide?.durationMs).toBe(timeToMs(enter?.durSubpageToken ?? ""));
+      expect(inSlide?.durationMs).toBe(timeToMs(enter.durSubpageToken ?? ""));
       expect(bezierPoints(inSlide?.keyframes[0]?.easing ?? "")).toEqual(
-        bezierPoints(enter?.easeSoftToken ?? ""),
+        bezierPoints(enter.easeSoftToken ?? ""),
       );
 
       // 103 % → 0, in that order.
@@ -350,9 +362,9 @@ test.describe("typed subpage slide", () => {
 
       // 05 §5.7's forward inversion: the page being left stays painted and the
       // destination's own background stays hidden until the panel lands.
-      expect(enter?.groupRootOpacity, "the root group is not painting").toBe("1");
-      expect(enter?.oldRootOpacity, "the outgoing page is hidden on a forward slide").toBe("1");
-      expect(enter?.newRootOpacity).toBe("0");
+      expect(enter.groupRootOpacity, "the root group is not painting").toBe("1");
+      expect(enter.oldRootOpacity, "the outgoing page is hidden on a forward slide").toBe("1");
+      expect(enter.newRootOpacity).toBe("0");
 
       // URL, scroll and focus. The router supplies none of the focus (05 §5.7),
       // so the `h1` receiving it is `BackLink`'s work and is asserted here.
@@ -373,24 +385,24 @@ test.describe("typed subpage slide", () => {
       const historyOnDetail = await historyLength(page);
       await clickBack(page, locale, route);
 
-      const [, exit] = await transitionRecords(page, 2);
+      const exit = await typedTransition(page, EXIT_TYPE);
 
-      expect(exit?.types, "the Back pill carried no transition type").toEqual([EXIT_TYPE]);
+      expect(exit.types, "the Back pill carried no transition type").toEqual([EXIT_TYPE]);
 
-      const outSlide = exit?.slides.find((slide) => slide.name === SLIDE_OUT);
+      const outSlide = exit.slides.find((slide) => slide.name === SLIDE_OUT);
       expect(outSlide, `${SLIDE_OUT} did not run on the leaving page`).toBeDefined();
       expect(outSlide?.pseudoElement).toMatch(/^::view-transition-old\(/);
-      expect(outSlide?.durationMs).toBe(timeToMs(exit?.durSubpageToken ?? ""));
+      expect(outSlide?.durationMs).toBe(timeToMs(exit.durSubpageToken ?? ""));
       expect(bezierPoints(outSlide?.keyframes[0]?.easing ?? "")).toEqual(
-        bezierPoints(exit?.easeSoftToken ?? ""),
+        bezierPoints(exit.easeSoftToken ?? ""),
       );
       expect(outSlide?.keyframes.map((frame) => frame.translate)).toEqual([SETTLED, TRAVEL]);
 
       // The floor is already the right picture on the way back: home visible
       // from the first frame, the page being left sliding off above it.
-      expect(exit?.groupRootOpacity).toBe("1");
-      expect(exit?.oldRootOpacity).toBe("0");
-      expect(exit?.newRootOpacity).toBe("1");
+      expect(exit.groupRootOpacity).toBe("1");
+      expect(exit.oldRootOpacity).toBe("0");
+      expect(exit.newRootOpacity).toBe("1");
 
       // 06 `D-06.8`: a *replace* to `home#section`, so history does not grow
       // and the reader is put back at the section they opened the page from.
@@ -428,18 +440,21 @@ test.describe("typed Back out of a page nothing links to", () => {
       await spyOnViewTransitions(page);
       await page.goto(urlFor(locale, route.path));
 
+      // 05 §5.7: "direct URL load of a detail page: no transition". Asserted
+      // here, while the reader is still on the page, rather than inferred later
+      // from where the Back transition landed in the list.
+      await expect(page.locator(`#${headingId(route.id)}`)).toBeAttached();
+      expect(await transitionCount(page), "a hard load started a view transition").toBe(0);
+
       const historyOnDetail = await historyLength(page);
       await clickBack(page, locale, route);
 
-      const [exit] = await transitionRecords(page, 1);
+      const exit = await typedTransition(page, EXIT_TYPE);
+      expect(exit.types, "the Back pill carried more than its own type").toEqual([EXIT_TYPE]);
 
-      // The direct load ran no transition, so the Back is the *first* record —
-      // which is itself the assertion that a hard load does not animate.
-      expect(exit?.types, "the Back pill carried no transition type").toEqual([EXIT_TYPE]);
-
-      const outSlide = exit?.slides.find((slide) => slide.name === SLIDE_OUT);
+      const outSlide = exit.slides.find((slide) => slide.name === SLIDE_OUT);
       expect(outSlide, `${SLIDE_OUT} did not run on the leaving page`).toBeDefined();
-      expect(outSlide?.durationMs).toBe(timeToMs(exit?.durSubpageToken ?? ""));
+      expect(outSlide?.durationMs).toBe(timeToMs(exit.durSubpageToken ?? ""));
       expect(outSlide?.keyframes.map((frame) => frame.translate)).toEqual([SETTLED, TRAVEL]);
 
       expect(page.url()).toContain(`${homeUrlFor(locale)}#${route.homeAnchor}`);
@@ -474,13 +489,13 @@ test.describe("reduced motion swaps instantly", () => {
       await page.goto(homeUrlFor(locale));
 
       await clickLearnMore(page, locale, route);
-      const [enter] = await transitionRecords(page, 1);
+      const enter = await typedTransition(page, ENTER_TYPE);
 
       // A transition still starts — the reduced-motion block removes the
       // animations, it does not stop React naming the groups. What must be
       // gone is every `gp-slide-*`.
-      expect(enter?.types).toEqual([ENTER_TYPE]);
-      expect(enter?.slides, "a slide ran under prefers-reduced-motion: reduce").toEqual([]);
+      expect(enter.types).toEqual([ENTER_TYPE]);
+      expect(enter.slides, "a slide ran under prefers-reduced-motion: reduce").toEqual([]);
 
       // Everything else is identical: 05 §5.9 removes the motion, not the
       // navigation. URL, scroll-to-top and focus all still hold.
@@ -490,10 +505,10 @@ test.describe("reduced motion swaps instantly", () => {
       await expect.poll(() => focusedId(page)).toBe(headingId(route.id));
 
       await clickBack(page, locale, route);
-      const [, exit] = await transitionRecords(page, 2);
+      const exit = await typedTransition(page, EXIT_TYPE);
 
-      expect(exit?.types).toEqual([EXIT_TYPE]);
-      expect(exit?.slides, "a slide ran on Back under reduced motion").toEqual([]);
+      expect(exit.types).toEqual([EXIT_TYPE]);
+      expect(exit.slides, "a slide ran on Back under reduced motion").toEqual([]);
       expect(page.url()).toContain(`${homeUrlFor(locale)}#${route.homeAnchor}`);
       // The origin section the reader is put back at. Its *heading* is asserted
       // to exist; the focus landing on it is not — see the note above
@@ -517,9 +532,20 @@ test.describe("untyped navigation swaps instantly", () => {
       await page.locator(`header a[href="${homeUrlFor(locale)}#${route.homeAnchor}"]`).click();
       await page.waitForURL(`**${homeUrlFor(locale)}#${route.homeAnchor}`);
 
-      const [untyped] = await transitionRecords(page, 1);
-      expect(untyped?.types, "a nav link carried a transition type").toEqual([]);
-      expect(untyped?.slides, "an untyped navigation ran a slide").toEqual([]);
+      // Over every record rather than the first: what "animates nothing" means
+      // is that no transition in this session carried a subpage type and none
+      // ran a slide, which is true whether or not the browser made a
+      // transition object for the untyped navigation at all.
+      await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
+      const records = await allTransitions(page);
+      expect(
+        records.flatMap((record) => record.types),
+        "a nav link carried a transition type",
+      ).toEqual([]);
+      expect(
+        records.flatMap((record) => record.slides),
+        "an untyped navigation ran a slide",
+      ).toEqual([]);
     });
   }
 });
@@ -556,7 +582,8 @@ test.describe("browser Back", () => {
       await spyOnViewTransitions(page);
       await page.goto(homeUrlFor(locale));
       await clickLearnMore(page, locale, route);
-      await transitionRecords(page, 1);
+      await typedTransition(page, ENTER_TYPE);
+      const beforeBack = await transitionCount(page);
 
       await page.goBack();
       await page.waitForURL(`**${homeUrlFor(locale)}`);
@@ -568,11 +595,13 @@ test.describe("browser Back", () => {
       // makes the absence below an assertion rather than a race.
       await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
 
-      // Exactly one transition in the whole session: the forward one. A
-      // browser Back starts none at all — it is not merely untyped, it does
-      // not call `startViewTransition` — so the count must not have grown.
-      const records = await transitionRecords(page, 1);
-      expect(records, "a browser Back started a view transition").toHaveLength(1);
+      // The count has not grown. A browser Back starts no transition at all —
+      // it is not merely untyped, it does not call `startViewTransition` — so
+      // comparing across the navigation is the assertion, and it does not care
+      // how many the forward half happened to produce.
+      expect(await transitionCount(page), "a browser Back started a view transition").toBe(
+        beforeBack,
+      );
       expect(await liveViewTransitionAnimations(page)).toBe(0);
     });
   }
