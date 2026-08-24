@@ -30,6 +30,15 @@ import { SectionHeader } from "./SectionHeader";
  * sections use, and `BackLink` — the shell's one client component — focuses it
  * on arrival. See `BackLink.tsx` for why the focus move lives there and why the
  * `tabIndex` is applied at focus time rather than rendered.
+ *
+ * ── Three decisions the six pages used to make one at a time ────────────
+ *
+ * The header is the same block on every detail page, so the answers that were
+ * once six copies of themselves live here now: the registry key that keeps the
+ * entrance from being eaten by a home section ({@link headerRevealId}), the
+ * bottom margin the gapped column does not want ({@link HEADER}), and the
+ * shape checks below, which turn a message tree the two intro props cannot
+ * describe into a readable failure rather than a header with no intro in it.
  */
 
 /**
@@ -88,14 +97,60 @@ export function subpageTitleId(page: SubpageNamespace): string {
   return `${page}-title`;
 }
 
+/**
+ * The header's `Reveal` registry key — **not** `<page>.header`.
+ *
+ * The registry is once per session and keyed by the id alone (05 `D-05.6`): the
+ * first `Reveal` to enter the viewport writes its id, and every later mount of
+ * that id renders the final state with no entrance. Three of the six page
+ * namespaces are also home section ids, so `gallery.header`, `programs.header`
+ * and `menu.header` are already spoken for by `GallerySection`,
+ * `ProgramsSection` and `MenuSection`. A reader who scrolled past the home
+ * Gallery section and then opened `/gallery` got a header that had "already
+ * played" and skipped its rise; Philosophy and Team, whose home anchors are
+ * named differently, played theirs. Prefixing the surface is what makes the two
+ * blocks two keys.
+ *
+ * It is derived here rather than taken as a prop for the reason the rest of
+ * this file exists: a seventh detail page cannot forget what it never writes.
+ */
+function headerRevealId(page: SubpageNamespace): string {
+  return `subpage.${page}.header`;
+}
+
+/**
+ * The header stack's own bottom clearance, released to the column's gap.
+ *
+ * `SectionHeader` closes with `mb-7 md:mb-11` because a home `Section` puts no
+ * gap between its children and the header has to make its own. `SubpageBar`'s
+ * content column *is* a gapped flex column, so on a detail page that margin
+ * lands **on top of** the gap — 16 + 28 on the narrow view, 24 + 44 on the wide
+ * one, where the references draw 16 and 24. Every detail page reached the same
+ * conclusion and wrote it down separately; the arithmetic is the shell's, so
+ * the answer is too.
+ *
+ * **Both halves, and the pair is deliberate.** `mb-0!` alone leaves `md:mb-11`
+ * to be settled by importance, and the two readings of that cascade disagree;
+ * making the `md:` twin important as well removes the question — at `≥ md` both
+ * rules are important and the `md:` one is later in the stylesheet, so it wins
+ * under either reading (`src/components/ui/class-names.tsx`).
+ */
+const HEADER = "mb-0! md:mb-0!";
+
 export type SubpageHeaderProps = {
   /** The page's message namespace — `philosophy`, `programs`, `menu`, … */
   readonly page: SubpageNamespace;
-  /** Extra classes for the header stack, under `withOverrides`' contract. */
-  readonly className?: string;
+  /**
+   * `true` where the design draws the intro on the wide view only — 04 §4's
+   * Menu-page row is the one that asks for it today. `SectionHeader` renders
+   * the string once and lets `md:` hide it, so the view is never a branch in
+   * code (`D-04.5`), and the page says so rather than the shell guessing from
+   * the key's name.
+   */
+  readonly introDesktopOnly?: boolean;
 };
 
-export function SubpageHeader({ page, className }: SubpageHeaderProps) {
+export function SubpageHeader({ page, introDesktopOnly = false }: SubpageHeaderProps) {
   // The root translator, not `useTranslations(page)`: the namespace is a union
   // of eight literals, and a translator narrowed to a union of namespaces is a
   // union of call signatures that no single `t("heading")` satisfies. The root
@@ -112,10 +167,30 @@ export function SubpageHeader({ page, className }: SubpageHeaderProps) {
   const titleId = subpageTitleId(page);
 
   // `SectionHeader`'s two intro shapes are exclusive by construction: a pair
-  // (`intro` + `introShort`, both rendered, `md:` picks one) or a lone intro.
-  // The `undefined` check is what keeps the pair well-formed — an `introShort`
-  // without an `intro` would render a header whose only intro disappears at
-  // `md`, which is the failure that type distinction exists to prevent.
+  // (`intro` + `introShort`, both rendered, `md:` picks one) or a lone intro
+  // that may be `≥ md` only. There the shapes are a type error apart; here the
+  // pair is assembled from whatever the message tree happens to hold, so the
+  // two combinations the types reject have to be rejected at runtime instead.
+  // Both used to pass silently, and both lose copy: the first rendered a header
+  // with no intro at all, the second ignored the page's own prop.
+  if (introShort !== undefined && intro === undefined) {
+    throw new Error(
+      `The "${page}" namespace has an introShort and no intro, which is half of a pair ` +
+        `(04 D-04.5): introShort is the < md twin of intro, and on its own it would leave the ` +
+        `header with no intro on either view. Add ${page}.intro to every locale, or rename the ` +
+        `key to ${page}.intro if the one string is meant for both views.`,
+    );
+  }
+
+  if (introShort !== undefined && introDesktopOnly) {
+    throw new Error(
+      `The "${page}" page asked for introDesktopOnly, but its namespace carries an introShort. ` +
+        `The two say different things about the narrow view — introShort draws the short copy ` +
+        `there, introDesktopOnly draws nothing — and SectionHeader accepts only one of them ` +
+        `(04 D-04.5). Drop the prop, or drop ${page}.introShort from every locale.`,
+    );
+  }
+
   const header =
     intro !== undefined && introShort !== undefined ? (
       <SectionHeader
@@ -125,7 +200,7 @@ export function SubpageHeader({ page, className }: SubpageHeaderProps) {
         title={title}
         intro={intro}
         introShort={introShort}
-        className={className}
+        className={HEADER}
       />
     ) : (
       <SectionHeader
@@ -134,12 +209,13 @@ export function SubpageHeader({ page, className }: SubpageHeaderProps) {
         eyebrow={eyebrow}
         title={title}
         intro={intro}
-        className={className}
+        introDesktopOnly={introDesktopOnly}
+        className={HEADER}
       />
     );
 
   return (
-    <Reveal id={`${page}.header`} variant="rise">
+    <Reveal id={headerRevealId(page)} variant="rise">
       {header}
     </Reveal>
   );

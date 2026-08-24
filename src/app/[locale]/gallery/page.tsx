@@ -8,7 +8,7 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { Reveal } from "@/components/motion/Reveal";
 import { GalleryExplorer } from "@/components/pages/gallery/GalleryExplorer";
 import type { GalleryFilter } from "@/components/pages/gallery/GalleryFilters";
-import { GALLERY_COLUMN, GALLERY_HEADER, GALLERY_HINT } from "@/components/pages/gallery/layout";
+import { GALLERY_COLUMN, GALLERY_HINT } from "@/components/pages/gallery/layout";
 import type { GalleryItem } from "@/components/pages/gallery/types";
 import { routeHref } from "@/components/pages/route-href";
 import { getGallery } from "@/content/collections";
@@ -97,7 +97,7 @@ export default async function GalleryPage() {
   return (
     <PageTransition>
       <SubpageBar routeId={ROUTE_ID} contentClassName={GALLERY_COLUMN}>
-        <SubpageHeader page={ROUTE_ID} className={GALLERY_HEADER} />
+        <SubpageHeader page={ROUTE_ID} />
 
         <GalleryExplorer
           items={items}

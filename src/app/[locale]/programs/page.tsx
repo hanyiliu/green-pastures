@@ -5,11 +5,7 @@ import { SubpageBar } from "@/components/layout/SubpageBar";
 import { SubpageHeader } from "@/components/layout/SubpageHeader";
 import { PageTransition } from "@/components/motion/PageTransition";
 import { Reveal } from "@/components/motion/Reveal";
-import {
-  PROGRAMS_COLUMN,
-  PROGRAMS_FOOTNOTE,
-  PROGRAMS_HEADER,
-} from "@/components/pages/programs/layout";
+import { PROGRAMS_COLUMN, PROGRAMS_FOOTNOTE } from "@/components/pages/programs/layout";
 import { RoomCards } from "@/components/pages/programs/RoomCards";
 import { getSite } from "@/content/site";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -86,7 +82,7 @@ export default async function ProgramsPage() {
   return (
     <PageTransition>
       <SubpageBar routeId={ROUTE_ID} contentClassName={PROGRAMS_COLUMN}>
-        <SubpageHeader page={ROUTE_ID} className={PROGRAMS_HEADER} />
+        <SubpageHeader page={ROUTE_ID} />
 
         <RoomCards />
 

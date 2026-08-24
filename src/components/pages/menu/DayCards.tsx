@@ -12,7 +12,6 @@ import {
   DAY_CARD_MEALS,
   DAY_CARD_ROW,
   DAY_CARD_TITLE,
-  DAY_CARD_VARS,
   MEAL_LABEL,
   mealClass,
 } from "./layout";
@@ -77,12 +76,7 @@ export async function DayCards({ menu }: DayCardsProps) {
 
         return (
           <RevealItem key={day} variant="riseChild" index={index}>
-            <section
-              aria-labelledby={titleId}
-              data-day={day}
-              style={DAY_CARD_VARS}
-              className={DAY_CARD}
-            >
+            <section aria-labelledby={titleId} data-day={day} className={DAY_CARD}>
               <h2 id={titleId} className={DAY_CARD_TITLE}>
                 {format.dateTime(weekdayDate(day), "weekdayLong")}
               </h2>

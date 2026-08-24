@@ -5,7 +5,7 @@ import { Reveal } from "@/components/motion/Reveal";
 import { StarRow } from "@/components/sections/testimonials/StarRow";
 import { YelpBadge } from "@/components/sections/testimonials/YelpBadge";
 
-import { COUNT_LINE, RATING_ROW, RATING_VALUE, REVIEWS_HEADER, REVIEWS_HEADING } from "./layout";
+import { COUNT_LINE, RATING_ROW, RATING_VALUE, REVIEWS_HEADER } from "./layout";
 
 /**
  * The reviews page's header — the rating row, the `h1` and the count line
@@ -19,10 +19,9 @@ import { COUNT_LINE, RATING_ROW, RATING_VALUE, REVIEWS_HEADER, REVIEWS_HEADING }
  * an eyebrow or an intro the day one is added to all three locales with no code
  * change here (INV-04.4). What it has no slot for is furniture *around* the
  * heading, and this page draws two pieces of it. So the composite is the shell
- * component with a sibling above and below, inside one centred stack, and
- * `mb-0!`/`md:mb-0!` sheds the bottom margin `SectionHeader` reserves for a
- * home section — both halves, because an important base class does not outrank
- * its own `md:` twin.
+ * component with a sibling above and below, inside one centred stack; the
+ * bottom margin `SectionHeader` reserves for a home section is already shed by
+ * `SubpageHeader`, so the stack's own gap is the whole separation here.
  *
  * ── Three reveals, not one ───────────────────────────────────────────────
  *
@@ -89,7 +88,7 @@ export function ReviewsPageHeader({ rating, reviewCount }: ReviewsPageHeaderProp
         </p>
       </Reveal>
 
-      <SubpageHeader page={PAGE} className={REVIEWS_HEADING} />
+      <SubpageHeader page={PAGE} />
 
       <Reveal id="reviews.count" variant="rise">
         {/*

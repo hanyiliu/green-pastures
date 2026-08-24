@@ -42,22 +42,6 @@
  */
 export const PHILOSOPHY_COLUMN = "max-w-235!" as const;
 
-/**
- * The subpage header's own bottom margin, released to the column's gap.
- *
- * `SectionHeader` closes with `mb-7 md:mb-11` because a home section's header
- * sits in a box with no gap of its own. The subpage column *is* a flex column
- * with an 18/28px gap (`SubpageBar`'s `CONTENT`), so the margin would stack on
- * top of it and open 46px / 72px where the references draw 18px and 28px.
- *
- * **Both halves are important, and the pair is deliberate.** `mb-0!` alone
- * leaves `md:mb-11` to be settled by importance, and the two readings of that
- * cascade disagree across this codebase's own notes; making the `md:` twin
- * important too removes the question — at `≥ md` both rules are important and
- * the `md:` one is later in the stylesheet, so it wins under every reading.
- */
-export const PHILOSOPHY_HEADER = "mb-0! md:mb-0!" as const;
-
 /* -------------------------------------------------------------------------- *
  * The principles (D L359–L372, M L267–L281)
  * -------------------------------------------------------------------------- */
@@ -93,9 +77,9 @@ export const PRINCIPLE_CARD =
  * "tile 48 → 40px". Two of the three sources agree with the drawing, so the
  * drawing wins here and 03 §9's single value is reported rather than followed.
  *
- * Both halves of each pair are important for the reason
- * {@link PHILOSOPHY_HEADER} gives: the `md:` twin has to outrank an important
- * base class without depending on how that cascade is read.
+ * Both halves of each pair are important for the reason `SubpageHeader`'s
+ * released bottom margin gives: the `md:` twin has to outrank an important base
+ * class without depending on how that cascade is read.
  */
 export const PRINCIPLE_TILE =
   "size-10! rounded-tile bg-chip-bg text-lg! md:size-12! md:text-2xl!" as const;

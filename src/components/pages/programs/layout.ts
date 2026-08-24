@@ -47,21 +47,6 @@ import type { ChipTone } from "@/components/ui/Chip";
  */
 export const PROGRAMS_COLUMN = "max-w-220! gap-4! md:gap-6!" as const;
 
-/**
- * What the page changes about `SubpageHeader`.
- *
- * `SectionHeader` carries `mb-7 md:mb-11` — 28px/44px of clearance under the
- * stack — because a home `Section` puts no gap between its children and the
- * header has to make its own. `SubpageBar`'s content column *is* a gapped flex
- * column, so on a detail page that margin lands **on top of** the gap: 16 + 28
- * on the narrow view and 24 + 44 on the wide one, against the 16 and 24 the
- * reference draws. Zeroing it here is the `className` contract doing its job,
- * and it is not a Programs quirk — every detail page composing the shell has
- * the same arithmetic. See this row's report; the shell is the better place for
- * it.
- */
-export const PROGRAMS_HEADER = "mb-0! md:mb-0!" as const;
-
 /* -------------------------------------------------------------------------- *
  * The card list (D L398–427, M L303–319)
  * -------------------------------------------------------------------------- */

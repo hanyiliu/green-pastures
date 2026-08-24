@@ -27,14 +27,11 @@
  *
  * All three are important, one property each, because `SubpageBar`'s own
  * recipe sets `max-w-content`, `gap-4.5` and `md:gap-7`. Both halves of the gap
- * are overridden rather than only the base — see `PHILOSOPHY_HEADER` in the
- * Philosophy page's `layout.ts` for why an important base class is not left to
- * settle a `md:` twin on its own.
+ * are overridden rather than only the base — see `SubpageHeader`'s released
+ * bottom margin for why an important base class is not left to settle a `md:`
+ * twin on its own.
  */
 export const TEAM_COLUMN = "max-w-220! gap-4! md:gap-6!" as const;
-
-/** `SectionHeader`'s bottom margin, released to the column's gap — as Philosophy. */
-export const TEAM_HEADER = "mb-0! md:mb-0!" as const;
 
 /* -------------------------------------------------------------------------- *
  * The head teacher (D L558–L565, M L450–L455)

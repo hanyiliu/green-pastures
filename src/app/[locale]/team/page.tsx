@@ -4,7 +4,7 @@ import { hasLocale } from "next-intl";
 import { SubpageBar } from "@/components/layout/SubpageBar";
 import { SubpageHeader } from "@/components/layout/SubpageHeader";
 import { PageTransition } from "@/components/motion/PageTransition";
-import { TEAM_COLUMN, TEAM_HEADER } from "@/components/pages/team/layout";
+import { TEAM_COLUMN } from "@/components/pages/team/layout";
 import { TeamBio } from "@/components/pages/team/TeamBio";
 import { getSite } from "@/content/site";
 import { notFound } from "@/i18n/navigation";
@@ -65,7 +65,7 @@ export default function TeamPage() {
   return (
     <PageTransition>
       <SubpageBar routeId={ROUTE_ID} contentClassName={TEAM_COLUMN}>
-        <SubpageHeader page={ROUTE_ID} className={TEAM_HEADER} />
+        <SubpageHeader page={ROUTE_ID} />
         <TeamBio />
       </SubpageBar>
     </PageTransition>

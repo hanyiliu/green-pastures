@@ -36,14 +36,6 @@ export const REVIEWS_COLUMN = "max-w-235! gap-4! md:gap-6.5!" as const;
  */
 export const REVIEWS_HEADER = "flex flex-col items-center gap-2 md:gap-3" as const;
 
-/**
- * `SectionHeader` reserves 28px/44px under itself for a home section. Inside
- * the stack above, the stack's own gap is the whole separation, so both halves
- * are zeroed — and both, because the important base class does not outrank the
- * recipe's `md:` twin.
- */
-export const REVIEWS_HEADING = "mb-0! md:mb-0!" as const;
-
 /** Stars · 5.0 · Yelp, in one row 9px/12px apart (D L519, M L419). */
 export const RATING_ROW = "inline-flex items-center gap-2.25 md:gap-3" as const;
 
