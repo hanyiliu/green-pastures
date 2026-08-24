@@ -6,6 +6,7 @@ import MenuSection from "@/components/sections/menu/MenuSection";
 import GallerySection from "@/components/sections/gallery/GallerySection";
 import TestimonialsSection from "@/components/sections/testimonials/TestimonialsSection";
 import TeachersSection from "@/components/sections/teachers/TeachersSection";
+import VisitSection from "@/components/sections/visit/VisitSection";
 
 /**
  * Home route (04 §1, 05 §5.7, §5.8).
@@ -40,6 +41,7 @@ export default function HomePage() {
         <GallerySection />
         <TestimonialsSection />
         <TeachersSection />
+        <VisitSection />
       </main>
     </PageTransition>
   );
