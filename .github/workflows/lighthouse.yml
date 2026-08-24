@@ -1,0 +1,295 @@
+# Lighthouse CI — docs/technical/08-testing-quality.md §10 (the
+# `lighthouse-preview` and `lighthouse-prod` rows), §7 (every assertion, which
+# lives in `lighthouserc.cjs` and not here), D-08.9 (the URL comes from the
+# `deployment_status` payload) and 09 D-09.4 (previews are protected, so the run
+# carries a bypass header). 10 §8 schedules both as PR-8.5.
+#
+# **Its own file, and it had to be.** 10 §10's rule for `ci.yml` is that later
+# pull requests add jobs and never edit an existing one, and `ci.yml`'s header
+# named PR-8.5's Lighthouse job as one of those additions. It cannot be one.
+# Both jobs below fire on `deployment_status`, an `on:` trigger `ci.yml` does
+# not have; adding it there would start `static`, `content`, `unit`, `build` and
+# `e2e` on every deployment event unless each of the five grew an `if:` guard —
+# five edits to existing jobs, taken to avoid one new file. D-10.15 already
+# settled this shape for `audit.yml` and `nightly.yml` in the same words: "each
+# carries a `schedule`/`workflow_dispatch` trigger `ci.yml` does not have, and a
+# single-owner file needs no serialisation rule at all". PR-8.5's other half,
+# the `budget` job, *is* an addition to `ci.yml`, because it runs on
+# `pull_request` like everything else there.
+#
+# **Advisory on previews, a launch gate on production.** INV-08.2 fixes the
+# required checks on `main` at exactly six and only the human changes that set
+# (INV-11.5). No job here declares a `name:`, so the check GitHub reports is the
+# job id verbatim (D-08.19) and neither id is one of the six. 09 §3: "an orange
+# or failed Lighthouse run never blocks a merge"; `lighthouse-prod` becomes a
+# gate at launch by way of 08 §12.3's checklist, not by way of the ruleset.
+#
+# **`deployment_status` runs on the default branch.** Like `repository_dispatch`,
+# it exists only there and runs the default branch's copy of this file
+# [verified: GitHub Actions "Events that trigger workflows", 2026-08-22]. Two
+# consequences, both deliberate. Neither job can be exercised from the pull
+# request that writes it — which is why `workflow_dispatch` below takes an
+# explicit URL, so the first real run is something a human starts and watches
+# rather than something that fires unattended weeks later. And the check run
+# `lighthouse-preview` creates is attached to `github.event.deployment.sha`,
+# which is how a workflow running on `main` reports against the commit under
+# review.
+#
+# **Nothing here has fired yet.** No Vercel project is connected (OPS-2.1), so
+# there is no `deployment_status` event to receive and no
+# `VERCEL_AUTOMATION_BYPASS_SECRET` to send. 08 §10's `Built?` cells read
+# `partly` for both rows and name what is missing, per that section's own
+# convention. The half that is exercised on every pull request today is
+# `ci.yml`'s `budget` job, which asserts the same `resource-summary` byte counts
+# a build directory can decide without a CDN.
+name: lighthouse
+
+on:
+  # Vercel posts one of these per deployment. `state == 'success'` is checked in
+  # each job's `if:` rather than here — `on:` has no filter for payload fields.
+  deployment_status:
+
+  # The live trigger while there is no Vercel project, and the way a human runs
+  # either matrix against a URL by hand afterwards (09 §5.1 item 16 re-runs
+  # `lighthouse-prod` at the launch checklist).
+  workflow_dispatch:
+    inputs:
+      url:
+        description: The deployment to measure, e.g. https://greenpasturesdaycare.com
+        required: true
+        type: string
+      matrix:
+        description: Which of 08 §7's runs to perform
+        required: true
+        default: preview
+        type: choice
+        options: [preview, production]
+
+# INV-08.7. `checks: write` is the one write either job needs, and only
+# `lighthouse-preview` needs it — 08 §10's conventions grant it to that job by
+# name — so it is declared on that job rather than here.
+permissions:
+  contents: read
+
+# A newer deployment of the same commit makes an older Lighthouse answer
+# worthless, so superseded runs are cancelled. Keyed on the deployment's own SHA
+# rather than `github.ref`, which on `deployment_status` is always the default
+# branch and would collapse every deployment into one group.
+concurrency:
+  group: lighthouse-${{ github.event.deployment.sha || inputs.url || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 08 §10 `lighthouse-preview` · 15 min · advisory.
+  #
+  # 08 §7's preview run: the enabled homes plus `/zh-Hans/programs` (CJK-heavy),
+  # mobile preset, `numberOfRuns: 3`. The URL list is built by
+  # `lighthouserc.cjs` from `src/i18n/routing.ts`, never written out here
+  # (INV-08.4).
+  #
+  # **Built? partly.** §10's row also names a `@smoke` + `@form` subset run
+  # against the preview URL. That is not here: `e2e/form*` is another lane's
+  # file set, D-08.7 points the whole e2e suite at a local production build
+  # rather than a preview, and a `@form` run against a live preview posts real
+  # inquiries. The step arrives with the pull request that reconciles those two
+  # facts; until then this job is Lighthouse only and §10's cell says so.
+  lighthouse-preview:
+    if: >-
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       !github.event.deployment.production_environment) ||
+      (github.event_name == 'workflow_dispatch' && inputs.matrix == 'preview')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # The check run this job attaches to the deployment's SHA (08 §10) — the
+      # only write in this workflow.
+      checks: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # The order is load-bearing, not stylistic: `setup-node`'s `cache: pnpm`
+      # resolves the store by shelling out to `pnpm store path`, so it fails
+      # outright unless pnpm is already on PATH (08 §10). `pnpm/action-setup`
+      # takes its version from `packageManager`; `setup-node` takes Node from
+      # `.nvmrc` (= 24). Third-party actions are pinned to a commit SHA and
+      # `actions/*` to a major (08 §10 conventions).
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # A missing URL is the one input that would make `lhci` measure nothing
+      # while looking healthy, so it is refused here rather than in the
+      # collector. Same discipline as `scripts/ci/todo-grep.sh`: a gate that
+      # cannot run must not report clean.
+      - name: resolve the deployment URL
+        id: target
+        env:
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
+          DISPATCH_URL: ${{ inputs.url }}
+        run: |
+          set -euo pipefail
+          url="${DEPLOYMENT_URL:-$DISPATCH_URL}"
+          if [ -z "$url" ]; then
+            echo "::error::no deployment URL in the payload and none dispatched — nothing would be measured."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: lhci autorun
+        id: lhci
+        continue-on-error: true
+        env:
+          LHCI_BASE_URL: ${{ steps.target.outputs.url }}
+          LHCI_MATRIX: preview
+          # 09 D-09.4 / OQ-08.4: previews are protected and this is the only job
+          # that touches one. Absent (as it is until OPS-2.1 provisions it) the
+          # collector sends no bypass header and Lighthouse measures Vercel's
+          # login page — which fails these assertions loudly rather than passing
+          # quietly, so a missing secret cannot read as a green run.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm exec lhci autorun --config=lighthouserc.cjs
+
+      - name: job summary
+        if: always()
+        env:
+          OUTCOME: ${{ steps.lhci.outcome }}
+          TARGET: ${{ steps.target.outputs.url }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Lighthouse (preview) — advisory"
+            echo
+            echo "Result: \`$OUTCOME\` against \`$TARGET\`."
+            echo "Budgets: docs/technical/08-testing-quality.md §7."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: lighthouse-preview
+          path: .lighthouseci
+          # `error`, not `warn`. The lesson PR #79 wrote down, and this job's own
+          # case for it: an upload step that shrugs at an empty directory
+          # publishes nothing and stays green, and the report is the entire
+          # output of an advisory job.
+          if-no-files-found: error
+          retention-days: 7
+
+      # 08 §10: the check run goes on `github.event.deployment.sha`, because a
+      # workflow triggered by `deployment_status` runs on the default branch and
+      # has no other way to report against the commit under review. `neutral`
+      # rather than `failure` on a red run — this job is advisory (09 §3), and a
+      # `failure` conclusion is what a human reads as "blocked".
+      - name: report against the deployment SHA
+        if: always() && github.event_name == 'deployment_status'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.0.1
+        env:
+          OUTCOME: ${{ steps.lhci.outcome }}
+          TARGET: ${{ steps.target.outputs.url }}
+        with:
+          script: |
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'lighthouse-preview',
+              head_sha: context.payload.deployment.sha,
+              status: 'completed',
+              conclusion: process.env.OUTCOME === 'success' ? 'success' : 'neutral',
+              output: {
+                title: 'Lighthouse (preview) — advisory',
+                summary: `08 §7 budgets against ${process.env.TARGET}. Full report in the run's artifacts.`,
+              },
+            });
+
+  # 08 §10 `lighthouse-prod` · 60 min · launch gate (§12.3).
+  #
+  # 08 §7's production matrix, re-cut so it fits: `numberOfRuns: 3` on the home
+  # URLs where LCP and CLS matter most and run-to-run variance is worst,
+  # `numberOfRuns: 1` on the detail pages, every URL on both presets. At three
+  # locales that is 42 collections, which is why the timeout is 60 minutes and
+  # not §10's original 40.
+  #
+  # **Built? partly.** §10's row also names the `@seo` and `@headers` tags run
+  # against the production base URL. Those specs are PR-6.10's and PR-6.11's and
+  # they live in another lane's file set; the step that points them at a
+  # production URL arrives with the pull request that owns them.
+  lighthouse-prod:
+    if: >-
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       github.event.deployment.production_environment) ||
+      (github.event_name == 'workflow_dispatch' && inputs.matrix == 'production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # 08 §3 / §12.3: the release gate's preflight. `--release` ignores every
+      # `--warn-locale` (INV-02.11) and fails while `provisional` is non-empty
+      # (INV-02.10), so it is the check that says the content on the URL below
+      # is finished content. It runs first: measuring a site that still carries
+      # placeholder facts wastes an hour of runner time.
+      - name: validate:content --release
+        run: pnpm run validate:content --release
+
+      - name: resolve the deployment URL
+        id: target
+        env:
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
+          DISPATCH_URL: ${{ inputs.url }}
+        run: |
+          set -euo pipefail
+          url="${DEPLOYMENT_URL:-$DISPATCH_URL}"
+          if [ -z "$url" ]; then
+            echo "::error::no deployment URL in the payload and none dispatched — nothing would be measured."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # Four invocations rather than one config: LHCI takes a single
+      # `numberOfRuns` per run, and 08 §7 asks for three samples on the homes
+      # and one on the detail pages, each on both presets.
+      - name: lhci autorun · homes · mobile
+        env:
+          LHCI_BASE_URL: ${{ steps.target.outputs.url }}
+          LHCI_MATRIX: prod-home
+        run: pnpm exec lhci autorun --config=lighthouserc.cjs
+
+      - name: lhci autorun · homes · desktop
+        env:
+          LHCI_BASE_URL: ${{ steps.target.outputs.url }}
+          LHCI_MATRIX: prod-home
+          LHCI_PRESET: desktop
+        run: pnpm exec lhci autorun --config=lighthouserc.cjs
+
+      - name: lhci autorun · detail pages · mobile
+        env:
+          LHCI_BASE_URL: ${{ steps.target.outputs.url }}
+          LHCI_MATRIX: prod-detail
+        run: pnpm exec lhci autorun --config=lighthouserc.cjs
+
+      - name: lhci autorun · detail pages · desktop
+        env:
+          LHCI_BASE_URL: ${{ steps.target.outputs.url }}
+          LHCI_MATRIX: prod-detail
+          LHCI_PRESET: desktop
+        run: pnpm exec lhci autorun --config=lighthouserc.cjs
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: lighthouse-prod
+          path: .lighthouseci
+          if-no-files-found: error
+          retention-days: 30

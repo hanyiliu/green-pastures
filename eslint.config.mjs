@@ -380,6 +380,21 @@ export default tseslint.config(
     files: ["**/*.{js,mjs,cjs}"],
     extends: [tseslint.configs.disableTypeChecked],
   },
+  {
+    // `package.json` declares `"type": "module"`, so a CommonJS file in this
+    // tree has to be spelled `.cjs` — and a `.cjs` file that may not call
+    // `require` cannot read anything. Lighthouse CI loads its config with
+    // `require()` (0.15.1 has no ESM loader), which is the whole reason
+    // `lighthouserc.cjs` is CommonJS at all, and it reads `src/i18n/routing.ts`
+    // and `content/site.json` so the URL matrix is derived rather than
+    // hard-coded per locale (INV-08.4). Exactly one rule comes off, in exactly
+    // one file. PR-8.5.
+    name: "gp/exempt-lighthouserc",
+    files: ["lighthouserc.cjs"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 
   /* --------------------------------------------------------------------- *
    * React / Next / a11y — JSX files only
