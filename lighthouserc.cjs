@@ -157,12 +157,26 @@ module.exports = {
         "categories:best-practices": median({ minScore: 0.95 }),
         "categories:seo": median({ minScore: 1 }),
 
+        // **There is no `largest-contentful-paint` row, and the absence is the
+        // decision.** It carried `2500` until 2026-08-24; 08 §7's closing
+        // paragraph is the record and the evidence. In short: measured at
+        // `15beead`, the best LCP any URL in this matrix produced was 3,930 ms,
+        // and `/privacy` — the lightest route in the site — sits at 3,533 ms
+        // while scoring `categories:performance` 0.90, so the floor is the
+        // architecture and not the page. It was removed rather than loosened
+        // or downgraded to `warn` because a number left in this table reads as
+        // enforcement whatever its severity, and a threshold nothing can fail
+        // is the shape the header above already names. LCP is not unwatched:
+        // it is a weighted input to `categories:performance`, asserted `error`
+        // in the block above and medianing 0.81 today, and the number that
+        // governs is the Speed Insights field p75 (08 §7, §12.3; the
+        // integration is PR-7.1's).
+
         // 08 §7: this is Lighthouse's whole-page, cold-load, mobile-emulated
         // CLS and is deliberately looser than the animation budget. The 0.02
         // that 03 §3 fixes for reveals, count-up, loops and the locale toggle
         // is asserted separately and per phase by 08 §5's `@perf` tag, and
         // neither number relaxes the other.
-        "largest-contentful-paint": median({ maxNumericValue: 2500 }),
         "cumulative-layout-shift": median({ maxNumericValue: 0.05 }),
         "total-blocking-time": median({ maxNumericValue: 200 }),
         "speed-index": medianWarn({ maxNumericValue: 3400 }),
