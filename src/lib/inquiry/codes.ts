@@ -166,6 +166,23 @@ export function isInquiryCode(value: string): value is InquiryCode {
 }
 
 /**
+ * Is `value` one of the seven **field-scoped** codes — the ones that may appear
+ * inside a 400's `fields`?
+ *
+ * `parseInquiry` asks this of every Zod issue message: a message that is one of
+ * the seven *is* the code the parent sees, and anything else — a schema-level
+ * failure with no code of its own — is reported as the generic `invalid`. That
+ * narrowing decision is the reason this is exported as a predicate rather than
+ * the caller reading {@link INQUIRY_FIELD_CODES} and re-deciding. A second copy
+ * of the list fails quietly: a code added here but missing from the copy is
+ * downgraded to `invalid`, and the parent reads "please check this value" in
+ * place of the specific reason. One list, one predicate, no copy to forget.
+ */
+export function isInquiryFieldCode(value: string): value is InquiryFieldCode {
+  return (INQUIRY_FIELD_CODES as readonly string[]).includes(value);
+}
+
+/**
  * The message key a code renders through, as a dotted path from the root of the
  * message tree.
  *
