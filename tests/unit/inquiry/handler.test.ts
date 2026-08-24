@@ -296,6 +296,45 @@ describe("Turnstile (07 §2 step 5)", () => {
     expect(impl.calls[0]?.url).toBe(TURNSTILE_VERIFY_URL);
     expect(impl.calls[1]?.url).toBe(RESEND_SEND_URL);
   });
+
+  /**
+   * `gp-dln.232`: the answer Cloudflare gives one of its published testing
+   * secrets, transcribed from a live call [verified 2026-08-24]. It carries no
+   * `action` and the hostname `example.com`, which is why the happy path was
+   * unreachable on a preview, in local development and in the Playwright run
+   * INV-08.7 keeps key-free.
+   */
+  const CLOUDFLARE_TESTING_PASS = {
+    success: true,
+    "error-codes": [],
+    hostname: "example.com",
+    metadata: { result_with_testing_key: true },
+  };
+
+  it("accepts a submission verified under the published testing secret", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA");
+    const { response, body, impl } = await submit({
+      network: { turnstile: CLOUDFLARE_TESTING_PASS },
+    });
+
+    expect(response.status).toBe(200);
+    expect(body).toStrictEqual({ ok: true });
+    expect(callsTo(impl, RESEND_SEND_URL)).toHaveLength(1);
+    expect(logLine()).toMatchObject({ outcome: "accepted" });
+  });
+
+  it("rejects that same answer under a secret that is not one of the three", async () => {
+    // The default stub, `test-secret`, stands for every real secret: the echo
+    // checks run, the missing `action` is a mismatch, and nothing is sent.
+    const { response, body, impl } = await submit({
+      network: { turnstile: CLOUDFLARE_TESTING_PASS },
+    });
+
+    expect(response.status).toBe(400);
+    expect(body).toStrictEqual({ ok: false, code: "turnstile_failed" });
+    expect(callsTo(impl, RESEND_SEND_URL)).toHaveLength(0);
+    expect(logLine()).toMatchObject({ turnstileErrorCodes: ["action-mismatch"] });
+  });
 });
 
 /* -------------------------------------------------------------------------- *

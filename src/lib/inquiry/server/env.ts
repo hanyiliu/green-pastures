@@ -50,6 +50,54 @@ export function turnstileSecretKey(): string | undefined {
 }
 
 /**
+ * Cloudflare's three **published** testing secrets (07 §5, `gp-dln.232`).
+ *
+ * These are not secrets. Cloudflare prints them in its own documentation so
+ * that anybody can wire a form up without an account, and each one makes
+ * `siteverify` a constant function of the secret rather than of the token: the
+ * `1x…` secret answers `success: true` for *any* string, the `2x…` one answers
+ * `invalid-input-response` for any string, and the `3x…` one answers
+ * `timeout-or-duplicate`. A deployment configured with one of them has no spam
+ * protection at all, whatever else the code does.
+ *
+ * That last sentence is the whole safety argument for
+ * {@link isTurnstileTestingSecret}, which is the key to the one relaxation in
+ * `./turnstile.ts`. The relaxation cannot widen a real deployment because it
+ * cannot be reached from one: a production secret is not on this list, and a
+ * deployment that put a value from this list into `TURNSTILE_SECRET_KEY` would
+ * already be letting every token through before the relaxation was consulted.
+ *
+ * Keying on the secret is deliberate, and the alternatives were worse. `NODE_ENV`
+ * is `production` on a preview build, so it would key the seam off the wrong
+ * axis. A dedicated `TURNSTILE_RELAX_*` variable would be one dashboard
+ * mis-click away from disarming the live form, and would make the bypass
+ * something an attacker could hope to find set. An env-overridable
+ * `siteverify` URL is worse still: it would let whoever can set an environment
+ * variable point verification at a host that always says yes. The value below
+ * is public knowledge and useless against a real widget, which is why it is the
+ * safest thing to key on.
+ *
+ * [verified against `https://challenges.cloudflare.com/turnstile/v0/siteverify`,
+ * 2026-08-24: `1x…` → `{"success":true,"hostname":"example.com"}` with **no**
+ * `action`; `2x…` → `invalid-input-response`; `3x…` → `timeout-or-duplicate`.]
+ */
+const TURNSTILE_TESTING_SECRETS: readonly string[] = [
+  "1x0000000000000000000000000000000AA",
+  "2x0000000000000000000000000000000AA",
+  "3x0000000000000000000000000000000AA",
+];
+
+/**
+ * Is the configured `siteverify` secret one of Cloudflare's published testing
+ * secrets? An exact match against {@link TURNSTILE_TESTING_SECRETS} and nothing
+ * else — no prefix, no case folding, no pattern. A real secret shaped like one
+ * of these is still a real secret and answers `false`.
+ */
+export function isTurnstileTestingSecret(secret: string): boolean {
+  return TURNSTILE_TESTING_SECRETS.includes(secret);
+}
+
+/**
  * `INQUIRY_FROM_EMAIL` — the per-environment override of the sender address.
  * Unset is the norm: the address is content, in `content/site.json`
  * (`D-07.10`). 09 §2 flags this variable for removal under OQ-09.11.

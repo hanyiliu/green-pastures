@@ -3,6 +3,7 @@ import { expect, test, type Locator } from "@playwright/test";
 import { HONEYPOT_FIELD, INQUIRY_FORM_FIELDS } from "../src/lib/inquiry/schema";
 
 import {
+  awaitInquiryResponse,
   control,
   copy,
   EXPECTED_LAUNCH_LOCALE_COUNT,
@@ -37,11 +38,16 @@ import {
  *
  * What each test is allowed to conclude is set by `form-support.ts`'s notes (a)
  * and (b), and is worth one sentence here because it is the thing a reader will
- * want to check first: **the honeypot test runs against the live handler**, and
- * every other server outcome is forced with `page.route` because this rig
- * cannot make Cloudflare's `siteverify` answer differently — 08 §5's `@form`
- * row prescribes exactly that, and the forced tests still assert the *request*
- * the form built, so none of them is a test of its own fixture.
+ * want to check first: **the success test and the honeypot test run against the
+ * live handler**, and every *failure* outcome is forced with `page.route`
+ * because this rig cannot make a running server answer 502 or 429 — 08 §5's
+ * `@form` row prescribes exactly that, and the forced tests still assert the
+ * *request* the form built, so none of them is a test of its own fixture.
+ *
+ * The success test only became reachable at `gp-dln.232`. Until then
+ * `siteverify` rejected its own published test secret's answer here — no
+ * `action`, hostname `example.com` — so the "form submits" row of the Phase 5
+ * gate was asserted against a `page.route` fixture and not against the site.
  */
 
 /**
@@ -105,22 +111,67 @@ test.describe("inquiry form", () => {
         await stubTurnstile(page);
         const form = await gotoForm(page, id);
 
-        // The response is held open until the pending assertions below have
-        // run, so `D-07.4`'s pending contract is observed rather than raced.
+        // No `page.route`: this submission goes to the running
+        // `POST /api/inquiry`, through 07 §2's nine steps in order, and the 200
+        // it comes back with is the server's own.
+        const answered = awaitInquiryResponse(page);
+
+        await fillDraft(form, VALID_DRAFT);
+
+        // Past the time-to-submit floor, which is what separates this test from
+        // the decoy one below. `isBotSignal` answers true for anything sooner
+        // than `MIN_SUBMIT_MS`, and a decoy returns the *same* `{ ok: true }`
+        // from step 3 — so without this wait a 200 would prove nothing about
+        // `siteverify` at step 5. With it, and with the honeypot left empty,
+        // the only route to a 200 is the whole handler.
+        await passTimeToSubmitFloor(form);
+
+        const submit = submitButton(form);
+        await expect(submit).toHaveText(copy(words, "form.submit"));
+        await submit.click();
+
+        const { status, text, captured } = await answered;
+        expect(status).toBe(200);
+        expect(text).toBe(JSON.stringify({ ok: true }));
+
+        const panel = successPanel(page);
+        const heading = panel.getByRole("heading", { level: 3 });
+        await expect(heading).toHaveText(copy(words, "form.status.success.title"));
+        await expect(panel).toContainText(copy(words, "form.status.success.body"));
+
+        // `D-07.4`: focus moves to the heading of what replaced the form, so a
+        // keyboard user is not dropped on `<body>` with nothing announced.
+        await expect(heading).toBeFocused();
+        await expect(form).toBeHidden();
+
+        expectWellFormedSubmission(captured, id, VALID_DRAFT);
+      });
+
+      /**
+       * `D-07.4`'s pending contract, which is the one thing the live test above
+       * cannot observe: the window is however long the server takes, and a
+       * suite that raced it would be flaky in exactly the direction that hides
+       * a regression. So this one keeps `page.route` and holds the response
+       * open until every assertion has run. It is a question about the client,
+       * and the client cannot tell the two responses apart.
+       */
+      test(`keeps the submit button announced and focusable while pending @form`, async ({
+        page,
+      }) => {
+        await stubTurnstile(page);
+        const form = await gotoForm(page, id);
+
         const held = gate();
         const captured = await forceInquiryResponse(
           page,
           200,
           { ok: true },
-          {
-            deferUntil: held.opened,
-          },
+          { deferUntil: held.opened },
         );
 
         await fillDraft(form, VALID_DRAFT);
 
         const submit = submitButton(form);
-        await expect(submit).toHaveText(copy(words, "form.submit"));
         await submit.click();
 
         // Pending: the accessible name changes, `aria-busy`/`aria-disabled` go
@@ -133,16 +184,7 @@ test.describe("inquiry form", () => {
 
         held.open();
 
-        const panel = successPanel(page);
-        const heading = panel.getByRole("heading", { level: 3 });
-        await expect(heading).toHaveText(copy(words, "form.status.success.title"));
-        await expect(panel).toContainText(copy(words, "form.status.success.body"));
-
-        // `D-07.4`: focus moves to the heading of what replaced the form, so a
-        // keyboard user is not dropped on `<body>` with nothing announced.
-        await expect(heading).toBeFocused();
-        await expect(form).toBeHidden();
-
+        await expect(successPanel(page).getByRole("heading", { level: 3 })).toBeFocused();
         expectWellFormedSubmission(captured, id, VALID_DRAFT);
       });
 
@@ -332,21 +374,17 @@ test.describe("inquiry form", () => {
       });
 
       /* ------------------------------------------------------------------ *
-       * The decoy — the one path that reaches the real handler
+       * The decoy — answered at step 3, before `siteverify`
        * ------------------------------------------------------------------ */
 
       test(`answers a filled honeypot with the success panel @form`, async ({ page }) => {
         await stubTurnstile(page);
         const form = await gotoForm(page, id);
 
-        // No `page.route` here: this submission goes to the running
-        // `POST /api/inquiry`. 07 §2 answers the decoy at step 3, before the
-        // `siteverify` this rig cannot influence, so the whole round trip is
-        // real — and the response has to be byte-identical to a success.
-        const answered = page.waitForResponse(
-          (response) =>
-            response.url().endsWith(INQUIRY_ENDPOINT) && response.request().method() === "POST",
-        );
+        // Also live, and the point of the pair: 07 §2 answers the decoy at step
+        // 3, so this 200 has to be **byte-identical** to the step-9 one the
+        // success test above reads off the same endpoint. A bot learns nothing.
+        const answered = awaitInquiryResponse(page);
 
         await fillDraft(form, VALID_DRAFT);
         await fillHoneypot(form, "https://example.test/cheap-pills");
@@ -356,9 +394,9 @@ test.describe("inquiry form", () => {
         await passTimeToSubmitFloor(form);
         await submitButton(form).click();
 
-        const response = await answered;
-        expect(response.status()).toBe(200);
-        expect(await response.text()).toBe(JSON.stringify({ ok: true }));
+        const { status, text } = await answered;
+        expect(status).toBe(200);
+        expect(text).toBe(JSON.stringify({ ok: true }));
 
         await expect(successPanel(page)).toBeVisible();
         await expect(successPanel(page).getByRole("heading", { level: 3 })).toHaveText(

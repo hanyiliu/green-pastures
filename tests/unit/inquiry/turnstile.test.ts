@@ -7,6 +7,7 @@ import {
   TURNSTILE_SCRIPT_URL,
   TURNSTILE_VERIFY_URL,
 } from "@/lib/inquiry/turnstile";
+import { isTurnstileTestingSecret } from "@/lib/inquiry/server/env";
 import { verifyTurnstile } from "@/lib/inquiry/server/turnstile";
 
 import { fakeFetch, type FetchCall } from "./fixtures";
@@ -182,5 +183,179 @@ describe("verifyTurnstile", () => {
       fetchImpl: () => Promise.resolve(new Response("not json")),
     });
     expect(outcome.status).toBe("unavailable");
+  });
+});
+
+/* -------------------------------------------------------------------------- *
+ * The testing-secret seam (`gp-dln.232`)
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Cloudflare's published testing secrets, and the answers it actually gives
+ * them.
+ *
+ * The payloads are transcribed from a live `siteverify` call rather than
+ * imagined [verified 2026-08-24, any token string]. The load-bearing detail is
+ * the one PR-5.8's mocked `fetch` never saw: a testing secret's success carries
+ * **no `action` key at all** and the fixed hostname `example.com`, so both echo
+ * checks reject it and the form's happy path was unreachable in every
+ * environment 07 §5 describes.
+ */
+const ALWAYS_PASSES = "1x0000000000000000000000000000000AA";
+const ALWAYS_FAILS = "2x0000000000000000000000000000000AA";
+const ALREADY_SPENT = "3x0000000000000000000000000000000AA";
+
+const CLOUDFLARE_TESTING_PASS = {
+  success: true,
+  "error-codes": [],
+  hostname: "example.com",
+  challenge_ts: "2026-08-24T19:06:27.620Z",
+  metadata: { result_with_testing_key: true },
+};
+
+/**
+ * A secret shaped like the real thing. Turnstile's production secrets begin
+ * `0x4AAAAAAA`, which is a different prefix from any testing one — but nothing
+ * in the code reads the prefix, and this value is here only to stand for "the
+ * secret an operator pastes out of the Cloudflare dashboard".
+ */
+const PRODUCTION_SECRET = "0x4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+describe("the published testing secrets (07 §5)", () => {
+  it("recognises exactly Cloudflare's three and nothing else", () => {
+    expect(isTurnstileTestingSecret(ALWAYS_PASSES)).toBe(true);
+    expect(isTurnstileTestingSecret(ALWAYS_FAILS)).toBe(true);
+    expect(isTurnstileTestingSecret(ALREADY_SPENT)).toBe(true);
+  });
+
+  /**
+   * The near-misses, which are the whole security surface of the seam: anything
+   * an operator could plausibly hold that is *not* one of the three published
+   * values must key the seam shut. A prefix or suffix match, a case fold or a
+   * pattern would each turn "is this the public test value" into something an
+   * attacker could aim at.
+   */
+  it.each([
+    ["a production secret", PRODUCTION_SECRET],
+    ["the testing secret with a suffix", `${ALWAYS_PASSES}B`],
+    ["the testing secret with a prefix", `X${ALWAYS_PASSES}`],
+    ["the testing secret lower-cased", ALWAYS_PASSES.toLowerCase()],
+    ["the testing secret upper-cased", ALWAYS_PASSES.toUpperCase()],
+    ["the published *site* key, which is not a secret", "1x00000000000000000000AA"],
+    ["a fourth digit nobody published", "4x0000000000000000000000000000000AA"],
+    ["an empty string", ""],
+  ])("does not recognise %s", (_label, secret) => {
+    expect(isTurnstileTestingSecret(secret)).toBe(false);
+  });
+});
+
+describe("verifyTurnstile under a published testing secret", () => {
+  it("passes Cloudflare's real testing answer, which carries no action at all", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", ALWAYS_PASSES);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({ turnstile: CLOUDFLARE_TESTING_PASS }),
+    });
+    expect(outcome).toStrictEqual({ status: "passed", hostname: "example.com" });
+  });
+
+  it("still requires success — the 2x secret fails, as OPS-7.2 expects", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", ALWAYS_FAILS);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({
+        turnstile: { success: false, "error-codes": ["invalid-input-response"] },
+      }),
+    });
+    expect(outcome).toStrictEqual({ status: "failed", errorCodes: ["invalid-input-response"] });
+  });
+
+  it("still requires success — the 3x secret's spent token fails", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", ALREADY_SPENT);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({
+        turnstile: { success: false, "error-codes": ["timeout-or-duplicate"] },
+      }),
+    });
+    expect(outcome).toStrictEqual({ status: "failed", errorCodes: ["timeout-or-duplicate"] });
+  });
+
+  it("still fails closed on an outage", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", ALWAYS_PASSES);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({ turnstile: "unreachable" }),
+    });
+    expect(outcome).toStrictEqual({ status: "unavailable", errorCodes: ["fetch-failed"] });
+  });
+});
+
+/**
+ * The other half of the same change, and the one that matters: with a secret
+ * that is not on Cloudflare's published list, every case above is answered by
+ * the code that shipped before `gp-dln.232`.
+ *
+ * Each case feeds the *testing* payload — the one the seam accepts — to a
+ * *production* secret, so a regression that keyed the relaxation on anything
+ * looser than an exact match fails here rather than in a parent's inbox.
+ */
+describe("verifyTurnstile with a real secret is unchanged (INV-07.6)", () => {
+  it.each([
+    ["a production secret", PRODUCTION_SECRET],
+    ["the testing secret with a suffix", `${ALWAYS_PASSES}B`],
+    ["the testing secret with a prefix", `X${ALWAYS_PASSES}`],
+    ["the testing secret lower-cased", ALWAYS_PASSES.toLowerCase()],
+    ["the published site key mistaken for a secret", "1x00000000000000000000AA"],
+  ])("rejects the missing action under %s", async (_label, secret) => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", secret);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({ turnstile: CLOUDFLARE_TESTING_PASS }),
+    });
+    expect(outcome).toStrictEqual({ status: "failed", errorCodes: ["action-mismatch"] });
+  });
+
+  it("rejects a foreign hostname even when the action is ours", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", PRODUCTION_SECRET);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({ turnstile: passing({ hostname: "evil.example" }) }),
+    });
+    expect(outcome).toStrictEqual({ status: "failed", errorCodes: ["hostname-mismatch"] });
+  });
+
+  it("rejects a foreign action even when the hostname is ours", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", PRODUCTION_SECRET);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({ turnstile: passing({ action: "newsletter" }) }),
+    });
+    expect(outcome).toStrictEqual({ status: "failed", errorCodes: ["action-mismatch"] });
+  });
+
+  it("still passes a response that echoes both of ours", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", PRODUCTION_SECRET);
+    const outcome = await verifyTurnstile({
+      token: "t",
+      remoteIp: undefined,
+      expectedHosts: HOSTS,
+      fetchImpl: fakeFetch({ turnstile: passing() }),
+    });
+    expect(outcome).toStrictEqual({ status: "passed", hostname: HOSTS[0] });
   });
 });
