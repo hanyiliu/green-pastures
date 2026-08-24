@@ -1,9 +1,15 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { focusHeadingWhenPresent } from "@/components/layout/BackLink";
+import {
+  focusHeading,
+  ORIGIN_HEADING_ATTRIBUTE,
+  originHeadingInDocument,
+  requestHeadingFocus,
+  takeBackFocusRequest,
+} from "@/components/layout/heading-focus";
 import { SubpageBar } from "@/components/layout/SubpageBar";
 import { SubpageHeader, subpageTitleId } from "@/components/layout/SubpageHeader";
 import { MotionProvider } from "@/components/motion/MotionProvider";
@@ -29,9 +35,11 @@ import { installIntersectionObserverStub, installMatchMedia } from "../motion/ha
  * - **the header renders what the namespace has** — `philosophy` has an
  *   eyebrow and both intros, `gallery` has neither, and neither case is a
  *   branch on the page id (INV-04.4);
- * - **the wait for the origin heading refuses the element it started with** —
- *   four routes share an id with their home section, so "an element with this
- *   id exists" is true before the navigation has happened at all;
+ * - **the Back move is a request, not a wait** — the pill's click and a
+ *   `popstate` on a detail page each ask for the origin heading, and nothing in
+ *   this component tree tries to find it: four routes share an id with their
+ *   home section, so "an element with this id exists" is true before the
+ *   navigation has happened at all, and `BackFocus` is what runs once it has;
  * - **the shell makes the header's three shared decisions** — the registry key
  *   that keeps `gallery`, `programs` and `menu` from spending their entrance on
  *   the home section of the same name, the bottom margin a gapped column does
@@ -76,6 +84,9 @@ beforeAll(() => {
 
 afterEach(() => {
   resetRevealRegistry();
+  // The Back request is module state (05 `D-05.6`'s pattern), so one case's
+  // unspent request must not be the next one's starting condition.
+  takeBackFocusRequest();
 });
 
 describe("SubpageBar", () => {
@@ -254,48 +265,47 @@ describe("SubpageHeader", () => {
   });
 });
 
-describe("focusHeadingWhenPresent", () => {
-  it("refuses the element that is already there and takes the one that replaces it", () => {
-    vi.useFakeTimers();
+describe("heading-focus", () => {
+  /**
+   * The seam that replaced a two-second poll. Nothing here waits, and that is
+   * the property under test: the request is a value, so the focus move happens
+   * once, when whoever spends it says the heading exists.
+   */
+  it("focuses a heading that is there, and gives it a programmatic tab stop", () => {
+    const heading = document.createElement("h2");
+    heading.id = "teachers-title";
+    document.body.append(heading);
 
-    const outgoing = document.createElement("h1");
-    outgoing.id = "philosophy-title";
-    document.body.append(outgoing);
+    expect(focusHeading("teachers-title")).toBe(true);
+    expect(document.activeElement).toBe(heading);
+    expect(heading).toHaveAttribute("tabindex", "-1");
 
-    focusHeadingWhenPresent("philosophy-title");
-    expect(document.activeElement).not.toBe(outgoing);
-
-    // The navigation: the detail page's heading goes, the home section's
-    // heading arrives under the same id.
-    outgoing.remove();
-    const arriving = document.createElement("h2");
-    arriving.id = "philosophy-title";
-    document.body.append(arriving);
-
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
-
-    expect(document.activeElement).toBe(arriving);
-    expect(arriving).toHaveAttribute("tabindex", "-1");
-
-    arriving.remove();
-    vi.useRealTimers();
+    heading.remove();
   });
 
-  it("stops at its deadline instead of polling for ever", () => {
-    vi.useFakeTimers();
+  it("leaves a tabindex the element already had", () => {
+    const heading = document.createElement("h2");
+    heading.id = "teachers-title";
+    heading.setAttribute("tabindex", "0");
+    document.body.append(heading);
 
-    focusHeadingWhenPresent("teachers-title");
+    focusHeading("teachers-title");
 
-    act(() => {
-      vi.advanceTimersByTime(10_000);
-    });
+    expect(heading).toHaveAttribute("tabindex", "0");
 
-    expect(vi.getTimerCount()).toBe(0);
+    heading.remove();
+  });
+
+  it("reports the absent heading instead of scheduling a search for it", () => {
+    expect(focusHeading("teachers-title")).toBe(false);
     expect(document.activeElement).toBe(document.body);
+  });
 
-    vi.useRealTimers();
+  it("clears the request on read, so it cannot outlive its navigation", () => {
+    requestHeadingFocus("philosophy-title");
+
+    expect(takeBackFocusRequest()).toBe("philosophy-title");
+    expect(takeBackFocusRequest()).toBeNull();
   });
 });
 
@@ -376,51 +386,68 @@ describe("BackLink click", () => {
     };
   }
 
-  it("focuses the origin section's heading once the home page has rendered", () => {
+  it("asks for the origin section's heading, and touches no element itself", () => {
     const release = swallowNavigation();
-    vi.useFakeTimers();
 
     renderShell(<SubpageBar routeId="reviews">{null}</SubpageBar>);
 
-    // `reviews` → `testimonials`, so the heading id is one the detail page does
-    // not also carry; this stands in for the home section arriving.
-    const heading = document.createElement("h2");
-    heading.id = "testimonials-title";
-
+    // The detail page is still on screen and the home page has not rendered, so
+    // the handler cannot focus anything — and must not try. `reviews` →
+    // `testimonials`, which is 06 `D-06.8`'s mapping rather than the route id.
     fireEvent.click(screen.getByRole("link"));
-    document.body.append(heading);
 
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
+    expect(document.activeElement).toBe(document.body);
+    expect(takeBackFocusRequest()).toBe("testimonials-title");
 
-    expect(document.activeElement).toBe(heading);
-
-    heading.remove();
-    vi.useRealTimers();
     release();
   });
 
   it("leaves a ⌘-click to the browser — it opens a tab and this document keeps its focus", () => {
     const release = swallowNavigation();
-    vi.useFakeTimers();
 
     renderShell(<SubpageBar routeId="reviews">{null}</SubpageBar>);
 
-    const heading = document.createElement("h2");
-    heading.id = "testimonials-title";
-    document.body.append(heading);
-
     fireEvent.click(screen.getByRole("link"), { metaKey: true });
 
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
+    expect(takeBackFocusRequest()).toBeNull();
 
-    expect(document.activeElement).not.toBe(heading);
-
-    heading.remove();
-    vi.useRealTimers();
     release();
+  });
+});
+
+describe("the panel's origin heading", () => {
+  /**
+   * What the browser-Back half reads, and why it is markup rather than a value
+   * a client effect publishes: a `popstate` can arrive before React has run the
+   * arriving page's passive effects, which is the usual case for a Back taken
+   * the instant the URL changes. An attribute in the server-rendered HTML has
+   * no such window. The `popstate` listener itself is `BackFocus`'s — one on
+   * `BackLink` is removed mid-dispatch by that component's own unmount and
+   * never fires.
+   */
+  it("follows site.routes[].homeAnchor, not the page's own id", () => {
+    renderShell(<SubpageBar routeId="team">{null}</SubpageBar>);
+
+    expect(originHeadingInDocument()).toBe("teachers-title");
+  });
+
+  it("is on the same element as data-subpage, so one panel answers for one page", () => {
+    const { container } = renderShell(<SubpageBar routeId="reviews">{null}</SubpageBar>);
+    const panel = container.querySelector<HTMLElement>("[data-subpage]");
+
+    expect(panel?.getAttribute(ORIGIN_HEADING_ATTRIBUTE)).toBe("testimonials-title");
+  });
+
+  it("is absent on a standalone page, which expands no home section", () => {
+    renderShell(<SubpageBar routeId="privacy">{null}</SubpageBar>);
+
+    expect(originHeadingInDocument()).toBeNull();
+  });
+
+  it("goes with the page, so the home page answers for nothing", () => {
+    const view = renderShell(<SubpageBar routeId="team">{null}</SubpageBar>);
+    view.unmount();
+
+    expect(originHeadingInDocument()).toBeNull();
   });
 });

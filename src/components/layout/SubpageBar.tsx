@@ -5,6 +5,7 @@ import { withOverrides } from "@/components/ui/class-names";
 import { getSite } from "@/content/site";
 
 import { BackLink } from "./BackLink";
+import { homeHeadingId, ORIGIN_HEADING_ATTRIBUTE } from "./heading-focus";
 import { HERO_SECTION_ID, SECTION_IDS, sectionRoleVariables, type SectionId } from "./Section";
 import { subpageTitleId, type SubpageNamespace } from "./SubpageHeader";
 
@@ -55,6 +56,16 @@ import { subpageTitleId, type SubpageNamespace } from "./SubpageHeader";
  * `common.back.labelShort`. Both strings render and `md:` picks one
  * (`D-04.5`) — the view is never a branch in code. The `←` lives inside the
  * translated string (02 §5.4); nothing here appends a glyph.
+ *
+ * ── The origin heading, in the markup ───────────────────────────────────
+ *
+ * The panel also carries `data-origin-heading`: the id of the home section
+ * heading a Back out of this page has to leave focus on (05 §5.7). It is
+ * written here, in server-rendered HTML, rather than published from a client
+ * effect, because a `popstate` can arrive before React has run the arriving
+ * page's passive effects — measured in CI, where an effect-published value was
+ * missing on two locales out of three. `heading-focus.ts` owns the attribute
+ * name and the reader; `BackFocus` is the one caller.
  */
 
 /** `style` that also carries CSS custom properties (React writes them through). */
@@ -196,6 +207,9 @@ export function SubpageBar({
   return (
     <div
       data-subpage={routeId}
+      {...(route.homeAnchor === undefined
+        ? {}
+        : { [ORIGIN_HEADING_ATTRIBUTE]: homeHeadingId(route.homeAnchor) })}
       style={sectionRoleVariables(sectionId)}
       className={withOverrides("SubpageBar", `bg-(color:--section-bg)`, className)}
     >

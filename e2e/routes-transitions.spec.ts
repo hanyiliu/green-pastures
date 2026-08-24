@@ -210,38 +210,40 @@ const PER_LOCALE_CASES = routing.locales.flatMap((locale) =>
 const FROZEN_CASES = FIRST_ROUTE === undefined ? [] : [FIRST_ROUTE];
 
 /* -------------------------------------------------------------------------- *
- * One requirement of 05 §5.14 this file cannot hold the product to
+ * The requirement of 05 §5.14 this file could not hold the product to
  * -------------------------------------------------------------------------- */
 
 /**
- * **Focus after a typed "← Back" is not asserted here, and the omission is a
- * finding rather than an oversight.**
+ * **Focus after a "← Back" is asserted everywhere below, and it was not
+ * always.**
  *
- * 05 §5.14 asks for focus after all three navigations. Two of them are
- * asserted: the arriving `h1` after a typed forward navigation (below, in every
- * typed row) and the `<body>` a browser Back leaves behind (the guard further
- * down, which is the *pending* half of a move that has not been built). The
- * third is `BackLink.focusHeadingWhenPresent`, and it is the only one of the
- * three with a deadline: it starts polling for the origin section's heading
- * when the pill is clicked and stops after two seconds, whether or not the home
- * page has re-rendered by then.
+ * 05 §5.14 asks for focus after all three navigations. When this file was
+ * written only one of the three could be gated: the arriving `h1` after a typed
+ * forward navigation. The other two were both `src/components/layout/`'s and
+ * both broken, in different ways.
  *
- * Measured on this repository's own suite, that deadline is not always enough.
- * Re-entering the home page unmounts a detail page and mounts eight sections
- * with their decorations and reveals, and on a machine running the full
- * Playwright matrix the render finished after the two seconds often enough to
- * fail roughly half of the full runs — always on this assertion, never on the
- * forward one, and never when the file was run on its own. A test that fails
- * because the machine is busy is the flake `D-08.13` forbids, and inverting it
- * to assert `<body>` would pin a timing-dependent value as though it were the
- * design.
+ * The typed Back was a wall clock. `BackLink` started polling for the origin
+ * section's heading when the pill was clicked and gave up after two seconds,
+ * whether or not the home page had re-rendered by then — and re-entering the
+ * home page unmounts a detail page and mounts eight sections with their
+ * decorations and reveals. On a machine running the full Playwright matrix that
+ * render finished after the deadline often enough to fail roughly half of the
+ * full runs, always on this assertion and never when the file was run on its
+ * own. Asserting it would have shipped the flake `D-08.13` forbids, so the
+ * assertion was left out and reported: the transition, the `replace`, the URL,
+ * the hash and the *existence* of the origin heading were held, and the focus
+ * move was not.
  *
- * So what stays asserted after Back is everything that is deterministic — the
- * typed transition, the `replace`, the URL and hash, and the *existence* of the
- * origin heading the focus is meant to land on. The focus move itself needs
- * `src/components/layout/BackLink.tsx` (PR-6.1's file, which this row does not
- * touch) to stop racing a wall clock before a gate can hold it, and that is
- * reported rather than fixed here.
+ * The browser Back had no implementation at all — see the guard further down.
+ *
+ * gp-dln.269 fixed both as one fix, and the deadline is gone rather than
+ * lengthened: `BackFocus` sits in the `[locale]` layout, so it is mounted on
+ * both sides of the navigation, and its effect fires after React has committed
+ * the arriving home page. That is not a shorter race, it is the absence of one
+ * — an effect cannot run before the commit that scheduled it — which is what
+ * makes `expect.poll(focusedId)` writable here without a `D-08.13` problem.
+ * Measured against a main thread deliberately held for 2.6 s at the moment of
+ * Back, the polling version left focus on `<body>` and this one lands.
  */
 
 /* -------------------------------------------------------------------------- *
@@ -447,10 +449,11 @@ test.describe("typed subpage slide", () => {
       expect(await historyLength(page), "the Back pill pushed instead of replacing").toBe(
         historyOnDetail,
       );
-      // The origin section the reader is put back at. Its *heading* is asserted
-      // to exist; the focus landing on it is not — see the note above
-      // `clickLearnMore`.
+      // The origin section the reader is put back at, and the focus 05 §5.7
+      // says has to land on its heading. Both, now that the move is an effect
+      // rather than a two-second poll — see the note above `clickLearnMore`.
       await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
+      await expect.poll(() => focusedId(page)).toBe(headingId(route.homeAnchor));
     });
   }
 });
@@ -467,11 +470,11 @@ test.describe("typed Back after a direct URL load", () => {
    * because the describe above only ever reaches a Back pill on a page the
    * router already had in hand.
    *
-   * Focus is not asserted after Back here for the reason given above
-   * `clickLearnMore`, and least of all here: this page was reached by URL, so
-   * the home route is not in the client router cache and `BackLink`'s
-   * two-second search for the origin heading has a fetch in front of it as well
-   * as a render.
+   * Focus after Back is asserted here too, and this is the row that could least
+   * afford the old wall clock: the page was reached by URL, so the home route
+   * is not in the client router cache and the render has a fetch in front of
+   * it. What the pathname changing means is that the fetch and the render are
+   * both already done, so the length of either stops mattering.
    */
   for (const { locale, route } of DIRECT_LOAD_CASES) {
     test(`${urlFor(locale, route.path)} still slides out on Back @motion-vt`, async ({ page }) => {
@@ -500,10 +503,10 @@ test.describe("typed Back after a direct URL load", () => {
         historyOnDetail,
       );
 
-      // The origin section is the one the reader is put back at, so it has to
-      // exist even though the focus move that would land on it is not asserted
-      // here (see the note above this describe).
+      // The origin section is the one the reader is put back at, and its
+      // heading is where focus has to end up (see the note above this describe).
       await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
+      await expect.poll(() => focusedId(page)).toBe(headingId(route.homeAnchor));
     });
   }
 });
@@ -548,10 +551,10 @@ test.describe("reduced motion swaps instantly", () => {
       expect(exit.types).toEqual([EXIT_TYPE]);
       expect(exit.slides, "a slide ran on Back under reduced motion").toEqual([]);
       expect(page.url()).toContain(`${homeUrlFor(locale)}#${route.homeAnchor}`);
-      // The origin section the reader is put back at. Its *heading* is asserted
-      // to exist; the focus landing on it is not — see the note above
-      // `clickLearnMore`.
+      // 05 §5.9 removes the motion, not the navigation — and not the focus move
+      // either, which never depended on the slide having run.
       await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
+      await expect.poll(() => focusedId(page)).toBe(headingId(route.homeAnchor));
     });
   }
 });
@@ -590,28 +593,35 @@ test.describe("untyped navigation swaps instantly", () => {
 
 test.describe("browser Back", () => {
   /**
-   * **Focus after a browser Back has not landed, and this is the guard that
-   * says so.**
+   * **Focus after a browser Back, which for one phase did not exist.**
    *
    * 05 §5.14 asks for focus after all three navigations — typed forward, typed
    * Back and browser Back — "because the router supplies none of them". Two of
-   * the three are `BackLink`'s: its effect focuses the arriving `h1`, and its
-   * click handler focuses the origin heading. The third has no handler at all.
+   * the three were `BackLink`'s: its effect focuses the arriving `h1`, and its
+   * click handler asks for the origin heading. The third had no handler at all.
    * A `popstate` back to the home page unmounts `BackLink` without running
-   * either path, and `document.activeElement` is measured as `<body>`.
+   * either path, and `document.activeElement` was measured as `<body>` in every
+   * locale.
    *
    * So the two halves below are the two positions of one switch, the way
    * `e2e/smoke.spec.ts` holds a pending `hreflang` set to zero. While the
-   * constant is `false` the *current* behaviour is pinned, which means whoever
-   * implements the focus move gets a red test naming this constant rather than
-   * a silent pass; flipping it to `true` swaps in the assertion 05 asks for.
-   * Either way the navigation itself — URL, and no typed transition — is
-   * asserted in both halves, because that part does work.
+   * constant was `false` the *current* behaviour was pinned, so whoever
+   * implemented the move got a red test naming this constant rather than a
+   * silent pass. It is `true` from gp-dln.269, which moved the `popstate`
+   * listener to `BackFocus` in the `[locale]` layout — a listener on `BackLink`
+   * is removed by that component's own unmount *during* the dispatch and never
+   * fires, measured — and the assertion 05 asks for now runs in every locale.
    *
-   * The owning file is `src/components/layout/BackLink.tsx` (PR-6.1's), which
-   * this row does not touch.
+   * It stays a constant rather than becoming the literal `PER_LOCALE_CASES`,
+   * because the two halves are the two positions of one switch: withdrawing the
+   * focus move re-arms the `<body>` guard in the same one-word edit that turned
+   * it off. Either way the navigation itself — URL, and no typed transition —
+   * is asserted in the first describe, because that part always worked.
+   *
+   * The owning files are `src/components/layout/BackFocus.tsx` and
+   * `heading-focus.ts`.
    */
-  const BROWSER_BACK_FOCUS_LANDED: boolean = false;
+  const BROWSER_BACK_FOCUS_LANDED: boolean = true;
 
   for (const { locale, route } of PER_LOCALE_CASES) {
     test(`out of ${urlFor(locale, route.path)} is untyped and restores position @motion-vt`, async ({
@@ -654,6 +664,9 @@ test.describe("browser Back", () => {
       await page.goBack();
       await page.waitForURL(`**${homeUrlFor(locale)}`);
 
+      // The origin section's heading — an `h2` on the home page, not the `h1`
+      // the forward half lands on. 05 §5.7 names the origin *section* heading
+      // for both Backs, and `SectionTitle` defaults to `as: "h2"`.
       await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
       await expect.poll(() => focusedId(page)).toBe(headingId(route.homeAnchor));
     });
@@ -668,13 +681,18 @@ test.describe("browser Back", () => {
       await page.goBack();
       await page.waitForURL(`**${homeUrlFor(locale)}`);
 
-      // The `false` position of `BROWSER_BACK_FOCUS_LANDED`. `focusedId`
-      // reports the tag name when the element carries no id, and `<body>` is
-      // where the router leaves focus. When this fails, the focus move has
-      // landed — flip the constant and the half above takes over.
+      // The `false` position of `BROWSER_BACK_FOCUS_LANDED`, and empty while
+      // the constant is `true`. `focusedId` reports the tag name when the
+      // element carries no id, and `<body>` is where the router leaves focus on
+      // its own. It is the guard for the other direction: a release that
+      // withdraws the focus move flips the constant back and this half proves
+      // it is gone from every locale rather than surviving in one.
       await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
       await settleFrames(page);
-      expect(await focusedId(page)).toBe("BODY");
+      expect(
+        await focusedId(page),
+        "a browser Back moved focus — flip BROWSER_BACK_FOCUS_LANDED to true",
+      ).toBe("BODY");
     });
   }
 });
@@ -785,10 +803,11 @@ test.describe("without View Transitions at all", () => {
       await clickBack(page, locale, route);
 
       expect(page.url()).toContain(`${homeUrlFor(locale)}#${route.homeAnchor}`);
-      // The origin section the reader is put back at. Its *heading* is asserted
-      // to exist; the focus landing on it is not — see the note above
-      // `clickLearnMore`.
+      // The focus move is 05 §5.7's, not the View Transition's: it is a React
+      // effect either way, so removing the API removes the slide and nothing
+      // else.
       await expect(page.locator(`#${headingId(route.homeAnchor)}`)).toBeAttached();
+      await expect.poll(() => focusedId(page)).toBe(headingId(route.homeAnchor));
       expect(await liveViewTransitionAnimations(page)).toBe(0);
     });
   }
