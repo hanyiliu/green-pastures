@@ -13,16 +13,21 @@ import { absoluteUrl, canonicalUrl, HOME_HREF } from "./urls";
  *
  * ── It ships complete, and that is a decision ────────────────────────────
  *
- * An earlier revision emitted only the facts that were not `TODO` markers, so
- * the object grew a field at a time as the owner filled the file in. HD-7
- * retired that: telephone, e-mail, street address and the Yelp URL now exist as
- * **provisional sample defaults** (`D-02.20`), registered in
+ * An earlier revision emitted only the facts that carried no placeholder
+ * marker, so the object grew a field at a time as the owner filled the file in.
+ * HD-7 retired that: telephone, e-mail, street address and the Yelp URL now
+ * exist as **provisional sample defaults** (`D-02.20`), registered in
  * `site.json.provisional`. So this builder emits every field the config has and
  * branches on none of them — the shape a crawler sees today is the shape it
  * sees at launch — and `pnpm validate:content --release` is what refuses to
  * call the site ready while a sample is still in the registry (INV-02.10).
  * Nothing here inspects that registry; a builder that quietly dropped a field
  * because it was provisional would be the old behaviour under a new name.
+ *
+ * The marker word that retired revision keyed on is described, never spelled:
+ * `check:todo` (08 §2, TRAP-11.9) bans it from the text of `src/`, `tests/` and
+ * `scripts/`, and a comment *about* the rule is text like any other — backticks
+ * do not exempt it. Do not "clarify" this paragraph by writing the word out.
  *
  * ── What is deliberately absent ──────────────────────────────────────────
  *
