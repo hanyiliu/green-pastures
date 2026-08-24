@@ -39,7 +39,17 @@ export type FormAlertProps = {
 const ALERT_CLASS = "flex flex-col gap-1 rounded-input border border-yelp bg-cream p-3 md:p-3.5";
 const TEXT_CLASS = "font-body text-input text-ink";
 const CONTACT_CLASS = "font-body text-form-label text-body";
-const LINK_CLASS = "font-bold text-sage underline";
+
+/**
+ * `--color-form-link` (03 §2.3), not `--color-sage`.
+ *
+ * This line is 11–12px bold, so AA's threshold for it is 4.5:1 and not 3:1.
+ * Sage on the banner's cream measures 3.61:1 — 03 §10 passes that pair only as
+ * AA-large, for a 64px accent word — while `--color-form-link` measures 5.63:1
+ * on the same ground. A parent reads this line exactly when their request did
+ * not send, which is the worst place on the page to be hard to read.
+ */
+const LINK_CLASS = "font-bold text-form-link underline";
 
 /**
  * `visit.form.directContact`'s `{email}` and `{phone}` are ICU **values**, not

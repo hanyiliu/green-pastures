@@ -93,7 +93,17 @@ function axeSource(): string {
  * unmatched violation and fails.
  */
 export type ContrastException = {
-  /** Text colour, as axe composites it. Order-insensitive against `bg`. */
+  /**
+   * Text colour, as axe composites it — and matched **as** the text colour.
+   *
+   * The pair is oriented, not a set. An earlier revision matched `fg`/`bg` in
+   * either order, and that quietly made one entry cover two different defects:
+   * `#ffffff` on `#6f8a5f` is the audited submit button, while `#6f8a5f` on
+   * `#ffffff` is sage used as *text* on the card — the same two colours, the
+   * same 3.83, and one of them a failure 03 §10 never passed. axe always
+   * reports `fgColor` as the text colour, so orienting the match costs nothing
+   * and stops an allowance for a fill from excusing the inverse as type.
+   */
   readonly fg: string;
   readonly bg: string;
   /** The ratio 03 §10 records, to two decimals. */
@@ -131,38 +141,23 @@ export const CONTRAST_EXCEPTIONS: readonly ContrastException[] = [
   },
 
   /*
-   * The three entries above are 03 §10 rows verbatim. The two below are the
-   * same *tokens* in a place the audit did not measure, and they are marked
-   * differently on purpose: 03 §10 records `#6f8a5f` on cream at 3.61 and
-   * passes it as **AA-large**, because the only sage text the design draws at
-   * that size is a 64 px accent word. `FormAlert`'s direct-contact links and
-   * `SuccessPanel`'s "send another" are sage at 12–14 px bold, where 3:1 is not
-   * the threshold and 4.5:1 is — and 03 §10's own "links 15 px bold" row uses
-   * the darker per-section link colours (`#4f6b43` at 5.63 on cream) rather
-   * than sage for exactly this reason.
+   * Every entry above is a 03 §10 row verbatim, and that is now the whole list.
    *
-   * So these are a **finding**, not an audited allowance, and they are listed
-   * here only so PR-5.10 lands with the rest of the gate live rather than red
-   * on someone else's component. They carry no `expires` because the file that
-   * owns expiry — `e2e/axe-exceptions.json`, `D-08.8` — is PR-8.4's; the bead
-   * that changes the link colour deletes these two lines and the run proves it.
+   * PR-5.10 also carried two entries that were **not** audited rows — sage
+   * (`#6f8a5f`) as link text at 12–14 px bold in `FormAlert`, `SuccessPanel`
+   * and `NoscriptFallback`, where 4.5:1 is the threshold and 03 §10 passes that
+   * pair only as AA-large. They were a finding, not an allowance, and they are
+   * gone because the finding is fixed: those three links bind to
+   * `--color-form-link` (03 §2.3, `#4f6b43`) instead, which measures 5.63:1 on
+   * cream and 5.97:1 on the card's white.
+   *
+   * Deleting them is the test — a regression to sage puts the banner's
+   * violation straight back with nothing left to match it. That is true of the
+   * success panel's too only because {@link ContrastException} now matches an
+   * oriented pair: while the match ran in either direction, the audited
+   * white-on-sage button covered sage-on-white text as well, and deleting that
+   * second entry proved nothing at all.
    */
-  {
-    fg: "#6f8a5f",
-    bg: "#fbf8f0",
-    ratio: 3.61,
-    reason:
-      "discovered at PR-5.10 — sage link text on cream in FormAlert; 03 §10 passes this pair " +
-      "only as AA-large (64px accent word), and 12px bold needs 4.5:1",
-  },
-  {
-    fg: "#6f8a5f",
-    bg: "#ffffff",
-    ratio: 3.83,
-    reason:
-      "discovered at PR-5.10 — sage link text on the card's white in SuccessPanel's reset link; " +
-      "same pair as the submit button, inverted, at 14px bold",
-  },
 ];
 
 /* -------------------------------------------------------------------------- *
@@ -273,13 +268,12 @@ function sameColour(a: string | undefined, b: string): boolean {
 }
 
 function matchException(node: AxeNode): ContrastException | undefined {
-  return CONTRAST_EXCEPTIONS.find((entry) => {
-    const pairMatches =
-      (sameColour(node.fg, entry.fg) && sameColour(node.bg, entry.bg)) ||
-      (sameColour(node.fg, entry.bg) && sameColour(node.bg, entry.fg));
-
-    return pairMatches && Math.abs((node.ratio ?? 0) - entry.ratio) <= RATIO_TOLERANCE;
-  });
+  return CONTRAST_EXCEPTIONS.find(
+    (entry) =>
+      sameColour(node.fg, entry.fg) &&
+      sameColour(node.bg, entry.bg) &&
+      Math.abs((node.ratio ?? 0) - entry.ratio) <= RATIO_TOLERANCE,
+  );
 }
 
 function describeNode(node: AxeNode): string {

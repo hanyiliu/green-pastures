@@ -46,7 +46,15 @@ export type NoscriptFallbackProps = {
 };
 
 const TEXT_CLASS = "font-body text-input text-body";
-const LINK_CLASS = "font-bold text-sage underline";
+
+/**
+ * The same `--color-form-link` the other two panels take (03 §2.3): 14px bold
+ * is small text, sage on the card's white measures 3.83:1 and this measures
+ * 5.97:1. No axe run reaches this one — a browser with scripting enabled parses
+ * the block as text — so it is fixed alongside its two siblings rather than
+ * left as the one sage link in the folder.
+ */
+const LINK_CLASS = "font-bold text-form-link underline";
 
 /** `<a href="…">…</a>` with both halves escaped — see the note on markup above. */
 function anchor(href: string, text: string): string {

@@ -212,6 +212,22 @@ All three are §10 contrast failures (`3.50` / `3.77` / `2.89`) with proposed re
 tokens carry the **design** values because OQ-03.2 is unanswered and its stated default is to ship the design
 and keep §10 as the known-failure list (INV-03.5 — a replacement is recorded here first or not at all).
 
+**The form card's links.** The Visit form draws two links the design never draws — the direct-contact line in
+the failure banner and the "send another" reset on the success panel (07 §1, `D-07.4`/`D-07.5`; the `noscript`
+fallback prints the first of them again). They sit on the form card, which is white, inside the Visit section,
+whose `--color-link-visit` (`#c8d6bd`) is a colour for the forest ground behind the card and unreadable on it —
+so there is no per-section token for them to take. They take `--color-form-link` instead, which is the same
+`#4f6b43` §2.1 gives the hero and philosophy links, named once for the surface that uses it.
+
+| Token | Hex | Role | Consumer | Source |
+|---|---|---|---|---|
+| `--color-form-link` | `#4f6b43` | links inside the form card — direct-contact (11–12px bold on the banner's cream) and "send another" (14px bold on white) | `FormAlert`, `SuccessPanel`, `NoscriptFallback` (04 §3.5) | ours — the design draws no such link |
+
+This is not an OQ-03.2 replacement and changes no design value: it names a colour the palette already carries
+for exactly this role. The links previously took `--color-sage`, which is a fill and an accent-word colour in
+the handoff and is text nowhere in it; at these sizes that measured 3.61 and 3.83 against §10's 4.5:1, and
+`#4f6b43` measures 5.63 and 5.97 (§10).
+
 **2.4 Chips, badges, menu graphics, decorations**
 
 | Token | Value | Use | Source |
@@ -648,6 +664,7 @@ computed from the hex values above (relative-luminance formula; ±0.01). Failure
 | copyright `#8ba07c` on forest (12px) | 2.89 | **fail** | reuse `#c8d6bd` (5.38) |
 | panel labels `#9bb78c` on panel (12px) | 4.45 | **fail** (borderline) | `#b5cba8` (5.63) |
 | sage accent word `#6f8a5f` on cream (64px) | 3.61 | AA-large | — |
+| form-card links `#4f6b43` on the banner's cream `#fbf8f0` (11–12px bold) / on the card's white (14px bold) | 5.63 / 5.97 | AA | — |
 | eyebrows 13px: philosophy `#6f8a5f` 3.26 · programs `#c08552` 2.68 · menu `#bd9326` 2.56 · gallery `#6f8a9a` 3.16 · teachers `#8677a3` 3.50 | 2.56–3.50 | **fail** | use the section link colour for philosophy/gallery/teachers (`#4f6b43` 5.08 · `#56707e` 4.54 · `#6d5f92` 4.90); programs `#8f5a2d` (4.91); menu `#8a6a14` (4.53) |
 | links 15px bold: hero/philosophy `#4f6b43` 5.63/5.08 · gallery `#56707e` 4.54 · teachers `#6d5f92` 4.90 | ≥ 4.5 | AA | — |
 | links 15px bold: programs `#b06a35` 3.63 · menu `#a8852f` 3.11 · reviews `#c2553f` 3.87 | 3.11–3.87 | **fail** | `#8e5226` (5.32) · `#7d6218` (5.18) · `#a8432f` (5.14) |
