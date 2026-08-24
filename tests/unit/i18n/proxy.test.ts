@@ -39,6 +39,9 @@ describe("proxy matcher", () => {
     ["/robots.txt"],
     ["/manifest.webmanifest"],
     ["/og/cover.png"],
+    // The share image is a route handler until `OQ-06.7` supplies the artwork
+    // (`gp-dln.196`). A locale prefix on it would 404 every unfurl.
+    ["/og/placeholder.png"],
     ["/favicon.ico"],
   ])("never runs on %s", (url) => {
     expect(matches(url)).toBe(false);

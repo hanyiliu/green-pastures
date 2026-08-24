@@ -11,9 +11,13 @@ import {
   DETAIL_ROUTES,
   expectedAlternatePaths,
   HOME_PATH,
+  homeUrlFor,
   localeMessages,
+  metaProperty,
+  pngDimensions,
   ROUTE_PATHS,
   parseSitemap,
+  SHARE_IMAGE,
   statusOf,
   toPathPairs,
   urlFor,
@@ -71,6 +75,9 @@ const UNKNOWN_PATH = "/no-such-page";
 const SITEMAP_PATH = "/sitemap.xml";
 const ROBOTS_PATH = "/robots.txt";
 const INQUIRY_PATH = "/api/inquiry";
+
+/** The Open Graph property naming the share image (06 §6.5). */
+const OG_IMAGE = "og:image";
 
 test.describe("the route matrix this file asserts over", () => {
   test("is derived from routing.locales × site.json routes[] @seo", () => {
@@ -247,6 +254,57 @@ test.describe("sitemap.xml", () => {
     );
 
     expect(broken.filter((entry) => entry.status !== 200)).toEqual([]);
+  });
+});
+
+test.describe("the share image", () => {
+  test("every locale advertises the same og:image @seo", async ({ request, baseURL }) => {
+    const origin = new URL(baseURL ?? "").origin;
+    const advertised = new Set<string>();
+
+    for (const locale of routing.locales) {
+      const url = homeUrlFor(locale);
+      const response = await request.get(url);
+      expect(response.status(), `${url} did not answer 200`).toBe(200);
+
+      const content = metaProperty(await response.text(), OG_IMAGE);
+      expect(content, `${url} declares no og:image`).not.toBeNull();
+      advertised.add(new URL(content ?? "", origin).pathname);
+    }
+
+    // 06 §6.5: the image comes from `site.json` `images.og`, which is not a
+    // localized value, so all three locales point at one file. `og:image:alt`
+    // and `og:locale` are what differ per locale.
+    expect(advertised.size, "the locales advertise different share images").toBe(1);
+    expect([...advertised]).toEqual([SHARE_IMAGE.src]);
+  });
+
+  test("og:image answers 200 with a PNG of the size it promises @seo", async ({
+    request,
+    baseURL,
+  }) => {
+    const origin = new URL(baseURL ?? "").origin;
+    const response = await request.get(homeUrlFor(routing.defaultLocale));
+    const content = metaProperty(await response.text(), OG_IMAGE);
+    expect(content, "the home page declares no og:image").not.toBeNull();
+
+    // The path, not the URL Next printed. Every page here is prerendered, so
+    // the absolute form is baked from whatever origin the *build* resolved
+    // (`gp-dln.267`); the path is the part this run can hold it to.
+    const path = new URL(content ?? "", origin).pathname;
+    const image = await request.get(path, { failOnStatusCode: false });
+
+    // This is the assertion the block exists for: until the placeholder route
+    // landed, `images.og.src` named a file that had never been in `public/`,
+    // and every share of this site fetched a 404 (`gp-dln.196`).
+    expect(image.status(), `${path} did not answer 200`).toBe(200);
+    expect(image.headers()["content-type"]).toBe("image/png");
+
+    const bytes = await image.body();
+    expect(pngDimensions(bytes), `${path} is not a PNG`).toEqual({
+      width: SHARE_IMAGE.width,
+      height: SHARE_IMAGE.height,
+    });
   });
 });
 
