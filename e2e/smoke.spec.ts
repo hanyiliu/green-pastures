@@ -105,14 +105,18 @@ const NOT_BUILT_YET = PAIRS.filter((pair) => !hasPageFile(pair.routePath));
  * (`alternateLinks: false`, `D-02.9` — one source, so the `Link` header and the
  * markup cannot disagree).
  *
- * That helper is PR-6.8's, and no page emits a single alternate today. Flipping
- * this one constant swaps the two halves of the *hreflang set* describe below:
- * the real assertion — written out in full there, so PR-6.8 inherits a check
- * rather than a to-do — takes over from the guard that proves the tags are still
- * absent. The guard fails the moment the first alternate appears, so the flag
- * cannot rot unnoticed.
+ * That helper is PR-6.8's, which shipped it with no caller: every route emitted
+ * zero alternates, and the pending half of the *hreflang set* describe below
+ * held them to zero so the gap could not go unnoticed. The constant is `true`
+ * from the commit that gave `app/[locale]/page.tsx` its `generateMetadata` —
+ * the home page was the last built route emitting none, so the real assertion
+ * now runs on every built pair and PR-6.2…6.7 arrive already satisfying it.
+ *
+ * It stays a constant rather than becoming the literal `BUILT`, because the two
+ * halves are the two positions of one switch: withdrawing the alternates re-arms
+ * the zero-tag guard in the same one-word edit that turned it off.
  */
-const HREFLANG_ALTERNATES_LANDED: boolean = false;
+const HREFLANG_ALTERNATES_LANDED: boolean = true;
 
 const HREFLANG_ASSERTED = HREFLANG_ALTERNATES_LANDED ? BUILT : [];
 const HREFLANG_PENDING = HREFLANG_ALTERNATES_LANDED ? [] : BUILT;
@@ -201,13 +205,14 @@ test.describe("hreflang set", () => {
   }
 
   for (const pair of HREFLANG_PENDING) {
-    test(`${pair.url} has none yet — PR-6.8 lands them @smoke`, async ({ page }) => {
+    test(`${pair.url} emits no hreflang alternates @smoke`, async ({ page }) => {
       await page.goto(pair.url);
 
-      // The self-retiring half of `HREFLANG_ALTERNATES_LANDED`. When PR-6.8's
-      // `buildMetadata()` lands, this count stops being zero and this test
-      // fails; flipping the constant to `true` is the whole fix, and the real
-      // assertion above then runs on every pair.
+      // The `false` position of `HREFLANG_ALTERNATES_LANDED`, and empty while
+      // the constant is `true`. It is the guard for the other direction: a
+      // release that withdraws the alternates flips the constant back and this
+      // half proves the tags are gone from every built route, rather than
+      // leaving a page half-tagged.
       await expect(
         page.locator('link[rel="alternate"][hreflang]'),
         `${pair.url} emits hreflang alternates — flip HREFLANG_ALTERNATES_LANDED to true`,
