@@ -18,6 +18,18 @@ import type { DayId } from "@/content/schemas/menu";
  * `src/lib/menu-day.ts` already does that for a weekday
  * ({@link weekdayDate}); {@link openingTimeDate} is the same trick for a time
  * of day, and the reason it is not as simple lives in its docstring.
+ *
+ * ── Why it sits in `src/lib/` and not in the Visit section ───────────────
+ *
+ * It was written under `components/sections/visit/` for its first caller, the
+ * hours panel. Its second is the Philosophy page's daily rhythm, which formats
+ * `site.dailyRhythm[].time` through the same `timeShort` — and a page reaching
+ * into a home section's folder for a `site.json` derivation is the shape that
+ * gave `StarRow` and `YelpBadge` their own cross-import reports. So it moved
+ * here, beside `menu-day.ts` — the module `D-04.10` named by this path from the
+ * start, and for the same reason: a derivation over `site.json` that more than
+ * one surface needs. Nothing in this file renders, reads a message or knows a
+ * section; it is `site.json` in and `Date` out.
  */
 
 /* -------------------------------------------------------------------------- *

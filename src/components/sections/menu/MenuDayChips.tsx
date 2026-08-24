@@ -21,10 +21,8 @@ import { DAY_CHIP, DAY_CHIP_ROW, DAY_CHIP_STATE } from "./layout";
  * `weekdayShort` format), the five sample lines arrive as already-rendered
  * server nodes, and the tablist's name arrives as `groupLabel`. No dishes, no
  * `home` namespace and no collection cross the boundary — which is why
- * `src/i18n/messages.ts` leaves `menu` out of `CLIENT_NAMESPACES` and says so.
- * 10 §PR-5.3's "client, `menu` + `common` namespaces" is one document out of
- * date on this point; 04 §6's client-namespace table gives this component "—",
- * and that is what ships.
+ * `src/i18n/messages.ts` leaves `menu` out of `CLIENT_NAMESPACES` and says so;
+ * 04 §6's client-namespace table gives this component "—".
  *
  * ── The default day is the server's, and that is the whole point ─────────
  *
@@ -34,9 +32,7 @@ import { DAY_CHIP, DAY_CHIP_ROW, DAY_CHIP_STATE } from "./layout";
  * amber and the right line is already on screen before hydration, and stays
  * that way with JavaScript switched off. Reading a clock here instead would
  * answer with the *reader's* timezone and produce the hydration mismatch this
- * row exists to avoid. 10 §PR-5.3's "after hydration" is the same document out
- * of date; 04 `D-04.10` and 05 §5.6 both say "computed on the server", and the
- * discrepancy is filed.
+ * row exists to avoid.
  *
  * `initial={false}` inside `WordSwap` follows from the same fact: the first
  * line was never absent, so only a *change* of day animates.

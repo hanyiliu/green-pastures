@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { hoursDayRange, openingTimeDate } from "@/components/sections/visit/hours";
 import { formats, TIME_ZONE } from "@/i18n/formats";
+import { hoursDayRange, openingTimeDate } from "@/lib/hours";
 
 /**
  * The hours derivation (PR-5.7's acceptance: *hours derived from `site.hours`,

@@ -1,10 +1,10 @@
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { QuoteMark } from "@/components/decor/QuoteMark";
 import { getSite } from "@/content/site";
 
 import { PHILOSOPHY_ATTRIBUTION, PHILOSOPHY_PULL_QUOTE, PHILOSOPHY_QUOTE } from "./layout";
-import { QuoteMark } from "./QuoteMark";
 
 /**
  * The section's visible heading, which is not a heading (04 §3, §7; D L144–146,

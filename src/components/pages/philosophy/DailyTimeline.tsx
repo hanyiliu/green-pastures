@@ -1,9 +1,9 @@
 import { useFormatter, useLocale, useMessages, useTranslations } from "next-intl";
 
 import { Reveal, RevealItem } from "@/components/motion/Reveal";
-import { openingTimeDate } from "@/components/sections/visit/hours";
 import { getSite } from "@/content/site";
 import type { Messages } from "@/i18n/messages";
+import { openingTimeDate } from "@/lib/hours";
 
 import { DAY_CARD, DAY_LIST, DAY_TITLE } from "./layout";
 import { TimelineRow } from "./TimelineRow";
@@ -23,10 +23,10 @@ import { TimelineRow } from "./TimelineRow";
  * instant — and 02 `D-02.6` formats it with the named `timeShort` format, which
  * is what the format's own comment in `src/i18n/formats.ts` says it is for
  * ("opening hours **and the daily-rhythm times**"). `openingTimeDate` mints the
- * `Date` that stands for a wall clock; it is `VisitSection`'s helper and this
- * is its second caller, which is the point at which it wants to live in
- * `src/lib/` rather than under `components/sections/visit/` — filed in this
- * row's report.
+ * `Date` that stands for a wall clock. It began as `VisitSection`'s helper and
+ * this row is what gave it a second caller, so it now sits in `src/lib/hours.ts`
+ * beside `src/lib/menu-day.ts` — a page has no business reaching into a home
+ * section's folder for a date it derives from `site.json`.
  *
  * The one place this departs from the drawing: `timeShort` is
  * `{hour: 'numeric', minute: '2-digit'}`, so `en` renders "8:00 AM" where the
