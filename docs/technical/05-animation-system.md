@@ -13,7 +13,10 @@ Status: draft · seat writer-animation · 2026-08-22 · revised 2026-08-23 again
 (PR-4.3a), which settled §5.6's locale-cascade rule the two readings of this document disagreed on — D-05.9,
 §5.1, §5.6, §5.9 and §5.14 now describe what runs · revised again 2026-08-23 against the View Transitions
 spike (PR-4.4), which found §5.7's CSS shipped a blank outgoing page when implemented literally — §5.7 and
-OQ-05.2 now describe what runs
+OQ-05.2 now describe what runs · revised 2026-08-24 against `main` at #73: §5.1's module map carries the
+shipped paths and `AmbientScope`, §5.1's `id` row and §5.5 carry the registry keys that actually exist
+(`subpage.<page>.header`, `testimonials.header`), and §5.4 replaces the `useInView` it prescribed with the
+observer that ships
 
 ## Decisions
 
@@ -24,8 +27,8 @@ OQ-05.2 now describe what runs
   in launch scope (§5.12 states the adoption trigger).
 - **D-05.2 One primitive.** All entrance animations go through `Reveal` (container) and `RevealItem`
   (staggered child). Sections never call Motion directly for an entrance and never use one-off CSS entrances.
-- **D-05.3 Catalogue.** `src/motion/variants.ts` holds one named variant per design entrance. The values in
-  §5.2 are the contract; a variant that is not in the table does not exist.
+- **D-05.3 Catalogue.** `src/components/motion/variants.ts` holds one named variant per design entrance.
+  The values in §5.2 are the contract; a variant that is not in the table does not exist.
 - **D-05.4 Tokens.** Motion timing/easing tokens are CSS custom properties declared by
   `03-design-system-tokens.md` (`--dur-*` are plain custom properties next to `@theme`; `--ease-*` is a Tailwind
   v4 theme namespace — memo ADJ-5). Motion code reads them through one TypeScript mirror `src/design/tokens.ts`
@@ -74,21 +77,23 @@ OQ-05.2 now describe what runs
 
 ### 5.1 Architecture
 
-Module map (paths are proposals for `04-components-sections.md`; names are binding, locations are not —
-except `src/design/tokens.ts`, fixed by memo ADJ-8 as 03's path):
+Module map. The names are 05's and binding; the locations were 05's proposals and are now
+`04-components-sections.md` §2's answer — every `src/motion/*` path this table used to spell resolves to
+`src/components/motion/*`, and `src/design/tokens.ts` is 03's, fixed by memo ADJ-8.
 
 | Module | Kind | Responsibility |
 |---|---|---|
 | `src/design/tokens.ts` | TS | 03's mirror of the motion tokens in Motion units (seconds, bezier arrays) — `ease`, `dur`, `stagger`, `rise`, `REVEAL_THRESHOLD`, `breakpoints`. Declared by `03-design-system-tokens.md` §7; never restated here. The only place Motion code reads numbers. |
-| `src/motion/variants.ts` | TS | The catalogue (§5.2): `variants[name] = { hidden, visible, transition, reduced }`, dynamic by `custom` (index / side / tail). |
-| `src/motion/MotionProvider.tsx` | client | `LazyMotion` + `MotionConfig reducedMotion="user"`; optional `reducedMotion` override prop for tests. |
-| `src/motion/Reveal.tsx` | client | `Reveal`, `RevealItem`, `useRevealed()`; registry; locale-swap cascade. |
-| `src/motion/registry.ts` | TS | `revealedIds` (a `Set` of reveal ids), `markLocaleSwap()`, cascade counter. Module scope = survives client navigations, resets on full load. |
-| `src/motion/WordSwap.tsx` | client | `AnimatePresence mode="wait"` keyed text/element swap. |
-| `src/motion/CountUp.tsx` | client | Count-up with `animate()`; reads `useRevealed()`. |
-| `src/motion/PageTransition.tsx` | client | The only place that touches React `ViewTransition`; used by every `page.tsx`. |
-| `src/motion/view-transitions.css` | CSS | Route slide / crossfade rules on `::view-transition-*`, token-driven. |
-| `src/motion/ambient.css` | CSS | `gpfloat`, `gpfloat2`, `gpsun`, `gpbounce` keyframes and the `[data-ambient]` rules. |
+| `src/components/motion/variants.ts` | TS | The catalogue (§5.2): `variants[name] = { hidden, visible, transition, reduced }`, dynamic by `custom` (index / side / tail). |
+| `src/components/motion/MotionProvider.tsx` | client | `LazyMotion` + `MotionConfig reducedMotion="user"`; optional `reducedMotion` override prop for tests. Mounted once, in `app/[locale]/layout.tsx`, above `SiteHeader` rather than merely above `{children}` (D-05.5, 04 §1). |
+| `src/components/motion/Reveal.tsx` | client | `Reveal`, `RevealItem`, `useRevealed()`; registry; locale-swap cascade. |
+| `src/components/motion/registry.ts` | TS | `revealedIds` (a `Set` of reveal ids), `markLocaleSwap()`, cascade counter. Module scope = survives client navigations, resets on full load. |
+| `src/components/motion/WordSwap.tsx` | client | `AnimatePresence mode="wait"` keyed text/element swap. |
+| `src/components/motion/CountUp.tsx` | client | Count-up with `animate()`; reads `useRevealed()`. |
+| `src/components/motion/PageTransition.tsx` | client | The only place that touches React `ViewTransition`; used by every `page.tsx`. Imports `view-transitions.css`, so the stylesheet travels with it. |
+| `src/components/motion/AmbientScope.tsx` | client | 04 §3.3's name for the off-screen half of D-05.7: the one observer that sets `data-ambient="paused"` on a looping section (§5.4). Renders a hidden `span` and nothing visible. |
+| `src/components/motion/view-transitions.css` | CSS | Route slide / crossfade rules on `::view-transition-*`, token-driven. |
+| `src/components/motion/ambient.css` | CSS | `gpfloat`, `gpfloat2`, `gpsun`, `gpbounce` keyframes and the `[data-ambient]` rules. Imported by each decoration that can carry a loop, not by `globals.css`. |
 
 Composition (server/client boundary):
 
@@ -120,7 +125,7 @@ receiving a callback.
 | `amount` | `number \| 'some' \| 'all'` · `REVEAL_THRESHOLD` (0.16) | `viewport.amount`. Test-only override; production always `0.16`. |
 | `margin` | string · `"0px"` | `viewport.margin`. Test-only override; production always `"0px"`. |
 | `as` | `'div' \| 'section' \| 'ul' \| 'li' \| 'figure' \| 'p' \| 'span' \| 'h2' \| 'h3'` · `'div'` | Element, rendered as `m[as]`. |
-| `id` | string · required when `once` | Registry key (`section.slot`, e.g. `programs.header`). |
+| `id` | string · required when `once` | Registry key, and **unique across the site rather than per page** — the registry is one `Set` for the session (D-05.6), so two blocks on two routes sharing an id share one entrance and the second never plays. A home section's blocks are `<section>.<slot>` (`programs.header`, `programs.stones`); a subpage composite's are `<page>.<slot>` (`reviews.count`); the header the six detail pages share is **`subpage.<page>.header`**, prefixed because `gallery`, `programs` and `menu` are page namespaces *and* home section ids — unprefixed, a reader who had scrolled past the home Gallery section reached `/gallery` at opacity 1 with no transform, its rise already spent. `SubpageHeader` derives the key rather than taking it as a prop (04 §3.1). |
 | `opaque` | `boolean` · `false` | Drops the opacity track (transform only). Used for the LCP candidate (hero photo). |
 | reduced motion | — | Not a prop. `MotionConfig reducedMotion="user"` disables transform/layout animation globally; the catalogue's `reduced` entry supplies the per-variant fallback (§5.9). |
 
@@ -153,8 +158,8 @@ viewport={{ once, amount, margin }}` and container variants `{ hidden: {}, visib
 staggerChildren, delayChildren } } }`; `RevealItem` renders `m[as]` with `variants={variants[variant]}` and
 `custom={{ index, side, tail }}` so Motion's variant propagation drives the children. Motion pools
 IntersectionObservers per options set; production `Reveal`s all use the frozen options (`once: true`,
-`amount: 0.16`, `margin: "0px"`), so all reveals share one pooled observer; the ambient-pause `useInView` (§5.4)
-is the page's second and last observer.
+`amount: 0.16`, `margin: "0px"`), so all reveals share one pooled observer; `AmbientScope`'s ambient-pause
+observer (§5.4) is the page's second and last.
 If `registry.revealedIds.has(id)`, `Reveal` renders `initial={false}` (final state, no animation) — unless a
 locale swap is in flight, in which case that same registry hit is exactly what makes it play `swap` instead
 (§5.6). Above-the-fold reveals fire at hydration; the prototype's `checkInView()` rAF fallback is not needed
@@ -214,7 +219,7 @@ rotated by 9°, ≈2 px of horizontal difference); `swing` therefore sets `trans
 | Programs | header `rise`; link `rise` | 3 stones → `sprout` | stones are `SteppingStone` components |
 | Menu | header `rise`; benefit chips + link row `rise` | plate (index 0) → `roll`; day-chip row, sample line → `drop` | `Plate` component; `WordSwap` on the sample line |
 | Gallery | header `rise`; link `rise` | 7 polaroids (desktop) / 5 (mobile) → `polaroid`, side by index parity | `Polaroid` component (inner frame holds resting tilt) |
-| Reviews | header `rise` (contains the two `CountUp`s); link `rise` | 3 bubbles (desktop) / 2 (mobile) → `bubble`, origin by tail side | `Bubble` component |
+| Reviews (section id `testimonials`) | header `rise` (contains the two `CountUp`s); link `rise` | 3 bubbles (desktop) / 2 (mobile) → `bubble`, origin by tail side | `Bubble` component. The design's name for this section is Reviews and its id is `testimonials`, so its reveal keys read `testimonials.*` (§5.1) — `reviews.*` belongs to the subpage |
 | Teachers | header `rise`; link `rise` | 3 frames → `swing` | `TeacherFrame` component |
 | Visit | title block, form card, info column (photo + panel) → `fade`; footer row static (not animated in the prototype) | — | — |
 
@@ -248,10 +253,27 @@ leaf) loop in the references; the seven static section leaves and the two static
 with `loop={false}`, which drops the `.loop` class so no keyframes attach (04 §3.4 owns the per-instance
 placement and counts; the table above covers only the looping instances).
 
-Pausing: one `useInView` on the hero (and philosophy on mobile) toggles `data-ambient="paused"` on the section;
-`[data-ambient="paused"] .loop { animation-play-state: paused }`. Hidden tabs: browsers stop painting, so no
-work is done. Mobile keeps exactly the reference's set (sun + 2 leaves + cue): fewer, smaller, transform-only.
-Under `@media (prefers-reduced-motion: reduce)` the loops are `animation: none`.
+Pausing: one observer per looping section — `AmbientScope`, 04 §3.3's name for it and this document's too —
+toggles `data-ambient="paused"` on the hero (and on philosophy at the mobile breakpoint), against
+`[data-ambient="paused"] .loop { animation-play-state: paused }`. It is dropped into the section's `decor`
+slot, renders a hidden `span` as its foothold, and takes the nearest `[data-section]` ancestor as its scope —
+`Section` (04 D-04.3) is the only thing that writes that attribute, so the scope needs no id and no agreement
+with its parent about a name that could drift.
+
+**A plain `IntersectionObserver`, not Motion's `useInView`,** which is what this paragraph and 04 §3.3 used to
+specify. `useInView` takes a ref to an element React rendered, and the element that must carry `data-ambient`
+is a `<section>` a *server* component renders several layers up; priming a ref for it from a layout effect
+works only for as long as the hook keeps reading `ref.current` from a passive effect. The count is unchanged —
+this is the one observer beyond the frozen `Reveal` pool that INV-05.9 allows, the same reading `Turnstile`
+already takes for its own viewport trigger — so what moves is where the contract is written, out of Motion's
+internals and into a file that states it. The pause fails **open** in all three directions, because the two
+are not symmetric (an unpaused loop is a wasted frame; a paused-but-never-resumed one is a bug): the attribute
+is absent until the observer speaks, absent when no scope is found, and removed on cleanup, since a section
+can outlive a scope that only one breakpoint mounts.
+
+Hidden tabs: browsers stop painting, so no work is done. Mobile keeps exactly the reference's set (sun + 2
+leaves + cue): fewer, smaller, transform-only. Under `@media (prefers-reduced-motion: reduce)` the loops are
+`animation: none`.
 
 ### 5.5 Count-up (Yelp 5.0 / 47)
 
@@ -263,8 +285,14 @@ After hydration, while its `Reveal` is still hidden, it swaps to 0; when `useRev
 number formatter that 02 specifies (`Intl.NumberFormat(locale, { minimumFractionDigits: decimals,
 maximumFractionDigits: decimals })` unless 02 says otherwise). `font-variant-numeric: tabular-nums` and a
 `min-width` in `ch` keep the width stable while digits change (INV-05.7). Reduced motion (`useReducedMotion()`
-or `MotionConfig` override): never swaps to 0, shows the final value. Runs once per session (registry id
-`reviews.header`).
+or `MotionConfig` override): never swaps to 0, shows the final value.
+
+Runs once per session, off the registry id **`testimonials.header`** — the home section's id, since the
+section this header belongs to is `testimonials` in `site.routes[]` even though the design calls it Reviews
+(§5.3). `reviews.header` was never this block's key: it was the Reviews *subpage*'s, and that one is
+`subpage.reviews.header` now (§5.1). The distinction is not academic — the subpage draws no count-up at all,
+because neither subpage reference carries the `data-count` the home reference puts on its count line, so the
+page's two numbers are printed and only the home section's are counted.
 
 ### 5.6 Text swaps: menu day chip and EN ↔ 中文
 
@@ -562,8 +590,9 @@ a number (03 may later mint a dedicated hover-duration token). Reduced motion: c
   ships without its fallback row.
 - **INV-05.9 Two observers, no scroll listeners.** Production `Reveal`s use one frozen viewport-options set
   (`once: true, amount: 0.16, margin: "0px"`; the props are test-only overrides — any variance splits Motion's
-  pool and fails the perf test), so all reveals share one pooled observer; the ambient-pause `useInView` is the
-  second. Nothing subscribes to `scroll` or reads layout per frame; ambient loops pause off-screen.
+  pool and fails the perf test), so all reveals share one pooled observer; `AmbientScope`'s ambient-pause
+  observer is the second (§5.4). Nothing subscribes to `scroll` or reads layout per frame; ambient loops pause
+  off-screen.
 - **INV-05.10 No-JS and pre-hydration safety.** `noscript` stylesheet shows `[data-reveal]`; server HTML carries
   final text/values (count-up); nothing depends on JS for content to exist.
 - **INV-05.11 Single runtime.** Motion is the only JS animation dependency; CSS `@keyframes` exist only in

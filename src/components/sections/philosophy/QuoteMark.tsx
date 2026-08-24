@@ -16,9 +16,14 @@ import { PHILOSOPHY_QUOTE_MARK } from "./layout";
  * reader ever reaches it. Reading the shared key also means a locale that
  * wants `「` gets it here for free.
  *
- * 04 §2 files `QuoteMark` under `components/decor/`, which no row has created;
- * it lives beside its one caller until that directory exists, and moving it is
- * a file move.
+ * 04 §2 files `QuoteMark` under `components/decor/`, and that directory does
+ * exist — PR-4.3b created it for `Sun`, `Leaf` and `ScrollCue`. This file's
+ * earlier note said otherwise and was wrong on the day it was written. What is
+ * still true is the placement: it sits beside its one caller, and it is the
+ * only decoration in 04 §3.4 that is a server component with no loop, no `id`
+ * and no two-layer contract (INV-05.5) — nothing about it is addressable from
+ * the motion layer. Lifting it into `components/decor/` is a file move and a
+ * bead, not a design question.
  */
 export function QuoteMark() {
   const t = useTranslations("common.punctuation");

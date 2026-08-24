@@ -70,10 +70,15 @@ import { PullQuote } from "./PullQuote";
  * the other, and `Leaf`'s `loop` is a prop rather than a media query.
  * `layout.ts` carries the measurement behind that.
  *
- * No `AmbientScope` wraps them: 04 §3.3 places that observer in
- * `components/motion/` and no row has built it, so `ambient.css`'s
- * `[data-ambient="paused"]` hook stays inert here exactly as it does on the
- * hero.
+ * No `AmbientScope` wraps them — still true, for a different reason than this
+ * note used to give. The component exists now (`components/motion/`, where 04
+ * §3.3 places it); what does not exist is any section that mounts it, so
+ * `ambient.css`'s `[data-ambient="paused"]` hook stays inert here exactly as it
+ * does on the hero. Wiring it is a bead of its own and lands on both sections
+ * together: 04 §3.3 mounts one here at the mobile breakpoint only, and
+ * `tests/unit/sections/hero/HeroSection.test.tsx` asserts the hero adds no
+ * second `IntersectionObserver` today, which is the assertion that has to move
+ * in the same change (08 §5 puts the count at two once the hero carries one).
  */
 
 /** The `h2`'s id, which the `Section` points `aria-labelledby` at (INV-04.8). */
