@@ -7,7 +7,7 @@ import {
   type TurnstileVerifyResponse,
 } from "../turnstile";
 
-import { turnstileSecretKey } from "./env";
+import { isTurnstileTestingSecret, turnstileSecretKey } from "./env";
 
 /**
  * Server-side Turnstile verification (07 §2 step 5, `D-07.7`, INV-07.6).
@@ -23,6 +23,23 @@ import { turnstileSecretKey } from "./env";
  * pass. Spam protection that switches itself off during an outage is not spam
  * protection, and this is the one place in the handler where the cautious
  * branch costs a real parent a retry.
+ *
+ * **The one relaxation, and why it is not a bypass** (`gp-dln.232`). The two
+ * echo checks are skipped — and only they — when `TURNSTILE_SECRET_KEY` is
+ * literally one of Cloudflare's three published testing secrets
+ * ({@link isTurnstileTestingSecret}). They have to be, because Cloudflare's
+ * answer to a testing secret carries **no `action` at all** and the fixed
+ * hostname `example.com`, so both checks reject it and a genuine successful
+ * submission was unreachable in every environment 07 §5 and 08 §5 describe —
+ * local development, preview, and the Playwright run that INV-08.7 keeps
+ * key-free. `success === true` is still required, so the `2x…` and `3x…` test
+ * secrets still fail exactly as OPS-7.2 expects.
+ *
+ * Production is untouched by construction rather than by intention: with a real
+ * secret the condition is false and the code below this point is the code that
+ * shipped. And the relaxation grants nothing even where it does apply, because
+ * a testing secret already makes `siteverify` answer from the secret and not
+ * from the token — a deployment holding one has no spam protection to bypass.
  *
  * Nothing is provisioned. `TURNSTILE_SECRET_KEY` is unset in this repository and
  * belongs to the human's Cloudflare account (09); with it unset this returns
@@ -86,14 +103,20 @@ export async function verifyTurnstile(options: VerifyTurnstileOptions): Promise<
   const errorCodes = stringsOf(payload["error-codes"]);
   if (payload.success !== true) return { status: "failed", errorCodes };
 
-  if (payload.action !== TURNSTILE_ACTION) {
-    return { status: "failed", errorCodes: [...errorCodes, "action-mismatch"] };
-  }
-
   const hostname =
     typeof payload.hostname === "string" ? payload.hostname.toLowerCase() : undefined;
-  if (hostname === undefined || !options.expectedHosts.includes(hostname)) {
-    return { status: "failed", errorCodes: [...errorCodes, "hostname-mismatch"] };
+
+  // The two echo checks — the half of this function that stops a token minted
+  // by another widget on another site being replayed here. Skipped only under a
+  // published testing secret, which cannot be a production one; see the header.
+  if (!isTurnstileTestingSecret(secret)) {
+    if (payload.action !== TURNSTILE_ACTION) {
+      return { status: "failed", errorCodes: [...errorCodes, "action-mismatch"] };
+    }
+
+    if (hostname === undefined || !options.expectedHosts.includes(hostname)) {
+      return { status: "failed", errorCodes: [...errorCodes, "hostname-mismatch"] };
+    }
   }
 
   return { status: "passed", hostname };

@@ -36,14 +36,34 @@ import { TURNSTILE_SCRIPT_URL } from "../src/lib/inquiry/turnstile";
  * touch is the *server's* outbound call from `src/lib/inquiry/server/turnstile.ts`,
  * which is Node-to-Cloudflare and never passes through the browser.
  *
- * **(b) Which submissions therefore reach the real handler.** Two do, and they
- * are the ones 07 §2 answers before step 5's `siteverify`: the honeypot decoy
- * and the too-fast decoy (step 3). Those tests run against the live
- * `POST /api/inquiry` with no interception at all, so the round trip —
- * fetch, guards, shared-schema re-parse, decoy, `{ ok: true }`, success panel —
- * is genuinely end to end. Every other outcome is a *server answer this rig
- * cannot provoke locally*, so the specs force it with `page.route`, which is
- * what 08 §5's `@form` row prescribes in as many words ("`page.route` forces
+ * **(b) Which submissions therefore reach the real handler.** The **success
+ * path does**, and so do the two decoys 07 §2 answers before step 5 (step 3's
+ * honeypot and too-fast tests). Those specs run against the live
+ * `POST /api/inquiry` with no interception at all, so the round trip — fetch,
+ * guards, shared-schema re-parse, decoy or `siteverify`, `{ ok: true }`,
+ * success panel — is genuinely end to end.
+ *
+ * The success path was *not* reachable until `gp-dln.232`. Cloudflare answers
+ * the published always-pass secret in `playwright.config.ts` with a payload
+ * that carries no `action` and the hostname `example.com`, so 07 §2 step 5's
+ * two echo checks rejected it and the only 200 this suite could observe was a
+ * decoy's. `src/lib/inquiry/server/turnstile.ts` now skips those two checks —
+ * and only those two — when the configured secret is literally one of
+ * Cloudflare's three published testing values, so this run reaches the same
+ * `{ ok: true }` a parent will. `success === true` is still required, which is
+ * why the `2x…` secret still fails.
+ *
+ * That makes the success test the one spec in the family with an outbound
+ * dependency: `siteverify` is a Node-to-Cloudflare call, and 07 §2 step 5 fails
+ * *closed*, so a Cloudflare outage turns it into a 503 rather than a flake that
+ * passes. It is one test per locale, deliberately, and every other 200 the
+ * suite needs — the reset panel, the keyboard run, the pending state — is still
+ * forced with `page.route`, because each of those is a question about the
+ * client and none of them is improved by a second network round trip.
+ *
+ * Every outcome that is *not* a success remains a server answer this rig cannot
+ * provoke locally, so the specs force it with `page.route`, which is what
+ * 08 §5's `@form` row prescribes in as many words ("`page.route` forces
  * 502 → `emailFailed` banner; forces 429 → `rateLimited`").
  *
  * **(c) The copy is read, never typed** (INV-08.5). {@link visitCopy} loads
@@ -365,11 +385,50 @@ export async function fillHoneypot(form: Locator, value: string): Promise<void> 
 }
 
 /* -------------------------------------------------------------------------- *
- * Forcing a server answer — see note (b) above
+ * The live handler — see note (b) above
  * -------------------------------------------------------------------------- */
 
 /** What the browser actually sent, captured by {@link forceInquiryResponse}. */
 export type CapturedSubmission = { body: Record<string, unknown> | undefined };
+
+/** One real round trip to `POST /api/inquiry`, both halves of it. */
+export type LiveSubmission = {
+  readonly status: number;
+  /** The raw bytes, so `{ ok: true }` can be compared exactly (07 §2 step 3). */
+  readonly text: string;
+  readonly captured: CapturedSubmission;
+};
+
+/**
+ * Wait for the running server's own answer to the next submission.
+ *
+ * Nothing is intercepted: the request leaves the browser, the Route Handler
+ * runs, and both halves come back — the status and body the server chose, and
+ * the request the *form* built, read off the same `Response` so the two cannot
+ * disagree.
+ *
+ * Call it **before** the click. It registers the waiter first and returns the
+ * promise, which is the only ordering in which a fast answer cannot be missed.
+ */
+export function awaitInquiryResponse(page: Page): Promise<LiveSubmission> {
+  return page
+    .waitForResponse(
+      (response) =>
+        response.url().endsWith(INQUIRY_ENDPOINT) && response.request().method() === "POST",
+    )
+    .then(async (response): Promise<LiveSubmission> => {
+      const parsed: unknown = response.request().postDataJSON();
+      return {
+        status: response.status(),
+        text: await response.text(),
+        captured: { body: isTree(parsed) ? parsed : undefined },
+      };
+    });
+}
+
+/* -------------------------------------------------------------------------- *
+ * Forcing a server answer — see note (b) above
+ * -------------------------------------------------------------------------- */
 
 /**
  * Intercept `POST /api/inquiry`, record the request, and answer with `body`.

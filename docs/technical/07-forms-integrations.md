@@ -444,6 +444,23 @@ Behaviour by environment:
   `1x00000000000000000000AA` (always passes) with secret `1x0000000000000000000000000000000AA` (always passes
   validation); the `2x…` pair exercises the failure path [verified: Cloudflare testing docs, 2026-08-22]. No
   rate limit locally.
+
+  **The testing-secret seam** (`gp-dln.232`). `siteverify` answers a testing secret with
+  `{"success":true,"hostname":"example.com","metadata":{"result_with_testing_key":true}}` and **no `action`
+  field at all** [verified against the live endpoint, 2026-08-24]. Both of step 5's echo checks therefore
+  reject it, and a genuine successful submission was unreachable in every environment this section describes —
+  local development, preview, and the Playwright run INV-08.7 keeps key-free — which is what the Phase 5
+  gate's "form submits on preview" row had been asserting against a `page.route` fixture instead. So
+  `verifyTurnstile` skips the `action` and `hostname` checks, **and only those two**, when
+  `TURNSTILE_SECRET_KEY` is exactly one of Cloudflare's three published testing secrets. `success === true` is
+  still required, so the `2x…` and `3x…` secrets still fail and OPS-7.2's preview check is unaffected.
+
+  The seam is keyed on the secret rather than on `NODE_ENV` (which is `production` on a preview), on a
+  dedicated variable (one dashboard mis-click from disarming the live form) or on an overridable `siteverify`
+  URL (which would let whoever sets environment variables point verification at a host that always says yes).
+  A published testing secret is public knowledge and worthless against a real widget, and a deployment holding
+  one already accepts every token — so the relaxation cannot widen anything that was not already open, and a
+  real secret never reaches it.
 - **Preview deployments:** real transport, but Preview-scoped `INQUIRY_TO_EMAIL` is a test inbox — or
   Resend's `delivered@resend.dev` sink [assumed — confirm it accepts production keys]. Turnstile uses the
   test keys on previews — our decision, to keep the production widget's hostname list limited to the
