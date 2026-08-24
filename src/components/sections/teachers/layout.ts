@@ -110,16 +110,26 @@ export const TEACHERS_HEAD_PHOTO = "w-37.5! lg:w-49!" as const;
  * The HEAD TEACHER badge, centred on the photograph's lower edge: 4px up on
  * mobile, 6px on desktop (D L292, M L199).
  *
- * **Both padding classes are important, and both are needed.** 03 §4 mints
- * `--chip-head-teacher` (4px 11px `< md`, 5px 13px `≥ md`) for this badge and
- * `Chip` never reads it: the recipe hard-codes the *hero badge's* padding as
- * `px-3.25 py-1.5 md:px-3.75 md:py-1.75`, so overriding the unprefixed pair
- * alone leaves the recipe's `md:` pair standing from 768px up. Restating the
- * override behind `md:` is what actually lands the token on both views. Filed
- * as a `Chip` defect; when it reads `--chip-*` this collapses to nothing.
+ * **One important padding class, not two.** 03 §4 mints `--chip-head-teacher`
+ * (4px 11px `< md`, 5px 13px `≥ md`) for this badge. The token is re-declared
+ * inside `tokens.css`'s `@media (width >= 48rem)` block, so the single
+ * `var()` already carries both views; and `!important` outranks a non-important
+ * rule wherever that rule sits, a media query included, because importance is
+ * settled before specificity and before source order and a media query
+ * contributes to none of the three.
+ *
+ * This line carried a `md:` twin until `gp-dln.135`, on the reasoning that the
+ * recipe's own `md:`-prefixed padding pair would otherwise "stand from 768px
+ * up". It would not, and the twin compiled to a second rule setting the
+ * identical value. Measured in chromium against the compiled stylesheet, this
+ * class without the twin renders `4px 11px` at 390px and `5px 13px` at 1280px
+ * — the same two boxes the pair rendered.
+ *
+ * The override itself goes when `HeadTeacherCard` passes `Chip`'s own
+ * `size="head-teacher"`, which now binds this token in the recipe.
  */
 export const TEACHERS_HEAD_BADGE =
-  "absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap p-(--chip-head-teacher)! md:p-(--chip-head-teacher)! lg:bottom-1.5" as const;
+  "absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap p-(--chip-head-teacher)! lg:bottom-1.5" as const;
 
 /* -------------------------------------------------------------------------- *
  * An assistant's card (D L285–L287, M L204–L207)
