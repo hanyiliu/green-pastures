@@ -5,6 +5,6 @@
   },
   "kicker": "Reviews",
   "heading": "What Fremont parents say",
-  "countLine": "<count>{count, number}</count> {count, plural, one {review} other {reviews}} and counting",
+  "countLine": "<count>{reviews, number}</count> {reviews, plural, one {review} other {reviews}} and counting",
   "yelpCta": "Open our Yelp page ↗"
 }
