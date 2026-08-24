@@ -134,6 +134,16 @@
   --color-sub-testimonials-count: #8a7468; /* "47 reviews · Fremont parents" — desktop L243 */
   --color-sub-visit-copyright: #8ba07c; /* footer copyright on forest — desktop L342 */
 
+  /*
+   * The form card's links (03 §2.3, "The form card's links"). The card is white
+   * and sits inside the Visit section, whose `--color-link-visit` is a
+   * forest-ground colour — so the links the form prints in its own card
+   * (direct-contact, "send another") have no per-section token to take. This is
+   * the same `#4f6b43` §2.1 already gives the hero and philosophy links, named
+   * once for the surface that uses it.
+   */
+  --color-form-link: #4f6b43;
+
   /* 2.4 · Chips, badges, menu graphics, decorations (03 §2.4) */
   --color-daychip-text: #a89a72;
   --color-benefitchip-text: #897a4e;

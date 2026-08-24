@@ -34,8 +34,15 @@ export type SuccessPanelProps = {
 const PANEL_CLASS = "flex flex-col items-start gap-2 md:gap-2.5";
 const TITLE_CLASS = "font-display text-name font-semibold text-ink";
 const BODY_CLASS = "font-body text-input text-body";
+/**
+ * `--color-form-link` (03 §2.3), not `--color-sage`: at 14px bold this is
+ * small text, so AA asks 4.5:1 of it and sage on the card's white measures
+ * 3.83:1 — the submit button's pair inverted, which passes as a button fill and
+ * does not pass as text. `--color-form-link` measures 5.97:1 there. The hover
+ * stays forest, which is darker still.
+ */
 const RESET_CLASS =
-  "min-h-(--tap-min) font-body text-input font-bold text-sage underline transition-colors duration-(--dur-word-swap) ease-soft hover:text-forest";
+  "min-h-(--tap-min) font-body text-input font-bold text-form-link underline transition-colors duration-(--dur-word-swap) ease-soft hover:text-forest";
 
 export function SuccessPanel({ onReset }: SuccessPanelProps) {
   const t = useTranslations("visit.form");
