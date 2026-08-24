@@ -662,7 +662,8 @@ the `lighthouse-prod` timeout goes to **60 min** (§10). Every URL is still meas
 sampling depth differs, and the launch checklist reads the same assertions either way.
 Assertions (`error` unless noted; our numbers — OQ-08.2): `categories:performance ≥ 0.90`,
 `categories:accessibility = 1`, `categories:best-practices ≥ 0.95`, `categories:seo = 1`;
-`largest-contentful-paint ≤ 2500`, `cumulative-layout-shift ≤ 0.05` — this is Lighthouse's whole-page,
+**no `largest-contentful-paint` assertion** — it carried `≤ 2500` until 2026-08-24 and this section's last
+paragraph is why it does not; `cumulative-layout-shift ≤ 0.05` — this is Lighthouse's whole-page,
 cold-load, mobile-emulated CLS and is deliberately looser than the animation budget; the 0.02 that 03 §3 fixes
 for reveals, count-up, loops and the locale toggle is asserted separately and per phase by §5 `@perf`, and
 neither number relaxes the other. `total-blocking-time ≤ 200` (INP proxy), `speed-index ≤ 3400` (warn).
@@ -676,7 +677,8 @@ Image policy is lint + Lighthouse: `@next/next/no-img-element`, `next/image` wit
 `site.json`, hero `priority`, everything else lazy. Upload target `filesystem` → artifact + job summary (no
 `temporary-public-storage`: reports would be public). Bundle weight is measured where it is real — the
 preview's transfer sizes — not re-implemented locally; the route summary goes into the job summary for
-eyeballing. Field vitals (INP, p75) are read in Speed Insights after launch (09; OQ-01.1).
+eyeballing. Field vitals (LCP and INP, p75) are read in Speed Insights after launch (09; OQ-01.1) — and for
+LCP that is now the only place it is read at all, which is this section's last paragraph.
 
 **The half a build directory can decide, and the half it cannot** (PR-8.5). The paragraph above draws the
 line and `scripts/ci/build-budget.ts` sits on the near side of it. Four of the numbers on this page do not
@@ -716,6 +718,69 @@ third-party count is **0** against `≤ 3`; and `unsized-images`, `modern-image-
 None of those numbers moved a threshold on this page. They are the distance PR-8.3's LCP work and the
 Phase 8 gate have to close, and `lighthouse-preview` is advisory precisely so the distance is visible on
 every preview without blocking a merge.
+
+**The `largest-contentful-paint` threshold is retired, and the paragraph above is superseded on that one
+point** (the owner, 2026-08-24; `gp-dln.292`). `largest-contentful-paint ≤ 2500` is gone from
+`lighthouserc.cjs`: not loosened, not downgraded to `warn`, removed. What follows is the argument at the
+length it needs, because a budget that vanishes without one reads to the next person as a budget that was
+merely inconvenient.
+
+**2,500 ms is not reachable on this architecture, and that was measured rather than assumed.** At `15beead`,
+across every combination tried, the best LCP any URL in this section's matrix produced was **3,930 ms**. The
+floor is not a property of the home page: `/privacy` — the lightest route in the site, no form, no `zod`,
+almost nothing in its client graph — medians **3,533 ms** while scoring `categories:performance` **0.90**.
+Between those points the exchange rate is roughly **5 ms of LCP per KB of brotli script removed**, so closing
+the remaining ≈ 1,430 ms would mean deleting about **290 KB** of script from a page that carries **240 KB**
+of it in total, **130 KB** of which is Next and React and is not ours to delete. The budget is asking for a
+page with negative bytes in it. And the distance grows before it shrinks: PR-8.3's photography has not
+landed, and a real hero image gives the LCP element a Load Delay and a Load Time that a `PhotoSlot` div does
+not have.
+
+**Reproduced independently at `36e2b57`, and the reproduction is the argument in one run.** Twelve
+collections over this section's preview matrix, mobile preset, against a local `next start` on loopback — an
+environment strictly kinder than a throttled CDN preview, with no network hop and a faster CPU than any
+GitHub runner — put `largest-contentful-paint` between **3,466 ms** and **3,774 ms**. Not one of the twelve
+came within 950 ms of `2500`. Over the same twelve, `categories:performance` medianed **0.91** on `/en`,
+**0.91** on `/zh-Hans`, **0.91** on `/zh-Hant` and **0.89** on `/zh-Hans/programs`. Three of the four URLs
+*pass* the composite that contains LCP while every single run misses the standalone LCP threshold by around
+a second, and the fourth fails the composite on its own merits. A threshold that no configuration of this
+site has ever come close to, on a machine chosen to flatter it, is not a budget; it is a wish.
+
+**Why it was not simply loosened.** A threshold reset to whatever the site passes today is the failure shape
+`lighthouserc.cjs`'s own header names — "the failure shape this repository has catalogued seven times" — and
+it is worse than removing the row, because a number in the assertion table reads as enforcement to everyone
+downstream of it whatever its severity. `warn` was considered on the same ground and rejected:
+`lighthouse-preview` is advisory in full already (09 §3), so on previews the severity would change nothing,
+and on `lighthouse-prod` — §12.3's launch gate — a permanently yellow row is a budget nobody can act on.
+**If a lab LCP assertion ever returns it has to be justified here, from an observed baseline with a stated
+regression margin**, and not from a round number.
+
+**What still watches LCP in the lab.** Dropping the assertion does not drop the metric from the gate.
+`categories:performance ≥ 0.90` is asserted `error`, LCP is a weighted input to it, and a regression that
+pushes LCP up pushes that score down. That score is one a page can and does fail — **0.81** on `/en` in the
+preview run above, **0.89** on `/zh-Hans/programs` in the local one — which is the test of whether a
+surviving guard is real rather than decorative. §5's `@perf` tag holds the other half: the LCP
+element (the hero photo) has computed `opacity: 1` in the SSR HTML (INV-05.7, OQ-05.8, 05 §5.1). That is the
+one LCP property a lab run settles honestly, because it is a fact about the markup rather than about a
+simulated network. `numberOfRuns: 3` on the home URLs stays where it is for the same reason: LCP still moves
+the score, so its run-to-run variance is still what that sampling depth is for.
+
+**The number of record is a field number, which is this section's own rule.** "Bundle weight is measured
+where it is real" is the sentence that sends transfer sizes to a deployment rather than to a build machine;
+simulated LCP on a throttled headless Chrome is the same category of guess, taken against an emulated device
+nobody owns over a network nobody is on. So the LCP of record is the **Speed Insights p75**, alongside INP,
+read on the production project — §12.3 already carries "Speed Insights receiving data (INP read in the first
+week)" as a launch item, and LCP joins INP there.
+
+**This row lands half of that, deliberately, and says which half.** `@vercel/speed-insights` is not a
+dependency of this repository and does not become one here. 10 schedules it at **PR-7.1** together with
+`@vercel/analytics`, that row is blocked on the owner's Vercel setup, and 10's serialisation rule for
+`package.json` is "at most one dependency-adding PR is open at a time". Mounting `<SpeedInsights />` in the
+root layout before the project has the feature enabled would post vitals to an endpoint that answers 404 — a
+signal that looks wired and reports nothing, which is the defect this paragraph has just removed wearing
+different clothes. So the de-gating lands now and the field signal lands with PR-7.1. Between the two, LCP
+has **no dedicated threshold anywhere in CI** — only its weight inside `categories:performance` and §5's
+opacity check — and that gap is stated here rather than papered over.
 
 ### 8 · Visual regression
 
