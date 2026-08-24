@@ -20,7 +20,10 @@ owner facts (teacher names, credentials, phone, licence) as provisional content 
 Status: draft · seat writer-components · 2026-08-22 · revised 2026-08-22 for HD-5, HD-6, HD-7, HD-9, HD-10,
 HD-12, and again for HD-14 (CJK typeface closed on the system stack) and ADJ-20 (the switcher trigger ships
 with no chevron) · revised 2026-08-23 against shipped code (PR-4.2, PR-4.3a): §2's tree and its status note,
-and §3.2's `Chip` tone enum
+and §3.2's `Chip` tone enum · revised 2026-08-24 against `main` at #73: §2's status block is **deleted** for
+the convention that replaces it, §3.1/§3.3/§8 carry the reveal-id rule the `subpage.` prefix introduced,
+§3.3's `AmbientScope` row states the observer it actually uses, and §10's `--radius-hero` and `AmbientScope`
+requests close
 
 ## Decisions
 
@@ -248,7 +251,7 @@ leaves. Collections: `getPrograms()`, `getMenu()`, `getGallery()`, `getTestimoni
 ```text
 src/
 ├── app/
-│   ├── globals.css                  @import tailwindcss; imports styles/tokens.css and, when they exist, the motion css (05)
+│   ├── globals.css                  @import tailwindcss; imports styles/tokens.css; html { overflow-x: clip } (05 §5.8)
 │   ├── [locale]/layout.tsx          html/body, fonts, providers, SkipLink, SiteHeader, SiteFooter (06 routes; 04 content)
 │   ├── [locale]/page.tsx            home · [locale]/{philosophy,programs,menu,gallery,reviews,team}/page.tsx
 │   ├── [locale]/{faq,enroll}/       RESERVED, not built (D-02.17) · not-found.tsx · [...rest]/page.tsx · error.tsx* · global-error.tsx* (06)
@@ -285,22 +288,28 @@ all four elsewhere and the file was never created. The reset is Tailwind v4's pr
 in `MotionProvider`**, written into a `<noscript>` element — 05 INV-05.10's requirement, PR-4.3a's deliverable
 (10 §3), and the stronger placement of the two: the rule travels with the component that creates the hidden
 state it undoes, so there is no second wiring step to forget and no stylesheet left behind if the provider ever
-moves. (The same component emits the reduced-motion `[data-reveal]` rule beside it, 05 §5.9.) Only
-`html { overflow-x: clip }` (05 §5.8) is still unplaced; it lands with the gallery row that needs it.
+moves. (The same component emits the reduced-motion `[data-reveal]` rule beside it, 05 §5.9.) The two motion
+stylesheets follow the same rule and are imported by their consumers rather than by `globals.css`:
+`ambient.css` by each decoration that can carry a loop, `view-transitions.css` by `PageTransition`.
+`html { overflow-x: clip }` (05 §5.8) is the one declaration `globals.css` owns outright, and
+`.stylelintrc.mjs` scopes INV-05.2's `overflow` ban to `src/components/**` precisely so that this file is the
+single site where the gallery's bleed may land.
 
-**Status against `main`, 2026-08-23.** This tree is the target, not a manifest: under `components/`, three of the
-six directories exist. `components/layout/` holds `Section` and `SectionHeader`; `components/ui/` holds
-`Eyebrow`, `SectionTitle`, `LearnMoreLink`, `Button`, `Chip`, `Emoji` and `PhotoSlot` — together the layout
-shell and primitives of PR-4.2 — with `Picture`, `StarRow`, `IconDot`, `VisuallyHidden` and `rich.tsx` still to
-come. `components/motion/` holds `MotionProvider`, `Reveal` (which exports `RevealItem` and `useRevealed` from
-the one file), `registry.ts` and `variants.ts` from PR-4.3a; `WordSwap`, `CountUp`, `PageTransition`, `AmbientScope`,
-`ambient.css` and `view-transitions.css` are not built. `src/design/` now holds both files 03 §7 declares,
-`tokens.ts` and `fonts.ts`, which the row owning them closed without and which landed later in this wave.
-`components/decor/`, `components/sections/`, `components/pages/`, `components/forms/` and `src/lib/` do not
-exist yet. One consequence worth stating because §1 reads as though it were already true: **`MotionProvider` is
-not yet mounted.** `app/[locale]/layout.tsx` renders `<html lang>`, the skip link and `NextIntlClientProvider`
-and nothing more, so the fonts, the provider, `SiteHeader` and `SiteFooter` in §1's stack are what that file
-will render, not what it renders today; the wiring is a later Phase 4 row.
+**This tree is the target, not a manifest.** It fixes where a file belongs *once it exists* — which is what
+makes a new file's location a settled question instead of a fresh one — and claims nothing about which of
+these files exist today. Two authorities answer that better than a paragraph can, and stay right without
+anyone remembering to edit them: the working tree, for what is built, and
+[`11-work-tracking.md`](11-work-tracking.md)'s tracker, for what is planned and who holds it.
+
+A dated "Status against `main`" block used to stand here, and the convention that replaced it is general —
+05 now follows it too. **A document states what must be true and cites the decision, open question or bead
+that owns anything not yet true; it does not enumerate what currently exists.** A dated snapshot rots on a
+schedule nobody controls: this one was wrong within two pull requests, twice, and each time it read as
+authoritative *because* it carried a date. Where a gap is genuinely load-bearing — a reader would write the
+wrong code without it — it belongs in the row that owns the thing, worded as a condition on the
+specification, where a reader is already standing when the gap matters. `AmbientScope` is the worked example:
+§3.3 fixes what it does and where it goes, and the one fact a caller needs — that no section mounts it yet —
+is recorded in `ambient.css`, beside the rule that is waiting for it.
 
 ### 3 · Component inventory
 
@@ -321,12 +330,12 @@ contract 08 checks. Sizes, radii, shadows and colours are always 03 tokens and a
 | `MobileMenu` | C | `links: {id, anchor, label, href}[]`, `contact: {href, label}`, `children` (`LangSwitcher variant="sheet"`, BookTourButton nodes) | labels passed as props from `SiteHeader`; the sheet's link list is the third of 06 D-06.7's three `usePathname()` link lists and lives inside this already-client component | mobile/README "Hamburger opens nav menu (… Contact, EN·中文)" — that single language item is now three locale rows (D-04.8), one sheet row taller | sheet only `< lg`; desktop never mounts it | `fade` + `rise` open/close (05 OQ-05.3 default) | `role="dialog" aria-modal`, focus trap, `Escape` closes, background `inert`, scroll lock, focus returns to `Hamburger`; link hit areas ≥ 44px |
 | `SkipLink` | S | — | `common.a11y.skipToContent` | — (production a11y) | same | none | first focusable element; visible on focus; target `#main` |
 | `Section` | S | `id: SectionId`, `labelledBy`, `children`, `decor?` | `site.routes[].homeAnchor` for ids | root README "Section inventory", "Interactions & state" | padding `--section-py/--section-px` per view; gallery `px` bleed | none (shell is never transformed, INV-05.4) | `<section id aria-labelledby>`; `scroll-margin-top: var(--nav-h)`; `snap-start`; role variables (D-04.3) |
-| `SectionHeader` | S | `eyebrow?`, `title`, `intro?`, `introShort?`, `align`, `as: 'h1' \| 'h2'` | caller's keys | every section/subpage header | intro hidden `< md` where the key is desktop-only; gap 12px → 9–10px | wrapped in `Reveal variant="rise" id="<section>.header"` | heading element provided by `as`; one `h1` per page |
+| `SectionHeader` | S | `eyebrow?`, `title`, `intro?`, `introShort?`, `align`, `as: 'h1' \| 'h2'` | caller's keys | every section/subpage header | intro hidden `< md` where the key is desktop-only; gap 12px → 9–10px | wrapped in `Reveal variant="rise"`; the id is the caller's — `<section>.header` from a home section, `subpage.<page>.header` from `SubpageHeader` (§3.3's id rule) | heading element provided by `as`; one `h1` per page |
 | `SubpageBar` | S | `routeId` | `<page>.kicker`; `common.back.label\|labelShort` | desktop reference L350–352: tinted bar (the page's section colour at `.94`) + `backdrop-filter: blur(6px)` — the `--color-nav-bg` recipe (03 §2.4); `--shadow-subnav` on the bar, white pill + `--shadow-back` on `BackLink` (03 §5); token `--color-subnav-bg` requested, §10 | kicker always; back label ↔ `labelShort` via `md:` toggle | — | sticky under the header; `BackLink` first in tab order on detail pages |
 | `BackLink` | C | `homeAnchor`, `children` | — (label passed from `SubpageBar`) | root README "Detail subpages" | — | `router.replace('/#'+homeAnchor, {transitionTypes:['subpage-exit']})` (05 §5.7) | rendered as `Link` (works without JS); after navigation focus moves to the origin section heading |
 | `SiteFooter` | S | — | `common.nav.<id>` for `site.nav.footer[]` (six + contact), `common.footer.copyright` `{year, brandName, brandNameOther, license}`, `common.logo.alt`; `site.brand.name` (localized value) via `brandArgs(locale)`, `site.license` | root README §8; desktop reference L336–342; mobile L245–249 | row `≥ lg` (logo card · links) vs centred column; license renders on both (D-02.13) | inside the Visit `fade` block | `<footer>` + `<nav aria-label>`; link colour `--color-link-visit`; contrast caveat 03 §10 |
 | `LogoCard` / `FooterLinks` / `Copyright` | S / **C** / S | `height`, `items: {id, anchor, label, href}[]`, — | as `SiteFooter` | desktop/README §8 | logo 42px vs 34px | — | logo `alt` from `common.logo.alt`; copyright `<small>`; `FooterLinks` is client for the same reason as `PrimaryNav` — `usePathname()` per item (06 D-06.7) — and reads no messages, `SiteFooter` resolves the labels |
-| `SubpageHeader` | S | `page` | `<page>.eyebrow\|heading\|intro\|introShort` | desktop reference subpage headers | intro shortened `< md` | `Reveal rise` | `h1 tabIndex={-1}` focused after the slide (05 §5.7) |
+| `SubpageHeader` | S | `page` | `<page>.eyebrow\|heading\|intro\|introShort` | desktop reference subpage headers | intro shortened `< md` | `Reveal rise`, id `subpage.<page>.header` — derived inside the component, never a prop, so a seventh detail page cannot forget it (§3.3) | `h1 tabIndex={-1}` focused after the slide (05 §5.7) |
 
 #### 3.2 Primitives (`components/ui`)
 
@@ -350,11 +359,11 @@ contract 08 checks. Sizes, radii, shadows and colours are always 03 tokens and a
 | Component | Kind | Placed where (this doc) | Notes |
 |---|---|---|---|
 | `MotionProvider` | C | `app/[locale]/layout.tsx` body root | 05 D-05.5 |
-| `Reveal` / `RevealItem` | C | every `SectionHeader`, every link row, every stagger group per 05 §5.3; nav items `variant="none"` | ids `"<section>.<slot>"` (e.g. `programs.stones`); `as` chosen so semantics survive (`ul`/`li` for lists, `figure` for polaroids) |
+| `Reveal` / `RevealItem` | C | every `SectionHeader`, every link row, every stagger group per 05 §5.3; nav items `variant="none"` | **ids are unique across the site, not per page.** The registry is once per session keyed by the id alone (05 D-05.6), so two blocks on two routes that share an id share one entrance and the second never plays. A home section's blocks are `<section>.<slot>` (`programs.stones`); a subpage composite's are `<page>.<slot>` (`reviews.count`); the header every detail page shares is `subpage.<page>.header`, because `gallery`, `programs` and `menu` are page namespaces *and* home section ids — unprefixed, those three headers spent their entrance on the home page and arrived already-played. `RevealItem` carries no id: the registry and the cascade work on the block, not its parts (05 §5.1). `as` chosen so semantics survive (`ul`/`li` for lists, `figure` for polaroids) |
 | `WordSwap` | C | `MenuDayChips` sample line only | keyed by `selectedDay` (05 D-05.9) |
-| `CountUp` | C | `ReviewsHeader` (home) via the `count` rich tag and the rating | values from `site.yelp.*`; `tabular-nums`, `min-width` in `ch` (INV-05.7); reads `useRevealed()` from `Reveal id="testimonials.header"` |
+| `CountUp` | C | `ReviewsHeader` (home) via the `count` rich tag and the rating | values from `site.yelp.*`; `tabular-nums`, `min-width` in `ch` (INV-05.7); reads `useRevealed()` from `Reveal id="testimonials.header"` — the home section's id, which is `testimonials`, not `reviews` (05 §5.5). The Reviews *page* prints both numbers and counts neither: neither subpage reference carries the design's `data-count` |
 | `PageTransition` | C | first child of every `page.tsx` | 05 §5.7 |
-| `AmbientScope` | C | `HeroSection` (and `PhilosophySection` on mobile) | one `useInView` toggling `data-ambient="paused"` on the section (05 §5.4); renders nothing visible |
+| `AmbientScope` | C | `HeroSection` (and `PhilosophySection` on mobile) | one `IntersectionObserver` toggling `data-ambient="paused"` on the nearest `[data-section]` ancestor — which `Section` is the only thing to write (D-04.3), so the scope needs no id and no prop (05 §5.4). Renders a hidden `span` as its foothold and nothing visible. **Not Motion's `useInView`**, which this row used to specify: that hook takes a ref to an element React rendered, and the element that must carry the attribute is a `<section>` a *server* component renders several layers up. It is the same single observer INV-05.9 counts either way, with the contract in the file rather than in Motion's internals |
 
 #### 3.4 Decorations (`components/decor`; client unless noted; INV-05.5 two-layer contract; INV-04.5)
 
@@ -616,8 +625,11 @@ invented.
 - No-literal-text ESLint rule (INV-02.1) over `src/components/**`: any string literal in JSX text position or in
   `alt` / `aria-label` / `title` / `placeholder` fails; the allowed exceptions are punctuation-only strings and
   the `data-*` values this doc fixes. 08 owns the rule and its exception list.
-- Reveal-id uniqueness: a build-time scan of `Reveal`/`RevealItem` `id` props asserts every `"<section>.<slot>"`
-  is unique per page and matches 05's registry keys; duplicates fail (they would collide in `useRevealed()`).
+- Reveal-id uniqueness: a build-time scan of `Reveal` `id` props asserts every id is unique **across the
+  site**, not merely within one page, and matches 05's registry keys; duplicates fail. Per-page uniqueness is
+  the wrong property — the registry is once per session keyed by the id alone (05 D-05.6), so two blocks on
+  two routes that share an id share one entrance and the second silently renders its final state. That is the
+  defect `subpage.<page>.header` closes (§3.3), and a per-page scan would have passed over it.
 - Image contract (INV-04.6): a static check that every `Picture` call site passes `sizes` and a non-undefined
   `alt`, and that no `<img>` appears outside `Picture`/`PhotoSlot`.
 - Hit targets (INV-04.7): a Playwright pass measuring every focusable element's bounding box at 390 and 1280 —
@@ -703,17 +715,21 @@ invented.
   one of the failing pairs 03 lists) and the panel reuses `--color-nav-bg` + `--shadow-nav` + `--radius-card`;
   03 need only confirm that reuse. The Traditional-glyph request is **adopted, nothing outstanding**: 03 D-03.14
   splits `--font-cjk` into `--font-cjk-sc` / `--font-cjk-tc` under `:root:lang(zh-Hans)` / `:root:lang(zh-Hant)`,
-  which is entirely a CSS change and moves no component. Mint `--section-minh-<id>` tokens on 04's measured request (§5.5); mint `--radius-hero` for the 26px
-  hero photo (03 §5 states the value but has no step for it — §5.3 uses the name `hero`) and `--color-subnav-bg`
-  for the subpage bar's tinted `.94` background (§3.1, desktop reference L350); note D-04.9 (nav row at `lg`)
-  against §8's nav row. Until 03 mints them, 04 treats all three as requested names, not shipped tokens.
+  which is entirely a CSS change and moves no component. `--radius-hero` is likewise **adopted, nothing
+  outstanding**: 03 §5 minted the step and `src/styles/tokens.css` declares it under `@theme static` (22px,
+  26px at `md`), so §5.3's `hero` radius name is a shipped token and `rounded-hero` a real utility. Still
+  outstanding, and still requested names rather than shipped tokens: `--section-minh-<id>` on 04's measured
+  request (§5.5), and `--color-subnav-bg` for the subpage bar's tinted `.94` background (§3.1, desktop
+  reference L350). Note D-04.9 (nav row at `lg`) against 03 §8's nav row.
 - **05** — `Reveal` needs `as="ul" | "li" | "figure"` (already listed) and `RevealItem as="li"`. Two earlier
   requests are **adopted, nothing outstanding**: the decorative components are client components (D-04.15) —
   05 §5.1's mermaid node reads `Sun / Leaf / ScrollCue · client`, no "RSC shell" label remains — and `Leaf` and
   `Sun` carry `loop?: boolean` (default `true`) in 05 §5.4, whose prose matches §3.4's seven static leaves and
-  two static suns. Still outstanding: `AmbientScope` — 04's name for the single `useInView` that toggles
-  `data-ambient="paused"` (05 §5.4) — lives in `components/motion/` and is never named in 05, so 05 should
-  adopt or rename it.
+  two static suns. The third request is now **adopted, nothing outstanding** as well: 05 §5.1's module map and
+  §5.4 name `AmbientScope`, keeping 04's name, and both describe its mechanism as the plain
+  `IntersectionObserver` it is rather than the `useInView` the two documents used to specify — Motion's hook
+  cannot take the ref, because the element that must carry `data-ambient` is a `<section>` a server component
+  renders (D-04.3), and the observer count INV-05.9 fixes is the same either way (§3.3).
 - **06** — D-06.9's three-option menu is **adopted, nothing outstanding**: 04 supplies the primitive 06 assigns
   it (trigger semantics, `aria-current`, focus handling, no-JavaScript fallback, `routing.locales` iteration)
   as D-04.16, keeps 06's `LangSwitcher` name, and has dropped `common.localeSwitcher.label` from every list
