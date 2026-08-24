@@ -155,6 +155,11 @@ const yelp = site.yelp;
 
 if (yelp === undefined) throw new Error("content/site.json has no yelp block");
 
+/** The link row's destination, read from `site.json` rather than typed out. */
+const reviewsRoute = site.routes.find((route) => route.id === "reviews");
+
+if (reviewsRoute === undefined) throw new Error("content/site.json declares no reviews route");
+
 const format = (value: number, decimals: number, locale: Locale = routing.defaultLocale) =>
   new Intl.NumberFormat(locale, {
     minimumFractionDigits: decimals,
@@ -516,22 +521,30 @@ describe("one review", () => {
 });
 
 /* -------------------------------------------------------------------------- *
- * The outbound link (04 §3.5, 07 §4)
+ * The link row (04 §3.5, 05 §5.7)
  * -------------------------------------------------------------------------- */
 
-describe("the Yelp link", () => {
-  it("opens site.yelp.url in a new tab and says so in its accessible name", async () => {
+describe("the reviews link", () => {
+  it("resolves site.routes[reviews] under the current locale prefix", async () => {
     await renderSection();
 
-    const link = screen.getByRole("link", {
-      name: `${copy.link} ${reference.common.links.newTab}`,
-    });
-    expect(link).toHaveAttribute("href", yelp.url);
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    const link = screen.getByRole("link", { name: copy.link });
+    expect(link).toHaveAttribute("href", `/${routing.defaultLocale}${reviewsRoute.path}`);
+  });
 
-    // The warning is visually hidden, not merely small.
-    expect(screen.getByText(reference.common.links.newTab).className).toContain("sr-only");
+  it("stays on the site: no new tab, and no new-tab warning to give", async () => {
+    await renderSection();
+
+    // The design draws `data-subpage="reviews"` here and the section used to
+    // overrule it with an outbound Yelp link, which left the subpage linked
+    // from nowhere. Yelp is now the reviews page's own button, so the three
+    // attributes an external link needs are exactly what this one must not have
+    // — and `common.links.newTab` would be a lie rather than a courtesy.
+    const link = screen.getByRole("link", { name: copy.link });
+    expect(link).not.toHaveAttribute("target");
+    expect(link).not.toHaveAttribute("rel");
+    expect(link.textContent).toBe(copy.link);
+    expect(screen.queryByText(reference.common.links.newTab)).toBeNull();
   });
 
   it("keeps the 44px target on the anchor and the rule on the words (INV-04.7)", async () => {
@@ -543,6 +556,12 @@ describe("the Yelp link", () => {
     expect(screen.getByText(copy.link).className).toContain(
       "border-(color:--section-link-underline)",
     );
+  });
+
+  it("is the section's only anchor, so the row reads as one link", async () => {
+    await renderSection();
+
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 });
 

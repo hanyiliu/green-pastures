@@ -29,7 +29,7 @@
   "testimonials": {
     "title": "来自家庭的暖心话",
     "countLine": "<count>{reviews, number}</count> 条评价 · 弗里蒙特家长",
-    "link": "在 Yelp 阅读全部评价 →"
+    "link": "阅读全部评价 →"
   },
   "teachers": {
     "eyebrow": "我们是谁",

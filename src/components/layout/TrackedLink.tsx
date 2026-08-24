@@ -7,10 +7,12 @@ import { NavLink } from "./PrimaryNav";
 /**
  * The one analytics `onClick` wrapper (04 `D-04.1`, 07 §4).
  *
- * It exists so that no server component ever grows a handler: `BookTourButton`,
- * `YelpButton` and the home Yelp link stay server-rendered recipes and hand
- * their label down as `children`, while the single client leaf underneath fires
- * the event. The two names below are 07 §4's whole list for links; the other
+ * It exists so that no server component ever grows a handler: `BookTourButton`
+ * and `YelpButton` stay server-rendered recipes and hand their label down as
+ * `children`, while the single client leaf underneath fires the event. The
+ * `yelp_click` caller is `YelpButton` alone — the home testimonials link is an
+ * ordinary `LearnMoreLink` to the reviews subpage, and the outbound hop is that
+ * page's button. The two names below are 07 §4's whole list for links; the other
  * two events belong to `LangSwitcher` and `InquiryForm`, and the Maps link
  * fires nothing.
  *

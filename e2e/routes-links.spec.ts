@@ -57,15 +57,17 @@ import {
  * defect in this repository. Their *presence* is 04's business and their
  * attributes are `@a11y`'s (PR-8.4).
  *
- * ── One finding this crawl makes visible rather than fails on ────────────
+ * ── One finding this crawl surfaced, since fixed ─────────────────────────
  *
- * Nothing on the site links to `/{locale}/reviews`. 04 §3.5 decided it: the
- * home Testimonials section's link goes to Yelp rather than to the subpage,
- * overruling the design's own `data-subpage="reviews"`. So the reviews page is
- * reachable by URL and from `sitemap.xml` and from no anchor anywhere. That is
- * a decision, not a broken link, and this spec does not fail on it — it is
- * recorded here because a crawl is where someone would otherwise expect to
- * find out.
+ * For a while nothing on the site linked to `/{locale}/reviews`: 04 §3.5 sent
+ * the home Testimonials link to Yelp rather than to the subpage, overruling the
+ * design's own `data-subpage="reviews"`, and the page was reachable by URL and
+ * from `sitemap.xml` and from no anchor anywhere. A crawl is where someone
+ * would expect to find that out, and this file is where it was written down.
+ * 04 §3.5 now sends that link to the subpage — Yelp is the reviews page's own
+ * button, one hop on — so the reviews route is an ordinary seed with ordinary
+ * inbound links, and `routes-transitions.spec.ts` is what holds the home page
+ * to still carrying them (`UNLINKED_ROUTE_IDS`, now empty).
  */
 
 /** A link that failed, in the shape the failure message prints. */

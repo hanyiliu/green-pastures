@@ -29,8 +29,14 @@ import { buttonRecipe } from "@/components/ui/Button";
  *
  * The new-tab warning is a visually hidden sibling *inside* the anchor, so it
  * joins the accessible name — "Open our Yelp page ↗ opens in a new tab" —
- * rather than needing a `title` nobody hears. `YelpLink` on the home page makes
- * the same choice for the same reason (04 §3.5, `common.links.newTab`).
+ * rather than needing a `title` nobody hears. `InfoPanel`'s Maps link makes the
+ * same choice for the same reason (04 §3.5, `common.links.newTab`).
+ *
+ * **This is now the site's only link to Yelp**, and the home page's testimonials
+ * link is what brings the reader here (`ReviewsLink`, 04 §3.5). It used to be
+ * the second of two: the home link went to `site.yelp.url` directly, which left
+ * this page linked from nowhere. Both destinations survive that fix, one hop
+ * apart, and this button is the outbound hop.
  */
 
 export type YelpButtonProps = {
