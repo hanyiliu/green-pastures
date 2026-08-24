@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { ReactNode } from "react";
@@ -7,6 +7,8 @@ import { describe, expect, it, onTestFinished } from "vitest";
 import { Leaf } from "@/components/decor/Leaf";
 import { ScrollCue } from "@/components/decor/ScrollCue";
 import { Sun } from "@/components/decor/Sun";
+import { Section } from "@/components/layout/Section";
+import { AmbientScope } from "@/components/motion/AmbientScope";
 import { MotionProvider } from "@/components/motion/MotionProvider";
 
 /**
@@ -34,7 +36,10 @@ import { MotionProvider } from "@/components/motion/MotionProvider";
  * The file lives beside `WordSwap` and `CountUp` in `components/motion` (04 §2)
  * but is tested here, with the three components that import it: it has no
  * behaviour of its own, and a rule is only correct relative to the markup it is
- * written for.
+ * written for. `AmbientScope` is here for the same reason — it is the other
+ * end of one wire, and the only assertion worth making about it runs the whole
+ * length: observer says off-screen → attribute on the section → a real `Leaf`
+ * computes `animation-play-state: paused`.
  */
 
 /**
@@ -96,6 +101,85 @@ function installAmbientStylesheet(): void {
   onTestFinished(() => {
     style.remove();
   });
+}
+
+/**
+ * A two-way `IntersectionObserver`, for the length of one test.
+ *
+ * `tests/unit/motion/harness.ts` has a counting stub already and this is not
+ * it: every suite that uses that one is checking a `Reveal`, which is
+ * `once: true` and never hears about a departure, so it can only drive an
+ * element *into* view. The pause is the other direction and the resume is the
+ * bug that matters, so both are needed here — as is the target each observer
+ * was pointed at, which is the difference between watching the section and
+ * watching `AmbientScope`'s own marker.
+ */
+type AmbientObserver = {
+  /** How many `new IntersectionObserver(…)` since the stub went in (INV-05.9). */
+  count: () => number;
+  /** Every element currently observed, across every instance. */
+  targets: () => Element[];
+  /**
+   * Deliver one callback for a target. Several states deliver several records
+   * in that one callback, oldest first — which is what a real observer does
+   * when an element crosses the edge twice between frames.
+   */
+  report: (element: Element, ...states: readonly boolean[]) => void;
+};
+
+function installObserverStub(): AmbientObserver {
+  const owners = new Map<Element, StubObserver>();
+  const original = globalThis.IntersectionObserver;
+  let constructed = 0;
+
+  class StubObserver {
+    readonly callback: IntersectionObserverCallback;
+    readonly elements = new Set<Element>();
+
+    constructor(callback: IntersectionObserverCallback) {
+      this.callback = callback;
+      constructed += 1;
+    }
+
+    observe(element: Element): void {
+      this.elements.add(element);
+      owners.set(element, this);
+    }
+
+    unobserve(element: Element): void {
+      this.elements.delete(element);
+      owners.delete(element);
+    }
+
+    disconnect(): void {
+      for (const element of this.elements) owners.delete(element);
+      this.elements.clear();
+    }
+
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+
+  globalThis.IntersectionObserver = StubObserver as unknown as typeof IntersectionObserver;
+  onTestFinished(() => {
+    globalThis.IntersectionObserver = original;
+  });
+
+  return {
+    count: () => constructed,
+    targets: () => [...owners.keys()],
+    report: (element, ...states) => {
+      const observer = owners.get(element);
+      if (observer === undefined) throw new Error("report: the element is not being observed");
+      const entries = states.map(
+        (isIntersecting) => ({ target: element, isIntersecting }) as IntersectionObserverEntry,
+      );
+      act(() => {
+        observer.callback(entries, observer as unknown as IntersectionObserver);
+      });
+    },
+  };
 }
 
 /** `animation-*`, as jsdom computes it for the `.loop` under `selector`. */
@@ -174,12 +258,11 @@ describe("the acceptance clauses", () => {
    * misses the markup, or a `.loop` that turned out not to be animating in the
    * first place all fail here — which the regex this replaced did not.
    *
-   * What no test can assert yet is the *trigger*. The attribute is set by
-   * `AmbientScope`, the single `useInView` 05 §5.4 asks for; 04 §3.3 places that
-   * component and no Phase 4 row builds it, which `ambient.css` §3 says in its
-   * own words. Nothing in the shipping site sets `data-ambient` at all. So
-   * "off-screen" is deliberately not in the name below: green here means the
-   * CSS half is correct and waiting, not that a loop has ever stopped.
+   * It asserts the *rule*, and nothing about what moves the attribute: the
+   * test sets it by hand. "Off-screen" is therefore still absent from the name
+   * — the trigger is `AmbientScope` and it has a describe of its own below,
+   * which drives an observer instead. Keeping the two apart is what says which
+   * half broke when one of them goes red.
    */
   it("pauses a loop whose scope is marked paused, and only that scope (D-05.7)", () => {
     installAmbientStylesheet();
@@ -208,6 +291,134 @@ describe("the acceptance clauses", () => {
 
     scope?.removeAttribute("data-ambient");
     expect(loopStyle(container, "#scope").animationPlayState).toBe("running");
+  });
+});
+
+/* -------------------------------------------------------------------------- *
+ * AmbientScope — the trigger the rule above waits for
+ * -------------------------------------------------------------------------- */
+
+/** The `h1` id `Section` points `aria-labelledby` at (INV-04.8). */
+const HERO_TITLE_ID = "hero-title";
+
+/**
+ * The hero, as `HeroSection` composes it: a real `Section`, a looping `Leaf`
+ * in its `decor`, and the scope beside them. Nothing is mocked between the
+ * observer and the computed style.
+ *
+ * `scoped` is how the mobile-only case is expressed — 04 §3.3 mounts a scope on
+ * `PhilosophySection` at one breakpoint and not the other, so the scope can go
+ * away while its section stays.
+ */
+function HeroLikeSection({ scoped }: { scoped: boolean }) {
+  return (
+    <Section
+      id="hero"
+      labelledBy={HERO_TITLE_ID}
+      decor={
+        <>
+          {scoped ? <AmbientScope /> : null}
+          <Leaf id="deco-hero-leaf-1" size={40} tint="hero-1" />
+        </>
+      }
+    >
+      <h1 id={HERO_TITLE_ID}>hero</h1>
+    </Section>
+  );
+}
+
+describe("AmbientScope, the trigger (D-05.7)", () => {
+  function renderHero(scoped = true) {
+    installAmbientStylesheet();
+    const observer = installObserverStub();
+    const view = renderDecor(<HeroLikeSection scoped={scoped} />);
+    const section = view.container.querySelector<HTMLElement>("#hero");
+    if (section === null) throw new Error("no #hero section");
+    return { ...view, observer, section };
+  }
+
+  it("pauses the section's loops when it leaves the viewport, and resumes them", () => {
+    const { container, observer, section } = renderHero();
+
+    // Running until the observer says otherwise: the attribute is absent, not
+    // set to some third value, so a section is never paused before its first
+    // callback.
+    expect(section.hasAttribute("data-ambient")).toBe(false);
+    expect(loopStyle(container, "#hero").animationName).toBe("gpfloat");
+    expect(loopStyle(container, "#hero").animationPlayState).toBe("running");
+
+    observer.report(section, false);
+
+    expect(section.getAttribute("data-ambient")).toBe("paused");
+    expect(loopStyle(container, "#hero").animationPlayState).toBe("paused");
+
+    observer.report(section, true);
+
+    expect(section.hasAttribute("data-ambient")).toBe(false);
+    expect(loopStyle(container, "#hero").animationPlayState).toBe("running");
+  });
+
+  it("builds one observer, and points it at the section rather than its own marker", () => {
+    const { observer, section } = renderHero();
+
+    // INV-05.9 counts observers, and this is the one 08 §5's `@motion-obs`
+    // expects beside the frozen reveal pool.
+    expect(observer.count()).toBe(1);
+    // A zero-size marker crosses the viewport edge at a different moment than
+    // the section it stands in for, so watching it would pause at the wrong
+    // scroll position — and watching it while the *section* carries the
+    // attribute is a bug no computed style would reveal.
+    expect(observer.targets()).toEqual([section]);
+  });
+
+  it("takes the newest record in a batch, not any record in it", () => {
+    const { container, observer, section } = renderHero();
+
+    // One callback, two crossings: in, then out. The section is off screen at
+    // the end of it, so it pauses. Asking whether *any* record intersected
+    // reads this batch as "still visible" and leaves a departed hero running.
+    observer.report(section, true, false);
+
+    expect(section.getAttribute("data-ambient")).toBe("paused");
+    expect(loopStyle(container, "#hero").animationPlayState).toBe("paused");
+  });
+
+  it("leaves no section paused behind it when the scope unmounts", () => {
+    const { container, observer, section, rerender } = renderHero();
+
+    observer.report(section, false);
+    expect(loopStyle(container, "#hero").animationPlayState).toBe("paused");
+
+    rerender(
+      <MotionProvider>
+        <HeroLikeSection scoped={false} />
+      </MotionProvider>,
+    );
+
+    // The section outlives the scope, which is what 04 §3.3's philosophy leaf
+    // does at the `md` boundary. A loop frozen by a component that is gone
+    // could never start again.
+    expect(section.hasAttribute("data-ambient")).toBe(false);
+    expect(loopStyle(container, "#hero").animationPlayState).toBe("running");
+  });
+
+  it("observes nothing at all outside a section, rather than pausing the page", () => {
+    installAmbientStylesheet();
+    const observer = installObserverStub();
+
+    const { container } = renderDecor(
+      <>
+        <AmbientScope />
+        <Leaf id="deco-hero-leaf-1" size={40} tint="hero-1" />
+      </>,
+    );
+
+    // `[data-ambient="paused"]` is a descendant combinator, so a scope that
+    // resolved to `body` would stop every loop on the page at once. Finding no
+    // `[data-section]` is the one case where doing nothing is the answer.
+    expect(observer.count()).toBe(0);
+    expect(container.querySelector("[data-ambient]")).toBeNull();
+    expect(loopStyle(container, "div").animationPlayState).toBe("running");
   });
 });
 
