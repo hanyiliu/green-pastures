@@ -4,3 +4,15 @@
 .beads/interactions.jsonl merge=union
 # Projection of the bd graph: never text-merged — on conflict regenerate with `bd export`.
 .beads/issues.jsonl merge=binary
+
+# Visual-regression baselines — see docs/technical/08-testing-quality.md (D-08.10, INV-08.8).
+
+# One reviewed PNG per shot. `merge=binary` is stated rather than left to git's
+# content sniffing, because it is the whole reason these may be tracked where
+# reports/content-coverage.md may not (D-08.20). That file was a derived
+# aggregate in one text file, so two branches each adding one key both wrote the
+# same new total and git merged them to a number that was wrong. A screenshot is
+# neither aggregate nor shared: disjoint shots merge cleanly, the same shot
+# conflicts loudly, and the conflict is resolved by regenerating in the
+# Playwright container and looking at the picture.
+tests/e2e/__screenshots__/**/*.png merge=binary -diff
