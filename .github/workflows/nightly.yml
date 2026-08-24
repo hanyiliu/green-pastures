@@ -1,0 +1,249 @@
+# The cross-engine end-to-end run — docs/technical/08-testing-quality.md §10
+# (the `e2e-full` row: all four Playwright projects, `retries: 0`, 40 min,
+# report artifact, advisory) and 10 §3's PR-5.11 / D-10.15 (b)–(c) (why the row
+# is Phase 5, and why `workflow_dispatch` is the live trigger).
+#
+# Its own workflow instead of a job inside `ci.yml`, because `workflow_dispatch`
+# and `schedule` are `on:` blocks `ci.yml` does not have and 10 §7 gives every
+# workflow file one owning PR. Nothing here edits `ci.yml`, and `e2e` on pull
+# requests is untouched — same two projects, same two shards, same wall time.
+#
+# **What this workflow is for.** 08 §12.2 asks, from the Phase 5 gate onward,
+# for one green four-project run against the tip of `main` at gate time, with
+# its run URL on the gate bead. That is four gates plus the release SHA, not a
+# nightly — at ≈ 35–40 runner-minutes a run neither a true nightly (≈ 1,140
+# min/month) nor `push: main` (≈ 1,250–1,900) fits inside the 2,000 free
+# minutes a private repository gets, and the PR pipeline alone already spends
+# ≈ 1,200–1,900 of them (08 §10, OQ-08.3). So the dispatch *is* the trigger, and
+# the two triggers that do not fit are written below and guarded off at job
+# level, so turning the nightly on when OQ-08.3 closes is a settings flip rather
+# than a second pull request (D-10.15 (c)).
+#
+# **Advisory, and it must stay advisory.** INV-08.2 fixes the required checks on
+# `main` at exactly six — `static`, `content`, `unit`, `build`, `e2e-ok`,
+# `bead-trailer` — and only the human changes that set (INV-11.5). No job below
+# declares a `name:`, so the check GitHub reports is the job id verbatim
+# (D-08.19), and that id is `e2e-full`, which is none of the six. The single job
+# is *deliberately* not called `build`: a second check named `build` on the same
+# SHA, from a second workflow, would shadow one of the six by name.
+name: nightly
+
+on:
+  # The live trigger (D-10.15 (c)). The orchestrator dispatches this against the
+  # tip of `main` when it opens a phase-gate bead, and pastes the run URL onto
+  # that bead — which is what makes 08 §12.2's clause checkable rather than
+  # asserted.
+  workflow_dispatch:
+
+  # Written, and guarded off at job level. Two standing facts about `schedule`
+  # that this file cannot change: a scheduled run always uses the workflow file
+  # on the default branch, and GitHub disables the schedule after 60 days with
+  # no repository activity. Off the hour on purpose — GitHub queues cron runs
+  # and the top of an hour is its most congested slot — and hours clear of
+  # `audit.yml`'s Monday 07:17 UTC slot. 09:41 UTC is ≈ 02:41 in the daycare's
+  # own timezone, which is when a 40-minute run costs the least attention.
+  schedule:
+    - cron: "41 9 * * *"
+
+  # Written, and guarded off at job level. Note what "guarded" buys: the
+  # workflow is still *triggered* on every push to `main`, but a job whose `if:`
+  # is false is skipped without a runner being allocated, so a guarded-off run
+  # bills no runner minutes.
+  push:
+    branches: [main]
+
+# INV-08.7: a run gets no secrets beyond `GITHUB_TOKEN`. Playwright's own
+# environment — the Turnstile test pair, the log transport — is supplied by
+# `playwright.config.ts`'s `webServer.env`, and no real key ever reaches it.
+#
+# `contents: read` is also how "a failure opens a bead, never an auto-issue"
+# (08 §10) is enforced rather than merely intended: without `issues: write` the
+# token *cannot* file an issue, so no future step can quietly start doing it.
+permissions:
+  contents: read
+
+# Not `cancel-in-progress: true`. `ci.yml` cancels superseded PR runs because a
+# newer commit makes the older answer worthless; here the opposite holds — a
+# merge landing while the orchestrator's gate run is in flight must not cancel
+# the run whose URL is going on the gate bead. Same group, so two runs queue
+# instead of paying for two 40-minute matrices at once.
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # 08 §10 `e2e-full` · 40 min · advisory.
+  e2e-full:
+    # The guard of D-10.15 (c): `workflow_dispatch` always runs; `schedule` and
+    # `push` run only when the repository variable is explicitly on.
+    #
+    # **The comparison is load-bearing and the obvious spelling is a trap.**
+    # `vars.*` are always *strings*, and GitHub coerces every non-falsy string
+    # to `true` in a conditional — its falsy set is `false`, `0`, `-0`, `""`,
+    # `''` and `null`, the boolean and the empty string, never the four
+    # characters `f`,`a`,`l`,`s`,`e` [verified: github/docs
+    # `content/actions/reference/workflows-and-actions/expressions.md`,
+    # "Note that in conditionals, falsy values … are coerced to false"]. So
+    # `if: ${{ vars.NIGHTLY_E2E_FULL }}` would be off while the variable is
+    # *unset* and could never be turned off again once anyone set it to
+    # `false` — a guard that reads as reversible and is not. Writing the
+    # comparison out makes "flipping it on once and off again", which PR-5.11's
+    # own verification asks for, actually return the job to off. String
+    # comparison ignores case, so `TRUE` and `True` also turn it on.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      vars.NIGHTLY_E2E_FULL == 'true'
+    runs-on: ubuntu-latest
+
+    # The same image and the same tag as `ci.yml`'s `e2e` job (08 §10, D-08.10):
+    # browsers and their OS dependencies ship in it, so there is no
+    # `install-deps` step and no browser cache, and its fonts are the ones the
+    # `@visual` baselines were taken in. The tag tracks `@playwright/test` in
+    # `package.json` — Renovate bumps both in one pull request, and a mismatch
+    # is a startup error rather than a silent skew.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+    timeout-minutes: 40
+
+    # The one switch that turns two projects into four.
+    # `playwright.config.ts` reads it at config load, so it has to be on the
+    # environment of every `playwright` invocation in this job — which is why it
+    # is declared here rather than on a single step.
+    env:
+      E2E_FULL: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The order is load-bearing, not stylistic: `setup-node`'s `cache: pnpm`
+      # resolves the store by shelling out to `pnpm store path`, so it fails
+      # outright unless pnpm is already on PATH (08 §10). `pnpm/action-setup`
+      # takes its version from `packageManager`; `setup-node` takes Node from
+      # `.nvmrc` (= 24). Third-party actions are pinned to a commit SHA and
+      # `actions/*` to a major (08 §10 conventions).
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # **Why this job builds instead of downloading `ci.yml`'s artifact.**
+      # 08 §10's `Needs` cell for this row reads `build`, and `needs:` does not
+      # reach across workflow files — nor would the artifact if it did. The
+      # `next-build` artifact carries `retention-days: 1`, so a gate dispatched
+      # a day after the merge would find nothing, and on `push: main` this
+      # workflow and `ci.yml` start together, so the download would race the
+      # upload. Building here instead makes the run reproducible from the SHA
+      # alone, which is exactly what §12.2 asks for ("green on the gate's `main`
+      # SHA"), at ≈ 6 minutes on a 40-minute budget.
+      #
+      # `cache/restore`, never `cache`: this job reads the key `ci.yml`'s
+      # required `build` job writes and never writes it back, so an advisory
+      # workflow can not poison the cache of a required one. A miss is not an
+      # error (`fail-on-cache-miss` defaults false) — it costs a cold compile.
+      - uses: actions/cache/restore@v6
+        with:
+          path: .next/cache
+          key: >-
+            next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{
+            hashFiles('src/**', 'content/**', 'public/**') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: next build
+        run: pnpm run build
+
+      # **The guard that makes this workflow able to fail for the right reason.**
+      #
+      # Everything below it is a Playwright run, and a Playwright run that
+      # quietly executed two projects instead of four would be *green*: the two
+      # extra projects are added by `playwright.config.ts` only when
+      # `E2E_FULL === "1"`, and a lost environment variable, a renamed switch or
+      # a `grepInvert` widened to swallow them all look identical from the
+      # outside — a passing run that measured half of what it claims. The whole
+      # content of `e2e-full` is those two projects (D-08.7), so that failure
+      # mode is not a corner case, it is the only thing this job is for.
+      #
+      # So the matrix is checked before it is trusted, by listing the suite
+      # twice — once under this job's environment, once with `E2E_FULL` cleared
+      # — and asserting that the difference is exactly two projects and that
+      # each of them carries tests. Deriving the two rather than naming them
+      # keeps the check honest if D-08.7's project set is ever re-cut; asserting
+      # a test count keeps a project that exists but lists nothing from passing
+      # as one that ran.
+      - name: assert the full matrix is live
+        run: |
+          set -euo pipefail
+          pnpm exec playwright test --list --reporter=json > "$RUNNER_TEMP/full.json"
+          E2E_FULL= pnpm exec playwright test --list --reporter=json > "$RUNNER_TEMP/pr.json"
+          node - "$RUNNER_TEMP/full.json" "$RUNNER_TEMP/pr.json" <<'NODE'
+          const { readFileSync } = require("node:fs");
+          const [full, pr] = process.argv.slice(2).map((p) => JSON.parse(readFileSync(p, "utf8")));
+          const names = (report) => new Set(report.config.projects.map((p) => p.name));
+          const counts = (report) => {
+            const seen = {};
+            const walk = (suite) => {
+              for (const spec of suite.specs ?? [])
+                for (const t of spec.tests ?? []) seen[t.projectName] = (seen[t.projectName] ?? 0) + 1;
+              for (const child of suite.suites ?? []) walk(child);
+            };
+            for (const suite of report.suites ?? []) walk(suite);
+            return seen;
+          };
+          const prNames = names(pr);
+          const extra = [...names(full)].filter((n) => !prNames.has(n));
+          const perProject = counts(full);
+          let failed = false;
+          const fail = (message) => { failed = true; console.log(`::error::${message}`); };
+          if (extra.length !== 2)
+            fail(`E2E_FULL=1 added ${extra.length} projects, expected the 2 of D-08.7: [${extra}]`);
+          for (const name of extra)
+            if (!(perProject[name] > 0))
+              fail(`project ${name} is configured but lists 0 tests — that run would measure nothing`);
+          console.log(`projects added by E2E_FULL=1: ${extra.join(", ") || "(none)"}`);
+          console.log(`tests listed per project: ${JSON.stringify(perProject)}`);
+          if (failed) process.exit(1);
+          NODE
+
+      # `playwright.config.ts` starts the server itself (`pnpm start`) against
+      # the build above and supplies the test-key environment of INV-08.7. Not
+      # `pnpm test:e2e`: that script bakes in `--grep-invert @visual` for macOS
+      # hosts, and this container is one of the two places `@visual` may run.
+      # No `--shard`: 08 §10 budgets this row at 40 minutes as one job.
+      # `retries: 0` comes from the config (D-08.13) and is not overridden here
+      # — a red project gets a fix, never a re-run to green.
+      - name: playwright
+        run: pnpm exec playwright test
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-full
+          path: |
+            playwright-report
+            blob-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # 08 §10: "failure opens a bead via the orchestrator (no auto-issue)".
+      # This step files nothing — it cannot, on `contents: read` — it writes the
+      # instruction where whoever opened the run will read it. It never changes
+      # the job's conclusion: the `playwright` step above has already failed,
+      # and this one exits 0.
+      - name: say what a red run owes
+        if: failure()
+        run: |
+          set -euo pipefail
+          {
+            echo "## \`e2e-full\` is red"
+            echo
+            echo "Open a bead for it (11 §5) and link this run. Do **not** re-run it to green:"
+            echo "D-08.13 gives a failing check a fix or a \`@flaky-known\` tag naming an open bead,"
+            echo "and this workflow opens no issue of its own."
+            echo
+            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "Commit: \`${GITHUB_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
