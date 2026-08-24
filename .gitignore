@@ -41,6 +41,11 @@ reports/content-coverage.md
 .env*.local
 !.env.example
 
+# Lighthouse CI output (PR-8.5). `lhci autorun` writes the collected runs and
+# the rendered reports here; the Lighthouse jobs upload the directory as an
+# artifact and nothing about it belongs in the repository.
+.lighthouseci/
+
 # Vercel
 .vercel
 

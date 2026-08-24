@@ -12,8 +12,16 @@
 # which is why the name was withheld until now: **the human adds `content` to
 # the ruleset's required list when this PR merges.**
 #
-# Later PRs ADD jobs to this file and never edit an existing one (10 §7):
-# PR-3.4 the `content` job, PR-8.5 the perf-budget/Lighthouse job. Three named
+# Later PRs ADD jobs to this file and never edit an existing one (10 §10):
+# PR-3.4 the `content` job, PR-8.5 the `budget` job. Both have landed. PR-8.5's
+# other half — `lighthouse-preview` and `lighthouse-prod` — is **not** here and
+# could not be: both fire on `deployment_status`, an `on:` trigger this file
+# does not have, and adding one would start `static`, `content`, `unit`, `build`
+# and `e2e` on every deployment event unless each grew an `if:` guard — five
+# edits to existing jobs, taken to avoid one new file. They live in
+# `lighthouse.yml` instead, for the reason D-10.15 gives for `audit.yml` and
+# `nightly.yml`: a workflow with its own trigger is its own file, and a
+# single-owner file needs no serialisation rule at all. Three named
 # exceptions, each confined to one step and serialised by phase: the
 # `--warn-locale` flags on `content` (10's own carve-out); `static`'s
 # `check:todo` step, whose inlined body became a call to the script that now
@@ -23,7 +31,8 @@
 # choice and the alternative it beat. `gp-dln.224`'s own gate is **appended**,
 # not an edit: `check:coverage-report` is the job's last step.
 #
-# Every step here runs a script that exists in `package.json` today. The steps
+# Every step here runs a script that exists in `package.json` today, `budget`'s
+# `check:budget` included. The steps
 # 08 §10's `static` row also names — `check:tokens` (PR-4.x), `check:env`, the
 # `@flaky-known` tag lint (D-08.13) and the dependency allowlist — are
 # deliberately absent: their scripts do not exist yet, and a job calling a
@@ -337,3 +346,50 @@ jobs:
             echo "::error::e2e did not succeed (result: $result)"
             exit 1
           fi
+
+  # 08 §10 `budget` · 10 min · advisory (not one of D-08.12's six required
+  # names; a human adds it to the ruleset when the site is inside 08 §7's
+  # transfer budget and the job can be relied on to be green).
+  #
+  # This is PR-8.5's job, and it is the **addition** 10 §10's rule asks for: a
+  # new job, no edit to an existing one. It is deliberately not a step inside
+  # `build` even though it reads `build`'s output — a step there would be the
+  # edit the rule forbids, and the artifact download costs seconds.
+  #
+  # What it does *not* do is assert transfer sizes. 08 §7 settles that: "bundle
+  # weight is measured where it is real — the preview's transfer sizes — not
+  # re-implemented locally". Those assertions are `lighthouserc.cjs`'s, run by
+  # `lighthouse.yml` against a deployment. This job takes the half a build
+  # directory can decide on its own — font bytes, image bytes and names,
+  # third-party origins, and first-load growth against a recorded ceiling — and
+  # prints Next's per-route first-load table into the job summary, which is the
+  # "route summary into the job summary" 08 §7 asks for.
+  #
+  # One script, two callers (INV-08.6): `pnpm verify` runs the same
+  # `pnpm run check:budget` after its own `pnpm build`, so a seat finds a budget
+  # failure on their own machine rather than here.
+  budget:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # The same artifact `e2e` serves (D-08.7), read rather than served: the
+      # per-route first-load figures are Next's own, in
+      # `.next/diagnostics/route-bundle-stats.json`, and the font, image and
+      # third-party checks read the prerendered home pages under
+      # `.next/server/app/`.
+      - uses: actions/download-artifact@v8
+        with:
+          name: next-build
+          path: .next
+
+      - name: check:budget
+        run: pnpm run check:budget

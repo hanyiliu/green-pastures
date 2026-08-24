@@ -675,8 +675,47 @@ KiB) [verified: LHCI assertion docs, 2026-08-22], so they read `resource-summary
 Image policy is lint + Lighthouse: `@next/next/no-img-element`, `next/image` with `width/height` from
 `site.json`, hero `priority`, everything else lazy. Upload target `filesystem` → artifact + job summary (no
 `temporary-public-storage`: reports would be public). Bundle weight is measured where it is real — the
-preview's transfer sizes — not re-implemented locally; `build` prints Next's route summary into the job
-summary for eyeballing. Field vitals (INP, p75) are read in Speed Insights after launch (09; OQ-01.1).
+preview's transfer sizes — not re-implemented locally; the route summary goes into the job summary for
+eyeballing. Field vitals (INP, p75) are read in Speed Insights after launch (09; OQ-01.1).
+
+**The half a build directory can decide, and the half it cannot** (PR-8.5). The paragraph above draws the
+line and `scripts/ci/build-budget.ts` sits on the near side of it. Four of the numbers on this page do not
+need a CDN to be true, because the asset is already compressed or the thing being counted is not bytes at
+all: `resource-summary:font:size` (`woff2` on disk **is** `woff2` on the wire), `resource-summary:image:size`
+and 09 §4.9's 400 KB-per-file rule (same argument for JPEG/WebP/PNG), and
+`resource-summary:third-party:count`, which is a count of origins in the emitted HTML. Those four are
+asserted by `pnpm check:budget` on every pull request, against the same constants `lighthouserc.cjs` sends to
+Lighthouse, so a regression is caught at the pull request rather than at the next deployment. The transfer
+budgets — `resource-summary:script:size`, the three Core Web Vitals and the four category scores — are **not**
+re-implemented there; `check:budget` prints the measured gzip figure beside `184320` and leaves the assertion
+to `lighthouse-preview`. What it adds on its own account is a **first-load ratchet**: Next writes
+`firstLoadUncompressedJsBytes` per route into `.next/diagnostics/route-bundle-stats.json`, the script holds a
+whole-KiB ceiling per route, and growth past it reds the job. That number is a baseline in D-08.20's sense —
+an expectation a human reviews when it moves, like `reports/section-heights.json` — not a budget, and the
+file says so in as many words. The route table it prints into `$GITHUB_STEP_SUMMARY` is the route summary
+this section asks for; it is in `budget` rather than `build` because 10 §10's `ci.yml` rule makes additions
+new jobs and never edits to an existing one, and a step inside `build` would have been the edit.
+
+**Measured on 2026-08-24 against `origin/main` at 947bdf6, and the site does not meet this section yet.**
+Recorded here because a budget nobody has stated today's number against is a guess, and left alone rather
+than adjusted to fit. Home first-load JS is **968,434 bytes** uncompressed / 279,819 gzip / **239,705
+brotli-11**, so `resource-summary:script:size` is over `184320` by ≈ 55 KB even read at brotli's most
+favourable setting; Lighthouse's own figure against a local `next start`, which serves gzip, is 302,462.
+The same run (mobile preset, `lighthouserc.cjs`'s own preview matrix) put `/en` at
+`categories:performance` **0.81** against `≥ 0.90`, `largest-contentful-paint` **4,081 ms** against
+`≤ 2500`, and `total-blocking-time` **272 ms** against `≤ 200`. Those three are one finding with one cause:
+the client graph is about 55 KB of transfer too heavy, and the parse cost of it is the blocking time.
+
+What is already inside its budget: `cumulative-layout-shift` is **0** against `≤ 0.05`; fonts are **68,856
+bytes** in two preloaded `woff2` against `122880` — the "Fredoka 2 + Nunito 3 latin subsets" arithmetic
+predates both faces shipping as single variable files, so the real figure is a little over half the budget;
+third-party count is **0** against `≤ 3`; and `unsized-images`, `modern-image-formats`,
+`uses-responsive-images` and `offscreen-images` all pass, on a site that has no photography in it yet.
+`categories:accessibility` medians **0.97** against `= 1`, which is PR-8.4's row and not this one's.
+
+None of those numbers moved a threshold on this page. They are the distance PR-8.3's LCP work and the
+Phase 8 gate have to close, and `lighthouse-preview` is advisory precisely so the distance is visible on
+every preview without blocking a merge.
 
 ### 8 · Visual regression
 
@@ -818,8 +857,9 @@ rewrote that sentence in the past tense on the day it landed. The `Built?` colum
 | `e2e` | yes | PR, push | `build` | **`container: mcr.microsoft.com/playwright:v<version>-noble`** — browsers and their OS deps ship in the image, so no `install-deps` and no browser cache, and the fonts match the `@visual` baselines exactly (D-08.10); on a bare runner the font set differs and every CJK/emoji screenshot would diff forever · download `next-build` · `pnpm/action-setup` + `setup-node` · `playwright test --shard` (PR: 2 projects; push `main`: same) | 25 min | `playwright-report/`, `blob-report/`, `test-results/`; `section-heights.json` and screenshot diffs once `@perf` and `@visual` exist | via `e2e-ok` |
 | `e2e-ok` | yes | — | `e2e` | `if: always()` — fails unless every shard succeeded (single name for branch protection) | 2 min | — | **yes** |
 | `bead-trailer` | yes | PR (opened, synchronize, reopened, edited) | — | `scripts/ci/bead-trailer.sh origin/$base $head` with `PR_BODY`, `jq` (11 §6). Its own workflow, `bead-trailer.yml` | — (no `timeout-minutes`) | — | yes |
-| `lighthouse-preview` | **no** · PR-8.5 | `deployment_status` (state `success`, preview environment) | — | `lhci autorun --collect.url=$URL/en …` · `@smoke` + `@form` subset against `$URL` (with `x-vercel-protection-bypass` — previews are protected, 09 D-09.4) · check-run on `github.event.deployment.sha` via `actions/github-script` · summary | 15 min | `lhci/` | advisory |
-| `lighthouse-prod` | **no** · PR-8.5 | `deployment_status` (state `success`, production environment) · `workflow_dispatch` | — | `validate:content --release` (R1–R4 + locale completeness, §3) · full LHCI matrix, 42 collections at three locales · the `@seo` and `@headers` tags (§5) against the production base URL — sitemap/`hreflang`/canonical/robots and the 06/09 header set. Both tags live in `e2e/routes*` (PR-6.10, whose own assertions and PR-6.11's headers are the substance), so this job re-runs an existing spec against a different base URL and needs no spec file of its own | **60 min** (was 40; §7's re-cut matrix still needs the headroom at three locales) | `lhci/` | launch gate (§12.3) |
+| `lighthouse-preview` | **partly** · `lighthouse.yml` | `deployment_status` (state `success`, preview environment) · `workflow_dispatch` | — | `lhci autorun --collect.url=$URL/en …` · `@smoke` + `@form` subset against `$URL` (with `x-vercel-protection-bypass` — previews are protected, 09 D-09.4) · check-run on `github.event.deployment.sha` via `actions/github-script` · summary | 15 min | `lhci/` | advisory |
+| `lighthouse-prod` | **partly** · `lighthouse.yml` | `deployment_status` (state `success`, production environment) · `workflow_dispatch` | — | `validate:content --release` (R1–R4 + locale completeness, §3) · full LHCI matrix, 42 collections at three locales · the `@seo` and `@headers` tags (§5) against the production base URL — sitemap/`hreflang`/canonical/robots and the 06/09 header set. Both tags live in `e2e/routes*` (PR-6.10, whose own assertions and PR-6.11's headers are the substance), so this job re-runs an existing spec against a different base URL and needs no spec file of its own | **60 min** (was 40; §7's re-cut matrix still needs the headroom at three locales) | `lhci/` | launch gate (§12.3) |
+| `budget` | yes · PR-8.5 | PR, push | `build` | download `next-build` · `pnpm check:budget` (`scripts/ci/build-budget.ts`) — 08 §7's font, image and third-party byte counts, 09 §4.9's per-file image rule, and the first-load ratchet; writes the route table into the job summary. Advisory: it is none of D-08.12's six. Green today — every budget it asserts is met; the one this page names that is *not* met, `resource-summary:script:size`, is `lighthouse-preview`'s to assert and §7 records the measurement | 10 min | job summary | advisory |
 | `e2e-full` | yes · PR-5.11, in `nightly.yml` | `workflow_dispatch` (the live trigger — the orchestrator dispatches it when it opens a gate bead) · `push` `main` and nightly `schedule` written but job-level guarded on a repository variable defaulting to **off** until OQ-08.3 closes, because neither fits the free tier as costed (D-10.15 (c)) | `build` | same `container:` as `e2e`; all 4 projects (`playwright.config.ts` already switches them on `E2E_FULL=1`, so the config half is done and only the workflow is missing), `retries: 0`; failure opens a bead via the orchestrator (no auto-issue) | 40 min | report | advisory |
 | `audit` | **no** · PR-2.10 | PR · weekly `schedule` | — | `pnpm audit --prod --audit-level=high` · `gitleaks` (PR diff) [gitleaks-action licence for orgs — assumed free for a personal repo] | 10 min | — | advisory |
 
@@ -831,6 +871,42 @@ trigger `ci.yml` has no `on:` block for, and each flips its own `Built?` cell ab
 pass. `lighthouse-preview` and `lighthouse-prod` were never the gap — PR-8.5 has named them, with the
 workflow file, `lighthouserc*` and the `package.json` line that adds `@lhci/cli` — but they are Phase 8, which
 is why §12.2's Lighthouse clause is now scoped too.
+
+**PR-8.5 has landed, in two files rather than one, and the second is owed a line in 10.** The `budget` row
+above is an *addition* to `ci.yml`, exactly as 10 §10's rule requires. The two Lighthouse rows are not, and
+could not be: both fire on `deployment_status`, an `on:` trigger `ci.yml` does not have, and adding it there
+would start `static`, `content`, `unit`, `build` and `e2e` on every deployment event unless all five grew an
+`if:` guard — five edits to existing jobs, taken to avoid one new file. That is the shape D-10.15 already
+settled for `audit.yml` and `nightly.yml` ("each carries a `schedule`/`workflow_dispatch` trigger `ci.yml`
+does not have, and a single-owner file needs no serialisation rule at all"), so the rows live in
+`.github/workflows/lighthouse.yml`. **10 §10 is owed the matching entry** — its lane table lists one owning
+pull request per workflow file and names four; there are five, and the fifth is `lighthouse.yml` PR-8.5.
+That file is another lane's and out of this pull request's set, so the pointer is here rather than the edit
+there — the same move this section made when it asked 10 for the `check:todo` line.
+
+Both Lighthouse rows read `partly` rather than `yes` and each names what is missing. `lighthouse-preview`
+lacks the `@smoke` + `@form` subset the row specifies: `e2e/form*` belongs to another lane, D-08.7 points the
+whole end-to-end suite at a local production build rather than a preview, and a `@form` run against a live
+preview posts real inquiries — the step arrives with the pull request that reconciles those three facts.
+`lighthouse-prod` lacks the `@seo` and `@headers` tags run against the production base URL, whose specs are
+PR-6.10's and PR-6.11's.
+
+**What the first run taught, and it was not what PR-8.5 expected.** A Vercel project *is* connected and
+previews deploy, so `lighthouse-preview` fired on the pull request that wrote it — GitHub ran the workflow
+from the deployment's own ref rather than from `main` — and `lighthouse-prod` skipped, which is the
+`production_environment` discriminator working. Two defects came out of that run and neither would have been
+visible from reading the file. The artifact upload found nothing: `.lighthouseci` is a dot-directory and
+`actions/upload-artifact` skips hidden files unless `include-hidden-files: true`, the same trap this section
+already documents for `.next` in the `build` row — and `if-no-files-found: error` is the only reason it
+surfaced rather than leaving an empty artifact behind a green tick, which is the property `gp-dln.224` argued
+for on a different job. Second and worse: `VERCEL_AUTOMATION_BYPASS_SECRET` is not provisioned (OPS-2.1,
+OQ-08.4), so the collector followed Vercel's protection redirect and measured `vercel.com/login`, then
+reported `categories:performance 0.39` and `resource-summary:script:size 1373281` **about a page this project
+does not own**. A confident verdict about the wrong page is worse than a red one and worse than no verdict,
+and it is a fail-open of the same family as the seven this repository has catalogued — the gate looks like it
+ran. The job now runs a preflight probe of `$URL/en` and refuses to collect at all on a 401, a 403 or a
+redirect to `vercel.com/login`, naming the missing secret. Both jobs still carry a `workflow_dispatch` with
+an explicit URL, which is how a human re-runs either against a chosen deployment (09 §5.1 item 16).
 
 **What remains unscheduled is two scripts, and it is a gap in 10's tables rather than in this section.**
 `scripts/ci/bundle-secrets.sh` and `scripts/ci/env-example.ts` (D-08.11, INV-07.3): the `build` and `static`
