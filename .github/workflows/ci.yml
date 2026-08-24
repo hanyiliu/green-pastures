@@ -13,11 +13,15 @@
 # the ruleset's required list when this PR merges.**
 #
 # Later PRs ADD jobs to this file and never edit an existing one (10 §7):
-# PR-3.4 the `content` job, PR-8.5 the perf-budget/Lighthouse job. Two named
-# exceptions, both confined to one step and serialised by phase: the
-# `--warn-locale` flags on `content` (10's own carve-out) and `static`'s
+# PR-3.4 the `content` job, PR-8.5 the perf-budget/Lighthouse job. Three named
+# exceptions, each confined to one step and serialised by phase: the
+# `--warn-locale` flags on `content` (10's own carve-out); `static`'s
 # `check:todo` step, whose inlined body became a call to the script that now
-# holds it — 08 §10 records the choice and the alternative it beat.
+# holds it; and `content`'s upload step, whose `if-no-files-found` went from
+# `warn` to `error` when `gp-dln.224` made the report CI-only and that upload
+# one of the three copies rather than a convenience — 08 §10 records each
+# choice and the alternative it beat. `gp-dln.224`'s own gate is **appended**,
+# not an edit: `check:coverage-report` is the job's last step.
 #
 # Every step here runs a script that exists in `package.json` today. The steps
 # 08 §10's `static` row also names — `check:tokens` (PR-4.x), `check:env`, the
@@ -102,6 +106,16 @@ jobs:
   # never the registry. It is the one line in this file later PRs edit rather
   # than append to (10 §7): PR-3.9 adds `--warn-locale zh-Hant`, PR-8.1 removes
   # the `zh-Hans` flag and PR-8.8 the `zh-Hant` one. No other PR touches it.
+  #
+  # The report this job writes is **not in the repository** (D-08.20,
+  # `gp-dln.224`): it is a derived aggregate over all of `content/**`, a
+  # three-way merge cannot add, and two content branches that each add one `en`
+  # key merge to a total that is wrong with no conflict to warn anyone. So the
+  # three publications below — job summary, sticky comment, artifact — are the
+  # whole of it, each generated from the commit under test and none able to go
+  # stale. That makes their fail-open real: three steps that quietly do nothing
+  # when the file is absent used to add up to a green job with no report at all.
+  # The last step closes it, and it is the same script `pnpm verify` runs.
   content:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -147,12 +161,15 @@ jobs:
           header: content-coverage
           path: reports/content-coverage.md
 
+      # `error`, not `warn`: this upload is one of the report's three copies now
+      # that none is committed, and an artifact step that shrugs at an empty
+      # upload is the same fail-open the last step exists to close.
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: content-coverage
           path: reports/content-coverage.md
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
 
       - name: require validate:content to have passed
@@ -160,6 +177,18 @@ jobs:
         run: |
           echo "::error::pnpm validate:content found at least one error — see the job summary and the PR comment (08 §3)."
           exit 1
+
+      # D-08.20. Asserts the run produced a report and that the report is CI
+      # output — ignored and untracked. `if: always()` because it has to reach a
+      # verdict on a red gate too: `validate:content` writes the report either
+      # way and the step above may already have exited 1. Last, so the editor's
+      # three publications happen first and this only judges them. One script,
+      # two callers (INV-08.6) — `pnpm verify` runs the same `pnpm run
+      # check:coverage-report`, so a seat that re-commits the report finds out
+      # on their own machine rather than here.
+      - name: check:coverage-report
+        if: always()
+        run: pnpm run check:coverage-report
 
   # 08 §10 `unit` · 10 min · required.
   unit:
