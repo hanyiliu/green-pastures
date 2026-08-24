@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, TestInfo } from "@playwright/test";
 
-import { breakpoints } from "@/design/tokens";
 import type { Locale } from "@/i18n/routing";
 
 import { openSettled } from "./visual-support";
@@ -211,8 +210,6 @@ export type AxeOutcome = {
 export type AxeScope = {
   /** Restrict the scan to this selector. Omit to scan the whole document. */
   readonly include?: string;
-  /** Selectors to leave out of the scan. */
-  readonly exclude?: readonly string[];
 };
 
 type ColourData = {
@@ -225,7 +222,6 @@ type ColourData = {
 export async function runAxe(page: Page, scope: AxeScope = {}): Promise<AxeOutcome> {
   let builder = new AxeBuilder({ page }).withTags([...WCAG_TAGS]);
   if (scope.include !== undefined) builder = builder.include(scope.include);
-  for (const selector of scope.exclude ?? []) builder = builder.exclude(selector);
 
   const results = await builder.analyze();
 
@@ -431,20 +427,14 @@ export function notFoundUrlFor(locale: Locale): string {
   return `/${locale}/this-route-does-not-exist`;
 }
 
-/** The project's own viewport width, which is what "viewport" means here. */
-export function viewportWidth(page: Page): number {
-  const size = page.viewportSize();
-  if (size === null) throw new Error("The a11y suite needs a viewport to report a width for.");
-  return size.width;
-}
-
-/**
- * Is this the width at which the hamburger and its sheet exist?
+/*
+ * There is deliberately no `isViewportWide()` helper here.
  *
- * `< lg` (04 `D-04.9`), and `lg` is read from the token catalogue rather than
- * spelled here — the same import `MobileMenu` uses to decide when to close
- * itself, so the test and the component can only disagree in one file.
+ * The three tests that care which width they are at — the wide nav row, the
+ * hamburger sheet, and the reduced-motion hover row — **pin** their viewport
+ * with `test.use` instead of asking at runtime and branching. That is not a
+ * style preference: `playwright/no-skipped-test` and
+ * `playwright/no-conditional-in-test` both refuse the branch, and pinning is
+ * the better answer anyway, because it runs each of those interactions in
+ * *both* engines rather than in whichever project happens to match.
  */
-export function isSheetWidth(page: Page): boolean {
-  return viewportWidth(page) < breakpoints.lg;
-}
