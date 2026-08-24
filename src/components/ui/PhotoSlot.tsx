@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { withOverrides } from "./class-names";
+import { imageRole } from "./image-role";
 
 /**
  * The photo placeholder (03 §9, 04 §3.2, `D-04.12`).
@@ -20,8 +21,11 @@ import { withOverrides } from "./class-names";
  * colour, so INV-03.1's actual rule — no raw colour — holds.
  *
  * Accessibility (04 §3.2): with an `alt` the slot is `role="img"` and carries
- * it; without one it is `aria-hidden`. Nothing visible is rendered inside it —
- * `slotId` is data on a `data-*` attribute, never copy (INV-02.1).
+ * it; without one it is `aria-hidden`. That is the identical rule `Emoji` keeps
+ * for its glyph, so the branch itself lives once in
+ * `components/ui/image-role.tsx` and both primitives spread its answer.
+ * Nothing visible is rendered inside the slot — `slotId` is data on a `data-*`
+ * attribute, never copy (INV-02.1).
  */
 
 /**
@@ -82,15 +86,12 @@ export function PhotoSlot({
   className,
   children,
 }: PhotoSlotProps) {
-  const labelled = alt !== undefined;
   const shapeClasses = shape === "circle" ? "aspect-square rounded-full" : radiusClass(radius);
 
   return (
     <div
       data-photo-slot={slotId}
-      role={labelled ? "img" : undefined}
-      aria-label={labelled ? alt : undefined}
-      aria-hidden={labelled ? undefined : true}
+      {...imageRole(alt)}
       className={withOverrides("PhotoSlot", `block w-full ${FILL} ${shapeClasses}`, className)}
     >
       {children}

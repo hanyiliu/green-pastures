@@ -85,12 +85,20 @@ describe("PhotoSlot", () => {
     );
   });
 
+  /**
+   * Asserted on the accessibility tree, not on the attributes. `aria-hidden` is
+   * the mechanism; being unreachable is the contract, and only the second of
+   * those survives someone leaving `role="img"` dangling beside the hidden flag
+   * — the exact half-applied state this used to pass over. The DOM assertion
+   * stays for one reason: it proves the box still renders, so the absence below
+   * is a hidden element rather than no element.
+   */
   it("is hidden from the accessibility tree while it has no alt", () => {
     const { container } = render(<PhotoSlot slotId="gallery-3" />);
-    const slot = container.firstElementChild;
 
-    expect(slot).toHaveAttribute("aria-hidden", "true");
-    expect(slot).not.toHaveAttribute("role");
+    expect(container.firstElementChild).toHaveAttribute("data-photo-slot", "gallery-3");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { hidden: true })).not.toBeInTheDocument();
   });
 
   it("shows no copy of its own — the slot id is data, not words (INV-02.1)", () => {
