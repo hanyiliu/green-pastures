@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { RevealItem } from "@/components/motion/Reveal";
 import type { RevealSide } from "@/components/motion/variants";
+import { withOverrides } from "@/components/ui/class-names";
 
 import { BUBBLE_CARD } from "./layout";
 
@@ -34,7 +35,24 @@ import { BUBBLE_CARD } from "./layout";
  * reads a viewport, so there is no hydration mismatch and no shift (INV-04.4).
  * The pair lives inside this recipe rather than arriving as a caller class
  * because `display` is a property the recipe already sets, and a bare `hidden`
- * from a caller would collide with it.
+ * from a caller would collide with it — a collision {@link withOverrides} now
+ * refuses out loud, where until this file was migrated it lost in silence.
+ *
+ * ── `className` is an override, not an append ─────────────────────────────
+ *
+ * This is a real recipe — `display`, the card box, the tail radius — so the
+ * caller's classes go through 04 §3.2's contract (`components/ui/class-names`)
+ * rather than being concatenated onto the end. Tailwind v4 sorts
+ * `@layer utilities` by property, so a class written last in the attribute wins
+ * nothing: the built stylesheet decides, and against this recipe it decides for
+ * the recipe. `withOverrides` throws on a bare collision and asks for the
+ * important spelling (`bg-white!`), which wins one property at a time.
+ *
+ * `Bubble` was created after the nine primitives migrated (PR-4.2), so it never
+ * passed through that sweep and re-opened the hole on its own. Nothing rendered
+ * wrong: the one caller passes `TESTIMONIALS_MIDDLE_PUSH` — `lg:mt-7.5`, a
+ * margin no part of the recipe claims — so the change is inert on today's page
+ * and load-bearing for the next caller.
  *
  * ── No `id` prop ──────────────────────────────────────────────────────────
  *
@@ -58,7 +76,10 @@ export type BubbleProps = {
   readonly index?: number;
   /** `site.testimonials[].onMobile === false` — drawn only in the 3-column grid. */
   readonly desktopOnly?: boolean;
-  /** Extra classes on the card — the centre column's push. */
+  /**
+   * Extra classes on the card — the centre column's push. An override of a
+   * property the recipe sets must be important (`bg-white!`); a bare one throws.
+   */
   readonly className?: string;
   readonly children: ReactNode;
 };
@@ -72,7 +93,11 @@ export function Bubble({ tail, index = 0, desktopOnly = false, className, childr
       variant="bubble"
       tail={tail}
       index={index}
-      className={`${display} ${BUBBLE_CARD} ${TAIL_RADIUS[tail]}${className === undefined ? "" : ` ${className}`}`}
+      className={withOverrides(
+        "Bubble",
+        `${display} ${BUBBLE_CARD} ${TAIL_RADIUS[tail]}`,
+        className,
+      )}
     >
       {children}
     </RevealItem>

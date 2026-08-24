@@ -7,6 +7,8 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { MotionProvider } from "@/components/motion/MotionProvider";
 import { Reveal } from "@/components/motion/Reveal";
 import { resetRevealRegistry } from "@/components/motion/registry";
+import { Bubble, type BubbleProps } from "@/components/sections/testimonials/Bubble";
+import { BUBBLE_CARD, TESTIMONIALS_MIDDLE_PUSH } from "@/components/sections/testimonials/layout";
 import { ReviewsHeader } from "@/components/sections/testimonials/ReviewsHeader";
 import { renderRichText } from "@/components/sections/testimonials/SpeechBubble";
 import TestimonialsSection from "@/components/sections/testimonials/TestimonialsSection";
@@ -378,6 +380,69 @@ describe("the bubble list", () => {
 
     // The design draws three bubbles wide and two narrow (D L244, M L172).
     expect(onHome.filter((entry) => !entry.onMobile)).toHaveLength(1);
+  });
+});
+
+/* -------------------------------------------------------------------------- *
+ * The bubble's own className contract (04 §3.2)
+ * -------------------------------------------------------------------------- */
+
+/**
+ * `Bubble` sets `display`, the card box and the tail radius, so a caller class
+ * that claims one of those properties has to be marked important or it loses to
+ * the recipe wherever Tailwind's property sort puts the two rules — the failure
+ * `withOverrides` exists to make loud. `Bubble` was written after the nine
+ * primitives migrated and concatenated its caller's classes until now, so these
+ * are the checks that would have caught it.
+ *
+ * The `figure` is only here to give {@link bubble} something to find; the
+ * assertions are all on the `<li>` above it.
+ */
+function renderBubble(props: Partial<BubbleProps> = {}) {
+  return render(
+    wrap(
+      <Reveal id="bubble.contract" stagger as="ul">
+        <Bubble tail="left" {...props}>
+          <figure data-testimonial="contract" />
+        </Bubble>
+      </Reveal>,
+      routing.defaultLocale,
+      reference,
+    ),
+  );
+}
+
+describe("the card's className contract", () => {
+  it("appends the live caller's push, which claims a property the recipe leaves alone", () => {
+    renderBubble({ className: TESTIMONIALS_MIDDLE_PUSH });
+
+    // Byte for byte what the concatenation produced — `lg:mt-7.5` is a margin,
+    // and the recipe sets none, so the migration changes nothing that renders.
+    expect(bubble("contract").className).toBe(
+      `flex ${BUBBLE_CARD} rounded-bubble-l ${TESTIMONIALS_MIDDLE_PUSH}`,
+    );
+  });
+
+  it("refuses a bare `hidden` — the collision the doc comment warned about", () => {
+    expect(() => renderBubble({ className: "hidden" })).toThrow(/Bubble[\s\S]*"hidden"/u);
+  });
+
+  it("refuses a bare override of the card box and of the tail radius too", () => {
+    expect(() => renderBubble({ className: "bg-cream" })).toThrow(/"bg-white"/u);
+    expect(() => renderBubble({ className: "p-0" })).toThrow(/"p-0"/u);
+    expect(() => renderBubble({ className: "rounded-none" })).toThrow(/"rounded-bubble-l"/u);
+  });
+
+  it("keeps the surface flag's `lg:` claim separate from the base one", () => {
+    // `hidden lg:flex` claims `display` twice, once per variant, and the guard
+    // has to see both — a caller's `lg:block` is as inert as a bare `block`.
+    expect(() => renderBubble({ desktopOnly: true, className: "lg:block" })).toThrow(/"lg:flex"/u);
+  });
+
+  it("takes the important spelling, which is what actually wins the property", () => {
+    renderBubble({ className: "block!" });
+
+    expect(bubble("contract").className).toBe(`flex ${BUBBLE_CARD} rounded-bubble-l block!`);
   });
 });
 
