@@ -5,7 +5,7 @@ import { withOverrides } from "@/components/ui/class-names";
 import { getSite } from "@/content/site";
 
 import { BackLink } from "./BackLink";
-import { SECTION_IDS, sectionRoleVariables, type SectionId } from "./Section";
+import { HERO_SECTION_ID, SECTION_IDS, sectionRoleVariables, type SectionId } from "./Section";
 import { subpageTitleId, type SubpageNamespace } from "./SubpageHeader";
 
 /**
@@ -119,7 +119,20 @@ const CONTENT =
 const KICKER =
   "font-display text-(length:--subnav-kicker) font-semibold text-ink md:text-(length:--subnav-kicker-md)";
 
-function toSectionId(homeAnchor: string): SectionId {
+/**
+ * The palette of the page's origin section — or, for a **standalone** route,
+ * the site's base ground.
+ *
+ * Six of the seven routes expand a home section and wear its colours. A route
+ * with no `homeAnchor` expands nothing (`/privacy`), so there is no section to
+ * borrow from and the panel takes `hero`: 03 §2.2's first row, the cream the
+ * site opens on, with a full set of link and subhead tokens behind it. It is
+ * the only choice here that invents no colour — every other section id is
+ * already spoken for by the page that expands it.
+ */
+function toSectionId(homeAnchor: string | undefined): SectionId {
+  if (homeAnchor === undefined) return HERO_SECTION_ID;
+
   const sectionId = SECTION_IDS.find((id) => id === homeAnchor);
 
   if (sectionId === undefined) {

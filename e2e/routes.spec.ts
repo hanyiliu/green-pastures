@@ -16,6 +16,7 @@ import {
   metaProperty,
   pngDimensions,
   ROUTE_PATHS,
+  STANDALONE_ROUTES,
   parseSitemap,
   SHARE_IMAGE,
   statusOf,
@@ -84,6 +85,15 @@ test.describe("the route matrix this file asserts over", () => {
     expect(routing.locales.length, "routing.locales is empty").toBeGreaterThan(0);
     expect(DETAIL_ROUTES.length, "site.json routes[] is empty").toBeGreaterThan(0);
     expect(ROUTE_PATHS).toContain(HOME_PATH);
+
+    // A standalone route (`/privacy`) is out of the *slide* matrix, because it
+    // expands no home section — and it is emphatically **in** this one, which
+    // is about what a crawler sees. The two lists diverging silently is how a
+    // page ends up served, linked and absent from `sitemap.xml`.
+    for (const route of STANDALONE_ROUTES) {
+      expect(ROUTE_PATHS, `${route.path} is not in the crawled matrix`).toContain(route.path);
+      expect(DETAIL_ROUTES.map((detail) => detail.id)).not.toContain(route.id);
+    }
     expect(BUILT_ROUTE_PATHS.length, "no route has a page.tsx").toBeGreaterThan(0);
 
     // Every enabled locale reaches the assertions below. `/` is always built,

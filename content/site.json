@@ -51,7 +51,8 @@
     { "id": "menu", "path": "/menu", "homeAnchor": "menu" },
     { "id": "gallery", "path": "/gallery", "homeAnchor": "gallery" },
     { "id": "reviews", "path": "/reviews", "homeAnchor": "testimonials" },
-    { "id": "team", "path": "/team", "homeAnchor": "teachers" }
+    { "id": "team", "path": "/team", "homeAnchor": "teachers" },
+    { "id": "privacy", "path": "/privacy" }
   ],
   "nav": {
     "primary": [
@@ -69,7 +70,8 @@
       { "id": "gallery", "routeId": "gallery" },
       { "id": "reviews", "routeId": "reviews" },
       { "id": "team", "routeId": "team" },
-      { "id": "contact", "href": "/#visit" }
+      { "id": "contact", "href": "/#visit" },
+      { "id": "privacy", "routeId": "privacy" }
     ],
     "cta": { "href": "/#visit" }
   },
@@ -262,6 +264,14 @@
     "collections.teachers.chen.name",
     "collections.teachers.ping.credentials",
     "collections.teachers.reyes.credentials",
-    "collections.teachers.chen.credentials"
+    "collections.teachers.chen.credentials",
+    "messages.privacy.draftNotice.label",
+    "messages.privacy.draftNotice.body",
+    "messages.privacy.intro",
+    "messages.privacy.sections.collected.body",
+    "messages.privacy.sections.destination.body",
+    "messages.privacy.sections.spamCheck.body",
+    "messages.privacy.sections.hosting.body",
+    "messages.privacy.sections.asking.body"
   ]
 }

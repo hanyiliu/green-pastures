@@ -89,13 +89,15 @@ describe("getSite (02 D-02.12)", () => {
     expect(getProvisionalPaths()).toStrictEqual(siteJson.provisional);
     // 02's Phase 3 seed: PR-3.2's 21 paths plus PR-3.9's two `zh-Hant` brand
     // paths, plus `images.og.src` — the share image is a generated placeholder
-    // until `OQ-06.7` supplies the artwork (`gp-dln.196`).
+    // until `OQ-06.7` supplies the artwork (`gp-dln.196`) — plus PR-6.9's eight
+    // privacy paragraphs, the copy the owner's counsel has still to supply
+    // (`OQ-07.5`, `gp-dln.271`) and the first `messages.`-form entries here.
     //
     // The literal is the point: the line above compares the accessor against
     // the file, so only a written-down count notices the registry being
     // quietly emptied. A PR that registers or retires a sample default edits
     // this number and says which one in the comment.
-    expect(getProvisionalPaths()).toHaveLength(24);
+    expect(getProvisionalPaths()).toHaveLength(32);
   });
 
   it("parses once and memoises the result", () => {

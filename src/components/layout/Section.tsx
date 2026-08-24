@@ -70,8 +70,13 @@ export type SectionId = keyof typeof ROLES_WITHOUT_TOKEN;
  * The first and last sections, which are the two `D-04.3` names that are not a
  * `site.routes[]` entry: neither has a subpage, so neither can carry a
  * `homeAnchor`. The visit id is also the target of `site.nav.cta.href`.
+ *
+ * The hero id is exported because it is also the site's **base ground**: its
+ * `--color-bg-hero` is the cream 03 §2.2 opens the scroll order with, and it is
+ * the palette `SubpageBar` gives a standalone page, which by definition has no
+ * origin section to take colours from.
  */
-const HERO_SECTION_ID = "hero" satisfies SectionId;
+export const HERO_SECTION_ID = "hero" satisfies SectionId;
 const VISIT_SECTION_ID = "visit" satisfies SectionId;
 
 function toSectionId(anchor: string): SectionId {
@@ -89,10 +94,18 @@ function toSectionId(anchor: string): SectionId {
  * Every section id in scroll order, sourced from `site.routes[].homeAnchor`
  * (02 `D-02.12`) between the two bookends. `page.tsx` and the nav read this;
  * nothing types a section id by hand.
+ *
+ * A route with **no** `homeAnchor` is a standalone page — `/privacy` — and
+ * contributes nothing here: it expands no section, so there is no section for
+ * it to name. That is why this is a `flatMap` and not a `map`, and it is what
+ * keeps the home page's section list the length of the home page rather than
+ * the length of `routes[]`.
  */
 export const SECTION_IDS: readonly SectionId[] = [
   HERO_SECTION_ID,
-  ...getSite().routes.map((route) => toSectionId(route.homeAnchor)),
+  ...getSite().routes.flatMap((route) =>
+    route.homeAnchor === undefined ? [] : [toSectionId(route.homeAnchor)],
+  ),
   VISIT_SECTION_ID,
 ];
 

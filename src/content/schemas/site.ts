@@ -146,12 +146,23 @@ const Social = z.strictObject({
 /**
  * The stable mapping the Back control and every "learn more →" link use
  * (02 `D-02.12`; 05's slide, 06's routes). Ids never change.
+ *
+ * **`homeAnchor` is optional, and its absence is a kind of page.** Six of the
+ * seven routes are the expansion of a home-page section, and for those the
+ * anchor is the section they expand: it colours the subpage panel, it is where
+ * "← Back" lands, and it is the href a nav or footer entry naming the route
+ * resolves to. A route without one is a **standalone page** — reachable by URL
+ * and from the footer, belonging to no section, with nothing on the home page
+ * to go back to. `/privacy` is the first (06 §6.2's conditional row,
+ * `OQ-07.5`), and writing it as an absent field rather than as a borrowed
+ * anchor is what keeps `SECTION_IDS`, the Back target and the footer href from
+ * each having to special-case it.
  */
 const Route = z.strictObject({
   id: Id,
   path: RoutePath,
   /** The home-page section this page belongs to — `reviews` → `#testimonials`. */
-  homeAnchor: Id,
+  homeAnchor: Id.optional(),
 });
 
 /**
@@ -479,7 +490,13 @@ export const SiteSchema = SiteShape.superRefine((site, ctx) => {
   checkUniqueIds(ctx, ["gallery", "categories"], site.gallery.categories);
   checkUniqueIds(ctx, ["menu", "dietary"], site.menu.dietary);
 
-  for (const duplicate of duplicatesOf(site.routes.map((route) => route.homeAnchor))) {
+  // Standalone routes carry no anchor at all, so they are dropped before the
+  // comparison — two of them are not two routes sharing an anchor.
+  const anchors = site.routes
+    .map((route) => route.homeAnchor)
+    .filter((anchor): anchor is string => anchor !== undefined);
+
+  for (const duplicate of duplicatesOf(anchors)) {
     ctx.addIssue({
       code: "custom",
       message: `Two routes share the home anchor "#${duplicate}" — the Back control could not tell them apart (02 D-02.12).`,

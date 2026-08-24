@@ -82,6 +82,22 @@ export function navLabel(t: CommonTranslator, id: string): string {
   return t(`nav.${id}` as NavLabelKey);
 }
 
+/** One entry of `site.routes[]`, as the loader hands it back. */
+type SiteRoute = SiteConfig["routes"][number];
+
+/**
+ * Where a nav entry that names a route id points.
+ *
+ * A route that expands a home section points at the section (06 `D-06.6`'s
+ * spelling, no slash before the `#`, so `NavLink` gives it the two-way
+ * treatment); a standalone route — one with no `homeAnchor`, `/privacy` today —
+ * points at the page itself, and `NavLink`'s "not a home anchor" branch renders
+ * it as a plain locale-aware `Link`.
+ */
+function routeTarget(route: SiteRoute): string {
+  return route.homeAnchor === undefined ? route.path : `/#${route.homeAnchor}`;
+}
+
 /**
  * Resolve one `site.nav.*[]` group into the serialisable items the client link
  * lists take (04 `D-04.2`, 06 `D-06.7`).
@@ -95,8 +111,12 @@ export function navLabel(t: CommonTranslator, id: string): string {
  * Two rules, no branches beyond them:
  *
  * - the **href** is the entry's own `href` when it has one (`contact` carries
- *   `"/#visit"` verbatim) and `/#<route.homeAnchor>` otherwise — 06 `D-06.6`'s
- *   one spelling for a home anchor, with no slash before the `#`;
+ *   `"/#visit"` verbatim); otherwise it is the named route's, and which form
+ *   that takes is the route's own business — `/#<route.homeAnchor>` for a route
+ *   that expands a home section (06 `D-06.6`'s one spelling for a home anchor,
+ *   with no slash before the `#`), and the route's `path` for a standalone page
+ *   like `/privacy`, which has no section to scroll to. So the slug stays in
+ *   `routes[]` and the footer entry names the id rather than repeating it;
  * - the **label** is `common.nav.<id>`, checked against the reference tree so a
  *   nav id the message file has no label for fails the build here instead of
  *   rendering a `⟦common.nav.…⟧` marker in production.
@@ -107,20 +127,20 @@ export function resolveNavItems(
   label: (id: string) => string,
 ): NavLinkItem[] {
   return group.map((item) => {
+    if (item.href !== undefined) {
+      return { id: item.id, href: item.href, label: label(item.id) };
+    }
+
     const route = site.routes.find((entry) => entry.id === item.routeId);
 
-    if (item.href === undefined && route === undefined) {
+    if (route === undefined) {
       throw new Error(
         `content/site.json nav entry "${item.id}" names the route id "${String(item.routeId)}", ` +
           `which routes[] does not declare (02 D-02.12).`,
       );
     }
 
-    return {
-      id: item.id,
-      href: item.href ?? `/#${String(route?.homeAnchor)}`,
-      label: label(item.id),
-    };
+    return { id: item.id, href: routeTarget(route), label: label(item.id) };
   });
 }
 

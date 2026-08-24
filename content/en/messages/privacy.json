@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "title": "Privacy",
+    "description": "A placeholder notice describing what the tour-request form collects, where it goes, and how to ask us about it. Not the published policy."
+  },
+  "kicker": "Privacy",
+  "heading": "How we handle your information",
+  "draftNotice": {
+    "label": "Placeholder — not the published policy",
+    "body": "The wording below was written by the site's developer to describe what the software actually does. It has not been read by the daycare or by a lawyer, it is not legal advice, and it is not the daycare's privacy notice. Every paragraph on this page is registered as provisional in the site's content file, and the release check refuses to pass while any of them stands."
+  },
+  "intro": "One form on this site sends anything anywhere: the tour request. This page says what it asks for, who sees the answer, and how to reach us about it.",
+  "sections": {
+    "collected": {
+      "heading": "What the form asks for",
+      "body": "Your name, your email address and your child's age band, which are required; a desired start month and a short message, which are not. Nothing else is a field. The form does not ask for your child's name, and it asks nothing about your child beyond the age band. It records which page you sent the request from and which language you were reading in, so the reply can be written in that language."
+    },
+    "destination": {
+      "heading": "Where it goes",
+      "body": "One email, to the daycare's own inbox, sent through a delivery service called Resend. Your address is set as the reply-to on that email, so a reply reaches you. The website itself keeps no copy: the inbox is the record, and how long it is kept is a question about the daycare's mail rather than about this site."
+    },
+    "spamCheck": {
+      "heading": "The check that runs before it sends",
+      "body": "A Cloudflare Turnstile check runs first, to tell a person apart from a script. For that check Cloudflare sees your network address and some signals about your browser. It does not see the words you typed. Your network address is never stored by the site and never written into its logs."
+    },
+    "hosting": {
+      "heading": "Where the site runs",
+      "body": "On Vercel. Its request logs record which page answered, how long it took and whether the send succeeded, and never your name, your address or your message. Its visit counting sets no cookies and identifies no one."
+    },
+    "asking": {
+      "heading": "Asking us about it",
+      "body": "Write to {email} or call {phone}, and say roughly when you sent the request, so it can be found in the inbox and removed if that is what you want."
+    }
+  }
+}
