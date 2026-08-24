@@ -13,9 +13,9 @@ import {
   MENU_NOTE,
 } from "@/components/pages/menu/layout";
 import { WeeklyMenuTable } from "@/components/pages/menu/WeeklyMenuTable";
+import { routeHref } from "@/components/pages/route-href";
 import { DietaryChips } from "@/components/sections/menu/DietaryChips";
 import { getMenu } from "@/content/collections";
-import { getSite } from "@/content/site";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 /**
@@ -61,27 +61,10 @@ import { buildMetadata } from "@/lib/seo/metadata";
 /** This page's `site.routes[]` id, which is also its message namespace. */
 const ROUTE_ID = "menu";
 
-/**
- * The unprefixed route path, from `content/site.json` rather than typed here —
- * `programs/page.tsx` carries the full note on why.
- */
-function routeHref(): string {
-  const route = getSite().routes.find((entry) => entry.id === ROUTE_ID);
-
-  if (route === undefined) {
-    throw new Error(
-      `content/site.json declares no routes[] entry with id "${ROUTE_ID}" (02 D-02.12), ` +
-        `so the Menu page has no canonical URL to publish.`,
-    );
-  }
-
-  return route.path;
-}
-
 export async function generateMetadata(): Promise<Metadata> {
   return buildMetadata({
     locale: await getLocale(),
-    href: routeHref(),
+    href: routeHref(ROUTE_ID),
     namespace: ROUTE_ID,
   });
 }
