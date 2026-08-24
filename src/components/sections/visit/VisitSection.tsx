@@ -8,10 +8,10 @@ import { Section } from "@/components/layout/Section";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getSite } from "@/content/site";
+import { hoursDayRange, openingTimeDate } from "@/lib/hours";
 import type { InquirySource } from "@/lib/inquiry/schema";
 import { weekdayDate } from "@/lib/menu-day";
 
-import { hoursDayRange, openingTimeDate } from "./hours";
 import { InfoPanel } from "./InfoPanel";
 import {
   VISIT_FORM_CARD,
