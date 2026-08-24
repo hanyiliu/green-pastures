@@ -13,14 +13,18 @@
 # the ruleset's required list when this PR merges.**
 #
 # Later PRs ADD jobs to this file and never edit an existing one (10 §7):
-# PR-3.4 the `content` job, PR-8.5 the perf-budget/Lighthouse job.
+# PR-3.4 the `content` job, PR-8.5 the perf-budget/Lighthouse job. Two named
+# exceptions, both confined to one step and serialised by phase: the
+# `--warn-locale` flags on `content` (10's own carve-out) and `static`'s
+# `check:todo` step, whose inlined body became a call to the script that now
+# holds it — 08 §10 records the choice and the alternative it beat.
 #
 # Every step here runs a script that exists in `package.json` today. The steps
-# 08 §10's `static` row also names — `check:tokens` (PR-4.x), `check:todo` as a
-# script, `check:env`, the `@flaky-known` tag lint (D-08.13) and the dependency
-# allowlist — are deliberately absent: their scripts do not exist yet, and a job
-# calling a missing script fails on every PR. The `TODO` grep is inlined here
-# instead, because PR-2.6 owns only this file.
+# 08 §10's `static` row also names — `check:tokens` (PR-4.x), `check:env`, the
+# `@flaky-known` tag lint (D-08.13) and the dependency allowlist — are
+# deliberately absent: their scripts do not exist yet, and a job calling a
+# missing script fails on every PR. `check:todo` was in that list until its
+# script was written; it is a `package.json` entry now, like every step here.
 name: ci
 
 on:
@@ -68,36 +72,21 @@ jobs:
       - name: prettier
         run: pnpm run format:check
 
-      # TRAP-11.9 / 08 §2. A comment is not tracked work: a `TODO`, `FIXME` or
-      # `HACK` in source text fails the PR, and the fix is a bead.
+      # TRAP-11.9 / 08 §2. A comment is not tracked work: a work marker left in
+      # source text fails the PR, and the fix is a bead.
       #
-      # `content/**` is deliberately NOT in the word grep. A literal "TODO" as a
-      # JSON *value* under `content/` is the release gate's business (§3 R2,
-      # D-08.17) and must not red an ordinary PR; what is banned there is a
-      # comment in disguise — a key named `_comment` or `todo`. The two checks
-      # do not overlap and neither replaces the other.
+      # The two `git grep` commands, the `-w` history that is the reason they are
+      # not written with `\b`, the `content/**` carve-out and the rule that prose
+      # *about* a marker counts as source text all live in the script, which is
+      # the only copy of them. This step is now the same command a developer
+      # types, because a gate that runs only here is how `main` went red on a
+      # violation the author's own `pnpm verify` reported clean (INV-08.6).
       #
-      # `git grep` sees tracked files, which on a CI checkout is every file.
-      #
-      # `-w`, not the `\b(…)\b` 08 §2 writes: `\b` is a GNU extension that git's
-      # regex engine honours on glibc and silently drops elsewhere (verified on
-      # Apple Git 2.50.1 — `git grep -E '\bexport\b' -- src` matches nothing in
-      # a tree full of `export`). A word-boundary gate that matches nothing
-      # fails *open*, so it would report green over a file full of TODOs. `-w`
-      # is git's own flag, means the same thing, and works on every platform.
+      # Replacing this body was an edit to an existing job, which 10's `ci.yml`
+      # serialisation rule — additions are new jobs, never edits — otherwise
+      # forbids. 08 §10 names the exception and why the alternative was worse.
       - name: check:todo
-        run: |
-          set -euo pipefail
-          status=0
-          if git grep -nwE 'TODO|FIXME|HACK' -- 'src/**' 'tests/**' 'scripts/**'; then
-            echo "::error::TRAP-11.9: a comment is not tracked work. Open a bead and cite its id."
-            status=1
-          fi
-          if git grep -nE '"(_comment|todo)"[[:space:]]*:' -- 'content/**'; then
-            echo "::error::08 §2: no comment-in-disguise keys in content/ — use a bead."
-            status=1
-          fi
-          exit $status
+        run: pnpm run check:todo
 
   # 08 §10 `content` · 5 min · REQUIRED (D-08.12). The content contract's gate:
   # `pnpm validate:content` checks three-way key/tag/array parity against `en`,
