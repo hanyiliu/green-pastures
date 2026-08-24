@@ -1,7 +1,8 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { frame, frameData, MotionGlobalConfig } from "motion/react";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { MotionProvider } from "@/components/motion/MotionProvider";
 import { hasRevealed, markLocaleSwap, resetRevealRegistry } from "@/components/motion/registry";
@@ -21,8 +22,8 @@ import { installIntersectionObserverStub, type IntersectionObserverStub } from "
  * Motion falls back to its own frame loop and writes `style.opacity` and
  * `style.transform` on every tick — which is precisely what makes the
  * "a staggered child plays" block below a behaviour test rather than a
- * restatement of the markup. Resolution is one animation frame (~16 ms), and the
- * timing assertion leaves room for it.
+ * restatement of the markup. The one timing assertion drives that loop's clock
+ * by hand rather than reading the machine's; see {@link pumpTo}.
  */
 
 let observer: IntersectionObserverStub;
@@ -52,9 +53,53 @@ function itemLabelled(label: string): HTMLElement {
   return item;
 }
 
+/* -------------------------------------------------------------------------- *
+ * The animation clock, driven by hand
+ * -------------------------------------------------------------------------- */
+
 /**
- * When each element first left `opacity: 0`, in milliseconds from the call,
- * sampled once per animation frame for `windowMs`.
+ * Motion's frame loop stamps every batch with `performance.now()` — unless
+ * `MotionGlobalConfig.useManualTiming` is set, in which case it stamps the batch
+ * with whatever is already in `frameData.timestamp` and never writes that number
+ * itself. Every clock an entrance reads is downstream of that one field: the
+ * driver's `now()`, the start time an animation records, the delay a staggered
+ * child waits out, the progress along its easing. Set it by hand and the whole
+ * entrance becomes a pure function of the instants this file names.
+ *
+ * A real animation frame still flushes the queue, because that is the only way
+ * Motion schedules a batch. But it carries no time with it any more — it is the
+ * pump, not the clock — so a frame that arrives late, or a machine that drops
+ * one under load, cannot move a measurement. That is what lets the stagger test
+ * below assert exact milliseconds instead of a band it had to guess.
+ */
+const CLOCK_ORIGIN = 1_000_000;
+
+function startManualClock(): void {
+  MotionGlobalConfig.useManualTiming = true;
+  frameData.timestamp = CLOCK_ORIGIN;
+}
+
+function stopManualClock(): void {
+  MotionGlobalConfig.useManualTiming = false;
+}
+
+/** Put the animation clock `elapsed` ms past the origin and render one frame there. */
+async function pumpTo(elapsed: number): Promise<void> {
+  frameData.timestamp = CLOCK_ORIGIN + elapsed;
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      // `postRender` runs after the batch has written its styles, so the
+      // element's `style.opacity` is this instant's value by the time it fires.
+      frame.postRender(() => {
+        resolve();
+      });
+    });
+  });
+}
+
+/**
+ * When each element first left `opacity: 0`, in milliseconds on the manual
+ * clock, looked for at each of `instants` in turn.
  *
  * An element that never moves simply gets no entry — which is how the stagger
  * defect reads here, and why {@link startTimesInOrder} turns a missing entry
@@ -62,40 +107,33 @@ function itemLabelled(label: string): HTMLElement {
  */
 async function sampleStarts(
   items: readonly HTMLElement[],
-  windowMs: number,
+  instants: readonly number[],
 ): Promise<ReadonlyMap<HTMLElement, number>> {
   const started = new Map<HTMLElement, number>();
-  const origin = performance.now();
 
-  await act(async () => {
-    await new Promise<void>((resolve) => {
-      const sample = () => {
-        const elapsed = performance.now() - origin;
-        for (const item of items) {
-          if (!started.has(item) && Number(item.style.opacity || "0") > 0) {
-            started.set(item, elapsed);
-          }
-        }
-        if (elapsed >= windowMs) resolve();
-        else requestAnimationFrame(sample);
-      };
-      requestAnimationFrame(sample);
-    });
-  });
+  for (const elapsed of instants) {
+    await pumpTo(elapsed);
+    for (const item of items) {
+      if (!started.has(item) && Number(item.style.opacity || "0") > 0) {
+        started.set(item, elapsed);
+      }
+    }
+  }
 
   return started;
 }
 
 async function startTimesInOrder(
   items: readonly HTMLElement[],
-  windowMs: number,
+  instants: readonly number[],
 ): Promise<readonly number[]> {
-  const started = await sampleStarts(items, windowMs);
+  const started = await sampleStarts(items, instants);
+  const last = instants.at(-1) ?? 0;
   return items.map((item, index) => {
     const time = started.get(item);
     if (time === undefined) {
       throw new Error(
-        `staggered child ${String(index)} never left opacity 0 within ${String(windowMs)} ms`,
+        `staggered child ${String(index)} never left opacity 0 within ${String(last)} ms`,
       );
     }
     return time;
@@ -212,6 +250,10 @@ describe("the hidden state", () => {
 describe("a staggered child plays (05 §5.3, D-05.6)", () => {
   const STONES = ["outdoors", "music", "practical-life"] as const;
 
+  // Only the timing test runs on the manual clock, and it must not leave the
+  // clock stopped for the tests after it.
+  afterEach(stopManualClock);
+
   function renderStones() {
     renderInProvider(
       <Reveal id="programs.stones" as="ul" stagger>
@@ -247,22 +289,32 @@ describe("a staggered child plays (05 §5.3, D-05.6)", () => {
   });
 
   it("starts them one --stagger-child apart, in DOM order", async () => {
+    startManualClock();
     const items = renderStones();
     observer.enterViewport(revealElement("programs.stones"));
 
-    // Long enough for the last of three to start (2 × 110 ms) with room to spare.
-    const times = await startTimesInOrder(items, 900);
-    const gaps = consecutiveGaps(times);
     const step = stagger.child * 1000;
 
+    /**
+     * Two instants per child: the millisecond its own step falls on, where a
+     * child that starts on time is still at exactly `opacity: 0`, and the
+     * millisecond after, where it has moved. Six samples pin all three starts to
+     * the millisecond, and any child that starts early is caught by an earlier
+     * pair — a group that plays all at once has every child moving at 1 ms, and
+     * a group stepped by `--stagger-word` has the second child moving at 110.
+     */
+    const instants = STONES.flatMap((_, index) => [index * step, index * step + 1]);
+
+    const times = await startTimesInOrder(items, instants);
+    const gaps = consecutiveGaps(times);
+
+    // Where each child started: 1 ms, 111, 221 — the group's own step, plus the
+    // millisecond the sample sits past it.
+    expect(times).toEqual(STONES.map((_, index) => index * step + 1));
+    // The same fact as the gaps this test is named for. Every one is exactly a
+    // `--stagger-child`, and every one is positive, so the order is DOM order.
     expect(gaps).toHaveLength(STONES.length - 1);
-    for (const gap of gaps) {
-      // The band is wide because the sampler resolves to one animation frame and
-      // a loaded machine drops some; it is still nowhere near 0 (all at once) or
-      // 14 ms (`--stagger-word`, which belongs to the locale cascade, not here).
-      expect(gap).toBeGreaterThan(step / 2);
-      expect(gap).toBeLessThan(step * 2.5);
-    }
+    for (const gap of gaps) expect(gap).toBe(step);
   });
 
   it("still ships the hidden state in the server HTML, so nothing flashes (INV-05.7)", () => {
