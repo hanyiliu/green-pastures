@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import "../globals.css";
 
+import { BackFocus } from "@/components/layout/BackFocus";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SkipLink } from "@/components/layout/SkipLink";
@@ -37,6 +38,14 @@ import { buildRootMetadata } from "@/lib/seo/metadata";
  * **`<main>` is deliberately absent.** Each `page.tsx` renders its own, so the
  * home page can carry `data-snap-root` and the detail pages cannot (04 §1,
  * 05 §5.8). The skip link targets that landmark by id.
+ *
+ * **`BackFocus` is here for the one reason a component can need a layout: it
+ * has to survive the navigation it acts on** (05 §5.7). It renders nothing. A
+ * Back — typed or from the browser's own button — has to leave focus on the
+ * origin section's heading, and the page that knows which heading that is has
+ * been unmounted by the time the heading exists; a component in the layout is
+ * mounted on both sides of the swap and its effect runs after React has
+ * committed the arriving page. See `components/layout/heading-focus.ts`.
  */
 
 /**
@@ -134,6 +143,7 @@ export default async function LocaleLayout({
         */}
         <NextIntlClientProvider locale={locale} messages={clientMessages(messages)}>
           <MotionProvider>
+            <BackFocus />
             <SkipLink />
             <SiteHeader />
             {children}

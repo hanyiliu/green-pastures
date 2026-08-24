@@ -9,6 +9,8 @@ import {
 
 import { Link } from "@/i18n/navigation";
 
+import { HOME_PATHNAME, homeHeadingId, makeFocusable, requestHeadingFocus } from "./heading-focus";
+
 /**
  * The "← Back home" pill in the subpage bar (04 §3.1, 05 §5.7, 06 `D-06.8`).
  *
@@ -41,58 +43,35 @@ import { Link } from "@/i18n/navigation";
  *
  * ── The focus moves ─────────────────────────────────────────────────────
  *
- * **This is the shell's only client component, so it owns both of them.**
  * 05 §5.7 measured the problem: after a typed forward navigation, after a typed
  * Back and after a browser Back, `document.activeElement` is `<body>` — the
  * router moves focus nowhere, so a keyboard visitor's next Tab restarts from
  * the top of the document on every navigation. 05 §5.7 therefore makes focus
- * handling mandatory and hands it to 04. `SubpageBar` and `SubpageHeader` are
- * Server Components and cannot become client components: they read a page
- * namespace, and 02 `D-02.16` keeps those out of `CLIENT_NAMESPACES`, so
- * flipping either one would ship a whole page's copy to the browser. That
- * leaves this component. On arrival it focuses the detail page's `h1`; on Back
- * it focuses the origin section's heading once the home page has rendered.
- * Focusing a heading is also the announcement: a screen reader reads the new
- * heading, which is what tells the reader the page changed.
+ * handling mandatory — "required, not optional" — and hands it to 04. Focusing
+ * a heading is also the announcement: a screen reader reads the new heading,
+ * which is what tells the reader the page changed.
  *
- * **Why `tabIndex` is applied at focus time.** 04 §3.1 asks for `h1
- * tabIndex={-1}`, but the `h1` is rendered by `SectionTitle` inside
- * `SectionHeader` — a PR-4.2 file this row does not touch, 04 §2 naming
- * `SubpageBar`, `BackLink` and `SubpageHeader` as the only `layout/` files this
- * phase touches — and neither takes a `tabIndex` prop. The home section
- * headings focused on the way back have the same shape. So the attribute is set
- * here, on the element about to be focused, and only when it has none of its
- * own: the observable result is identical, and it costs no edit to two files
- * another row owns. Give `SectionTitle` a `tabIndex` prop later and
- * {@link makeFocusable} loses its first line; nothing else here changes.
+ * **The three navigations are two problems, and this file owns one and a
+ * half.** The arriving `h1` is entirely here: a mount effect on the page that
+ * has just rendered, which needs nothing but itself. It has to be *this*
+ * component because it is the shell's only client one — `SubpageBar` and
+ * `SubpageHeader` read a page namespace, and 02 `D-02.16` keeps those out of
+ * `CLIENT_NAMESPACES`, so flipping either to a client component would ship a
+ * whole page's copy to the browser.
+ *
+ * The origin heading on the way back cannot be, because the element to focus
+ * belongs to the page arriving and this component is unmounted before it
+ * exists. What this file contributes there is one line and no timing: the
+ * pill's click writes a *request*, and `BackFocus` — in the `[locale]` layout,
+ * so it survives the navigation — spends it once the home page has rendered.
+ * The browser's own Back is `BackFocus`'s entirely, and reads the same heading
+ * id out of `SubpageBar`'s markup rather than out of this component.
+ * `heading-focus.ts` carries the argument for the split, and for why a request
+ * replaced the two-second poll this file used to run.
  */
-
-/** 06 `D-06.6`: the internal pathname of the home page. */
-const HOME_PATHNAME = "/";
 
 /** 05 §5.7 / `D-05.10` — the type `PageTransition` maps to the `gp-page` class. */
 const SUBPAGE_EXIT_TRANSITION = ["subpage-exit"];
-
-/**
- * The id of a home section's heading — `philosophy-title`, `teachers-title`.
- * Every `<Section>` points `aria-labelledby` at exactly this, built from
- * `site.routes[].homeAnchor`, so the origin heading is addressable without any
- * component naming it (04 INV-04.8).
- */
-function homeHeadingId(homeAnchor: string): string {
-  return `${homeAnchor}-title`;
-}
-
-/**
- * How long to keep looking for the origin heading after Back. The home page is
- * prerendered and the router has it in hand, so the element is normally there
- * on the first or second check; the budget exists so a slow render ends in
- * "focus stayed where it was" rather than a timer that never stops. It is not a
- * design token — nothing animates over it, and the slide has `--dur-subpage`,
- * which this deliberately does not wait for.
- */
-const FOCUS_DEADLINE_MS = 2000;
-const FOCUS_POLL_MS = 32;
 
 /**
  * Module scope, for the reason the reveal registry is (05 `D-05.6`): a client
@@ -137,50 +116,6 @@ function arrivedByClientNavigation(): boolean {
   } catch {
     return false;
   }
-}
-
-/** See the note on `tabIndex` above. */
-function makeFocusable(target: HTMLElement): void {
-  if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
-}
-
-/**
- * Focus the origin section's heading once the home page has replaced this one.
- *
- * **It waits for a *different* element, not merely for one to exist**, and that
- * distinction is the whole function. Four of the six routes have an id equal to
- * their home anchor, so `/philosophy`'s own `h1` and the home Philosophy
- * section's heading are both `#philosophy-title`. Looking the id up the moment
- * Back is clicked therefore finds the page being left, focuses it, and loses
- * the focus again the instant React unmounts it — measured: `activeElement`
- * back to `<body>` with the reader on the home page. Holding the outgoing node
- * and refusing it is what makes the wait mean "the home page has rendered".
- * Where the two ids differ (`reviews` → `testimonials-title`, `team` →
- * `teachers-title`) `outgoing` is simply `null` and the check costs nothing.
- *
- * `preventScroll` (05 §5.7): the scroll position is the router's — the origin
- * section's snap point, reached through the hash — and a focus that scrolled
- * would fight it under the slide.
- *
- * Deliberately not a `requestAnimationFrame` loop: rAF is paused while the
- * document is hidden, so a backgrounded tab would hold an unresolved callback
- * until someone looked at it again.
- */
-export function focusHeadingWhenPresent(elementId: string): void {
-  const deadline = Date.now() + FOCUS_DEADLINE_MS;
-  const outgoing = document.getElementById(elementId);
-
-  const attempt = () => {
-    const target = document.getElementById(elementId);
-    if (target !== null && target !== outgoing) {
-      makeFocusable(target);
-      target.focus({ preventScroll: true });
-      return;
-    }
-    if (Date.now() < deadline) setTimeout(attempt, FOCUS_POLL_MS);
-  };
-
-  attempt();
 }
 
 /** `style` that also carries CSS custom properties (React writes them through). */
@@ -268,15 +203,14 @@ export function BackLink({ homeAnchor, titleId, children }: BackLinkProps) {
 
     hasNavigatedInSession = true;
 
-    // The navigation unmounts this component, so the wait for the origin
-    // heading is deliberately not a React effect: `focusHeadingWhenPresent`
-    // schedules itself, and the timer belongs to the module rather than to a
-    // tree that is about to be replaced.
+    // The typed Back. The navigation unmounts this component, so what is left
+    // behind is a request rather than a timer: `BackFocus` is mounted on both
+    // sides of it and spends the request once the home page has committed.
     //
-    // A standalone page has no origin section, so there is no heading to land
-    // on and nothing to schedule: the home page loads at the top and its own
-    // first heading is where a reader arrives.
-    if (homeAnchor !== undefined) focusHeadingWhenPresent(homeHeadingId(homeAnchor));
+    // A standalone page expands no home section, so there is no heading to ask
+    // for: the home page loads at the top and its own first heading is where a
+    // reader arrives.
+    if (homeAnchor !== undefined) requestHeadingFocus(homeHeadingId(homeAnchor));
   }
 
   return (
