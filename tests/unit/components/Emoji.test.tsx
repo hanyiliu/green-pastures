@@ -17,12 +17,31 @@ describe("Emoji", () => {
 
   it("is hidden from the accessibility tree when it repeats the words beside it", () => {
     const { container } = render(<Emoji symbol="🎨" />);
-    const emoji = container.firstElementChild;
 
-    expect(emoji).toHaveAttribute("aria-hidden", "true");
-    expect(emoji).not.toHaveAttribute("role");
-    expect(emoji).not.toHaveAttribute("aria-label");
+    // The glyph still renders; it is simply unreachable, and unreachable even
+    // to a query that asks for hidden elements — the role is gone, not just
+    // the name.
+    expect(container.firstElementChild).toHaveTextContent("🎨");
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { hidden: true })).not.toBeInTheDocument();
+  });
+
+  /**
+   * What "hidden" has to mean for a glyph, which `queryByRole` alone cannot
+   * say: an accessible name is computed from an element's contents, so a
+   * decorative emoji that is not hidden is read out as part of the name of
+   * whatever encloses it. `Chip`, `AssistantCard` and `PrincipleCard` all draw
+   * this shape — an unlabelled `Emoji` beside the words it illustrates.
+   */
+  it("does not lend its glyph to the accessible name of what encloses it", () => {
+    render(
+      <button type="button">
+        <Emoji symbol="🎨" />
+        Gallery
+      </button>,
+    );
+
+    expect(screen.getByRole("button", { name: "Gallery" })).toBeInTheDocument();
   });
 
   it("always renders in the emoji font stack", () => {

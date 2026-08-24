@@ -1,4 +1,5 @@
 import { withOverrides } from "./class-names";
+import { imageRole } from "./image-role";
 
 /**
  * The emoji icon (03 `D-03.8`, §9; 04 §3.2).
@@ -14,6 +15,8 @@ import { withOverrides } from "./class-names";
  * carries it as the accessible name; without one it is `aria-hidden`, which is
  * the right answer whenever the neighbouring words already say what the icon
  * says. The label is always a message value — never a literal (INV-02.1).
+ * `PhotoSlot` keeps the identical rule, so the branch itself lives once in
+ * `components/ui/image-role.tsx` and both primitives spread its answer.
  */
 
 const SIZE = {
@@ -38,13 +41,9 @@ export type EmojiProps = {
 };
 
 export function Emoji({ symbol, label, size = "inline", className }: EmojiProps) {
-  const labelled = label !== undefined;
-
   return (
     <span
-      role={labelled ? "img" : undefined}
-      aria-label={labelled ? label : undefined}
-      aria-hidden={labelled ? undefined : true}
+      {...imageRole(label)}
       className={withOverrides(
         "Emoji",
         `inline-flex items-center justify-center font-emoji leading-none ${SIZE[size]}`,
