@@ -7,7 +7,7 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { Reveal } from "@/components/motion/Reveal";
 import { PROGRAMS_COLUMN, PROGRAMS_FOOTNOTE } from "@/components/pages/programs/layout";
 import { RoomCards } from "@/components/pages/programs/RoomCards";
-import { getSite } from "@/content/site";
+import { routeHref } from "@/components/pages/route-href";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 /**
@@ -47,31 +47,10 @@ import { buildMetadata } from "@/lib/seo/metadata";
 /** This page's `site.routes[]` id, which is also its message namespace. */
 const ROUTE_ID = "programs";
 
-/**
- * The unprefixed route path, from `content/site.json` rather than typed here.
- *
- * 06 keeps a two-entry allowlist for literal hrefs (`/` and `/sitemap.xml`) and
- * this is not on it: `routes[].path` is the one place a slug is written
- * (`D-06.2`), and reading it means a renamed slug moves the canonical, the
- * alternates and the sitemap together.
- */
-function routeHref(): string {
-  const route = getSite().routes.find((entry) => entry.id === ROUTE_ID);
-
-  if (route === undefined) {
-    throw new Error(
-      `content/site.json declares no routes[] entry with id "${ROUTE_ID}" (02 D-02.12), ` +
-        `so the Programs page has no canonical URL to publish.`,
-    );
-  }
-
-  return route.path;
-}
-
 export async function generateMetadata(): Promise<Metadata> {
   return buildMetadata({
     locale: await getLocale(),
-    href: routeHref(),
+    href: routeHref(ROUTE_ID),
     namespace: ROUTE_ID,
   });
 }

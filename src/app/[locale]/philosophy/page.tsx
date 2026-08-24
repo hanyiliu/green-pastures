@@ -8,7 +8,7 @@ import { DailyTimeline } from "@/components/pages/philosophy/DailyTimeline";
 import { PHILOSOPHY_COLUMN } from "@/components/pages/philosophy/layout";
 import { PhilosophyBadges } from "@/components/pages/philosophy/PhilosophyBadges";
 import { PrinciplesList } from "@/components/pages/philosophy/PrinciplesList";
-import { getSite } from "@/content/site";
+import { routeHref } from "@/components/pages/route-href";
 import { notFound } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -38,26 +38,6 @@ import { buildMetadata } from "@/lib/seo/metadata";
 const ROUTE_ID = "philosophy";
 
 /**
- * The unprefixed route path, read from `content/site.json` rather than spelled
- * (02 `D-02.12`, 06 `D-06.2`). `SubpageBar` throws for a namespace with no
- * route, so a missing entry cannot reach a rendered page; this throws for the
- * same reason one segment earlier, where `generateMetadata` would otherwise
- * emit a canonical for a path that does not exist.
- */
-function routeHref(): string {
-  const route = getSite().routes.find((entry) => entry.id === ROUTE_ID);
-
-  if (route === undefined) {
-    throw new Error(
-      `content/site.json declares no route with the id "${ROUTE_ID}" (02 D-02.12), so this ` +
-        `page has no canonical URL to publish (06 D-06.10).`,
-    );
-  }
-
-  return route.path;
-}
-
-/**
  * Title, description, canonical and the full `hreflang` set — one call to the
  * shared helper, which is what keeps canonical URLs to one implementation
  * (06 `D-06.10`, INV-06.3). The guard is the layout's, repeated because
@@ -71,7 +51,7 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  return buildMetadata({ locale, href: routeHref(), namespace: ROUTE_ID });
+  return buildMetadata({ locale, href: routeHref(ROUTE_ID), namespace: ROUTE_ID });
 }
 
 export default function PhilosophyPage() {

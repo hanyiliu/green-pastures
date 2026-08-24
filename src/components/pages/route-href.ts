@@ -5,11 +5,17 @@ import { getSite } from "@/content/site";
  * 06 `D-06.2`).
  *
  * `generateMetadata` needs the path its canonical and `hreflang` set are built
- * from, and 06 keeps a literal href off the allowlist: "the slug set lives once
- * in `content/site.json.routes[].path`". So a page names its **route id** — the
+ * from, and 06 keeps a literal href off the allowlist — INV-06.1 spares `/` and
+ * `#main` and nothing else: "the slug set lives once in
+ * `content/site.json.routes[].path`". So a page names its **route id** — the
  * same id it hands `SubpageBar` and the same string as its message namespace —
  * and the slug is looked up, exactly as `LearnMoreLink` and `SubpageBar`
- * already look it up for their own links.
+ * already look it up for their own links. A renamed slug then moves the
+ * canonical, the alternates and the sitemap together.
+ *
+ * All six detail pages call this one function (06 `D-06.10`, INV-06.3). Four of
+ * them used to carry a private copy of the lookup, which is four places for the
+ * throw below to drift out of.
  *
  * It throws rather than falling back, for `SubpageBar`'s stated reason: the
  * reserved namespaces (`faq`, `visit` — `D-02.17`) carry a `kicker` and no
