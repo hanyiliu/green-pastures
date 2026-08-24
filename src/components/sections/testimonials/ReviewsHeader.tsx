@@ -2,9 +2,9 @@ import { useTranslations } from "next-intl";
 
 import { CountUp } from "@/components/motion/CountUp";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { StarRow } from "@/components/ui/StarRow";
 
 import { TESTIMONIALS_HEADER, TESTIMONIALS_RATING_ROW } from "./layout";
-import { StarRow } from "./StarRow";
 import { YelpBadge } from "./YelpBadge";
 
 /**

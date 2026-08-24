@@ -210,6 +210,19 @@ describe("the rating row", () => {
     expect([...stars].filter((star) => star.textContent === "★")).toHaveLength(rows * 5);
   });
 
+  it("draws the header row and the bubbles at their two different sizes", async () => {
+    const { container } = await renderSection();
+
+    // `StarRow size="header"` — 18/24px against the drawing's 17/24 (M L165,
+    // D L238); `size="bubble"` — 14/16 against 13/15 (M L174, D L247). Both are
+    // one Tailwind step above the reference and `StarRow`'s own file says why.
+    const header = container.querySelector('[role="img"] > [aria-hidden="true"]');
+    expect(header).toHaveClass("text-lg", "md:text-2xl");
+
+    const bubble = container.querySelector('[data-testimonial] > [aria-hidden="true"]');
+    expect(bubble).toHaveClass("text-sm", "md:text-base");
+  });
+
   it("keeps the Yelp badge outside the group, as a word of its own", async () => {
     await renderSection();
 

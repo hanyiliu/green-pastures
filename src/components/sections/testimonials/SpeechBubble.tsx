@@ -3,11 +3,11 @@ import { Fragment, type ReactNode } from "react";
 
 import type { RevealSide } from "@/components/motion/variants";
 import { PhotoSlot } from "@/components/ui/PhotoSlot";
+import { StarRow } from "@/components/ui/StarRow";
 import type { TestimonialEntry } from "@/content/collections";
 
 import { Bubble } from "./Bubble";
 import { BUBBLE_ATTRIBUTION, BUBBLE_AVATAR, BUBBLE_BODY } from "./layout";
-import { StarRow } from "./StarRow";
 
 /**
  * One review (04 §3.5; D L245–252, M L173–179).
@@ -157,7 +157,7 @@ export function SpeechBubble({ item, index, className }: SpeechBubbleProps) {
   return (
     <Bubble tail={tailFor(index)} index={index} desktopOnly={!item.onMobile} className={className}>
       <figure data-testimonial={item.id} className={BUBBLE_BODY}>
-        <StarRow />
+        <StarRow size="bubble" />
 
         <blockquote className={QUOTE}>
           <p>

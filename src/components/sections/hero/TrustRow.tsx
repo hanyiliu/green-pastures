@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 
+import { StarRow } from "@/components/ui/StarRow";
 import { getSite } from "@/content/site";
 
 import { HERO_TRUST_ROW } from "./layout";
@@ -40,10 +41,16 @@ import { HERO_TRUST_ROW } from "./layout";
  * M L62) and 03 mints nothing for them, so they take Tailwind's own `sm` / `lg`
  * steps — the same answer `Emoji` reaches for its `text-2xl` / `text-3xl` dot,
  * and the only one that does not invent a px.
+ *
+ * ── The stars are `StarRow`'s, not this row's ────────────────────────────
+ *
+ * They used to be five glyphs written out here, because `components/ui/StarRow`
+ * did not exist and the testimonials section had built a second copy locally.
+ * It exists now (04 §3.2), and `trust` is the size that carries exactly the
+ * 14/18px this row was inlining — same element, same classes, same
+ * `aria-hidden`. The `role="img"` group around it stays here, because the name
+ * belongs to the stars and the "5.0 on Yelp" beside them together.
  */
-
-/** 04 §3.2: five `★` glyphs. The scale, not the rating — the rating is data. */
-const STARS = [1, 2, 3, 4, 5] as const;
 
 export function TrustRow() {
   const t = useTranslations("home.hero.trust");
@@ -59,11 +66,7 @@ export function TrustRow() {
             aria-label={tCommon("rating.ariaLabel", { rating: yelp.rating })}
             className="inline-flex items-center gap-1.5 md:gap-2"
           >
-            <span aria-hidden className="text-sm leading-none tracking-stars text-amber md:text-lg">
-              {STARS.map((star) => (
-                <span key={star}>★</span>
-              ))}
-            </span>
+            <StarRow size="trust" />
             <span className="font-body text-chip-trust font-bold text-(color:--section-sub)">
               {t("yelp", { rating: yelp.rating })}
             </span>

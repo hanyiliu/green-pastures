@@ -236,6 +236,16 @@ describe("the header", () => {
     expect(stars?.textContent).toBe("★★★★★");
   });
 
+  it("draws the header stars at StarRow's header size", async () => {
+    await renderPage();
+
+    // 18/24px against this header's drawn 17/22 (M L418, D L518). 22 sits
+    // exactly between `text-xl` and `text-2xl`, so no step is nearer and
+    // `header` — the size the home section's rating row also takes — stands.
+    const group = screen.getByRole("img");
+    expect(group.querySelector("[aria-hidden]")).toHaveClass("text-lg", "md:text-2xl");
+  });
+
   it("keeps the Yelp badge outside the rating group", async () => {
     await renderPage();
 
@@ -375,6 +385,21 @@ describe("the list", () => {
   it("stacks the cards below md and pairs them above it", async () => {
     const { container } = await renderPage();
     expect(container.querySelector("ul")).toHaveClass("grid-cols-1", "md:grid-cols-2");
+  });
+
+  it("draws each card's stars at the 12/14px the reference gives them", async () => {
+    await renderPage();
+
+    // The size this page was drawn at (M L422, D L524), and exact on both
+    // views. The cards used to render at `StarRow`'s `bubble` — 14/16px —
+    // because the component lived in the home section and that was the default
+    // it offered; `size` is required now and this row names its own
+    // (gp-dln.216).
+    for (const entry of testimonials) {
+      const stars = document.querySelector(`[data-review="${entry.id}"] > [aria-hidden]`);
+      expect(stars).toHaveTextContent("★★★★★");
+      expect(stars).toHaveClass("text-xs", "md:text-sm");
+    }
   });
 });
 
