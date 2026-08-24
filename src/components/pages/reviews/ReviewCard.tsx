@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 
 import { RevealItem } from "@/components/motion/Reveal";
 import { renderRichText } from "@/components/sections/testimonials/SpeechBubble";
-import { StarRow } from "@/components/sections/testimonials/StarRow";
+import { StarRow } from "@/components/ui/StarRow";
 import type { TestimonialEntry } from "@/content/collections";
 
 import { CARD, CARD_AUTHOR, CARD_BODY, CARD_DISPLAY, CARD_QUOTE, CARD_RELATION } from "./layout";
@@ -17,25 +17,24 @@ import { CARD, CARD_AUTHOR, CARD_BODY, CARD_DISPLAY, CARD_QUOTE, CARD_RELATION }
  * `riseChild` entrance 04 §3.6 gives the list. The words inside are the same
  * collection, and that is the only thing the two share.
  *
- * ── `StarRow` and `renderRichText` are imported, not copied ──────────────
+ * ── `StarRow` is `components/ui`'s now, and draws this card's own size ────
  *
- * 04 §3.2 places `StarRow` in `components/ui` and nothing builds it there: the
- * hero inlined its own five glyphs and the testimonials section built the
- * component locally, with a docstring saying so and calling the lift "a bead,
- * not this row's work". This page would be the third copy, so it imports the
- * second instead. The same goes for `renderRichText`, which `SpeechBubble`
- * exports precisely because it is a stand-in for `richTags()` (`D-04.13`) and
- * a second stand-in would be a second thing to delete.
+ * It used to be imported from `components/sections/testimonials`, where the
+ * home section had built it locally, and this card took its `bubble` size —
+ * 14/16px against the 12/14px drawn here (D L524, M L422) — because that was
+ * what the import offered. `StarRow` sits in `components/ui` where 04 §3.2
+ * puts it, `card` is this row's own size, and it is exact on both views
+ * (gp-dln.216).
  *
- * Both imports reach across from `components/pages` into
- * `components/sections/testimonials`, which is not where either belongs. The
- * fix is to lift them, and lifting touches two files this row does not own —
- * filed rather than done.
+ * ── `renderRichText` is still the home section's, and still shouldn't be ──
  *
- * The star sizes are the one thing the import costs. `StarRow`'s `bubble` size
- * is 14px/16px and this card draws 12px/14px (D L524, M L422): a step off, held
- * open the way `StarRow`'s own file holds the tracking gap open, rather than
- * adding a third size to a component that is already in the wrong folder.
+ * It reaches across from `components/pages` into
+ * `components/sections/testimonials`, which is not where it belongs either.
+ * Its destination is not `StarRow`'s, though: `D-04.13` reserves
+ * `components/ui/rich.tsx` for `richTags()`, and `renderRichText` is a
+ * deliberate stand-in for that helper rather than a primitive of its own — so
+ * it moves when `richTags()` is built, and a second stand-in here would be a
+ * second thing to delete. Filed, not done.
  *
  * ── The quotation marks and the separator are punctuation ────────────────
  *
@@ -64,7 +63,7 @@ export function ReviewCard({ item, index }: ReviewCardProps) {
       className={`${item.onMobile ? CARD_DISPLAY.both : CARD_DISPLAY.desktopOnly} ${CARD}`}
     >
       <figure data-review={item.id} className={CARD_BODY}>
-        <StarRow />
+        <StarRow size="card" />
 
         <blockquote className={CARD_QUOTE}>
           <p>

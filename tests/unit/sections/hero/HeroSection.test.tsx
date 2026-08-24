@@ -215,6 +215,18 @@ describe("the trust row", () => {
     const stars = container.querySelectorAll('[aria-hidden="true"] > span');
     expect([...stars].filter((star) => star.textContent === "★")).toHaveLength(5);
   });
+
+  it("draws the stars at the row's own 14/18px, not the section's", () => {
+    const { container } = renderHero();
+
+    // `StarRow size="trust"` — 14px `< md`, 18px `≥ md` (M L62, D L123). The
+    // row inlined these five glyphs before `components/ui/StarRow` existed, and
+    // the size that replaced the copy is the one it was inlining, not the size
+    // some other caller happened to be offering (gp-dln.216).
+    const row = container.querySelector('[role="img"] > [aria-hidden="true"]');
+    expect(row).toHaveTextContent("★★★★★");
+    expect(row).toHaveClass("text-sm", "md:text-lg", "tracking-stars", "text-amber");
+  });
 });
 
 /* -------------------------------------------------------------------------- *

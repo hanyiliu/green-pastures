@@ -15,9 +15,10 @@ import { YelpLink } from "./YelpLink";
  * and `docs/design/mobile` §06).
  *
  * It composes what Phase 4 built — `Section`, `Reveal`/`RevealItem`,
- * `SectionTitle`, `Chip`, `PhotoSlot`, `CountUp`, `TrackedLink` — and adds only
- * its own five leaves (`ReviewsHeader`, `YelpBadge`, `StarRow`, `SpeechBubble`,
- * `Bubble`, `YelpLink`) and its geometry (`layout.ts`, `D-04.6`).
+ * `SectionTitle`, `Chip`, `PhotoSlot`, `StarRow`, `CountUp`, `TrackedLink` —
+ * and adds only its own five leaves (`ReviewsHeader`, `YelpBadge`,
+ * `SpeechBubble`, `Bubble`, `YelpLink`) and its geometry (`layout.ts`,
+ * `D-04.6`).
  *
  * ── The only async section so far, and why ────────────────────────────────
  *

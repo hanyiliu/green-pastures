@@ -2,8 +2,8 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { SubpageHeader } from "@/components/layout/SubpageHeader";
 import { Reveal } from "@/components/motion/Reveal";
-import { StarRow } from "@/components/sections/testimonials/StarRow";
 import { YelpBadge } from "@/components/sections/testimonials/YelpBadge";
+import { StarRow } from "@/components/ui/StarRow";
 
 import { COUNT_LINE, RATING_ROW, RATING_VALUE, REVIEWS_HEADER } from "./layout";
 
@@ -49,12 +49,20 @@ import { COUNT_LINE, RATING_ROW, RATING_VALUE, REVIEWS_HEADER } from "./layout";
  * for a screen reader, and the badge is a word of its own. `ReviewsHeader` and
  * `TrustRow` both already read it this way.
  *
- * ── `StarRow` and `YelpBadge` are imported from the home section ─────────
+ * ── `StarRow` is a primitive; `YelpBadge` is still the home section's ────
  *
- * Neither lives where 04 §3.2 puts it — `StarRow` belongs in `components/ui`
- * and its own file says the lift is a bead — and this page would be the third
- * hand-rolled star row on the site. Importing the second is the smaller wrong
- * thing; see `ReviewCard` for the same note and the same filed follow-up.
+ * `StarRow` now comes from `components/ui`, where 04 §3.2 places it, and this
+ * row takes its `header` size — the same one `ReviewsHeader` takes on the home
+ * page. That size renders 18/24px and this header draws 17/**22** (M L418,
+ * D L518); 22 sits exactly between `text-xl` and `text-2xl`, so `StarRow`'s
+ * own file holds the gap open rather than mint a fifth size that is no nearer.
+ *
+ * `YelpBadge` still reaches across from `components/pages` into
+ * `components/sections/testimonials`, which is not where a pill used by two
+ * surfaces belongs. Moving it is not this row's call to make on its own: 04
+ * lists `YelpBadge` under `TestimonialsSection` in §3.5 and does not name it in
+ * §3.2's primitives or in the `components/ui` tree, so the move wants a line in
+ * 04 first. Filed, not done.
  */
 
 /** The page's message namespace, which is also its `site.routes[]` id. */
