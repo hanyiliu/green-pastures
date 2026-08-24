@@ -20,3 +20,5 @@ allowBuilds:
   '@parcel/watcher': false
   '@swc/core': false
   esbuild: false
+patchedDependencies:
+  zod@4.4.3: patches/zod@4.4.3.patch

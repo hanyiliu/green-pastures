@@ -132,6 +132,104 @@ if (urls.length === 0) {
 const median = (options) => ["error", { aggregationMethod: "median", ...options }];
 const medianWarn = (options) => ["warn", { aggregationMethod: "median", ...options }];
 
+/* ------------------------------------------------------------------------- *
+ * The script-transfer budget, which is per route (08 §7)
+ * ------------------------------------------------------------------------- */
+
+/**
+ * `resource-summary:script:size`, in bytes, by the kind of route.
+ *
+ * It is two numbers rather than one because the two kinds of page do not carry
+ * the same *first load*: `/{locale}` is the only route that renders the inquiry
+ * form, so it is the only route whose own graph contains Zod — 795,572 bytes
+ * against a detail page's 634,809. One number for both would either be the home
+ * figure, under which the detail pages sit 160 KB inside it and stop being
+ * gated in any meaningful sense, or the detail figure, which home cannot meet
+ * without deleting client-side validation (07 D-07.3 shares one schema between
+ * client and handler, so the client is not free to skip it).
+ *
+ * 08 §7 records the thing this split does not fix, and it belongs here too: a
+ * detail page *fetches* more than its first load, because after hydration the
+ * router prefetches `/` and home's route chunk arrives with it. `detail` is a
+ * live miss for that reason, kept rather than relaxed.
+ */
+const SCRIPT_TRANSFER_BYTES = {
+  /**
+   * 225 KiB, `/{locale}`. Measured on 2026-08-24 at 481d193 with the Zod patch
+   * in `patches/zod@4.4.3.patch` applied: **211,282 bytes brotli-11** over the
+   * thirteen scripts of `/en` (795,572 raw, 243,800 gzip-9), and that is exactly
+   * the set Lighthouse fetches, so it is a budget stated against what the
+   * assertion sees.
+   *
+   * The 19,118 bytes above the measurement are two things, not one. About 7,500
+   * is unit conversion rather than headroom: Lighthouse's transfer figure ran
+   * 3.1–3.5 % above the same local sum on both builds measured that day
+   * (284,120 against 275,614 before the patch, 252,216 against 243,800 after,
+   * gzip on both sides), because it counts response headers and the server's
+   * compressor is not this one. The remaining ≈ 12 KiB is deliberately on the
+   * generous side of the ratchet's calibration, because one term in it is not a
+   * regression at all: the CDN's brotli quality is not knowable from here and
+   * can only be *lower* than 11, which makes the real transfer figure larger
+   * than the number above by an amount nobody has measured yet. What is left
+   * still brackets the way `FIRST_LOAD_CEILINGS` does — at this tree's brotli
+   * ratio (26.6 %) an ordinary pull request, 08 §7's ≈ 1.2 KiB uncompressed,
+   * costs ≈ 0.3 KiB of transfer, while swapping `domAnimation` for `domMax` in
+   * `LazyMotion` costs 49.0 KiB uncompressed ≈ 13 KiB of transfer and does not
+   * fit. A library arriving in the client graph still reds this; a season of
+   * ordinary feature work does not. Re-record it against a real deployment once
+   * one has been measured.
+   */
+  home: 230_400,
+  /**
+   * 180 KiB, every other route — 08 §7's original figure, kept rather than
+   * relaxed. A detail page's own first load is 171,413 bytes brotli-11 (174,406
+   * for `/gallery`), 13 KB inside the budget; what it actually fetches is
+   * 211,928, because of the prefetch described above. The number stays because
+   * the fix for that is on the prefetch side, and because a budget reset to
+   * whatever the site scores today is the shape this file's header names.
+   */
+  detail: 184_320,
+};
+
+/** For building a URL pattern out of a base URL that is full of regex syntax. */
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const localeAlternation = locales.map(escapeRegExp).join("|");
+
+/**
+ * Which of the two budgets a URL is held to, as the regex `matchingUrlPattern`
+ * that LHCI tests against `lhr.finalUrl` [verified: `@lhci/utils` 0.15.1,
+ * `doesLHRMatchPattern`]. Both are built from `locales`, so INV-08.4 holds here
+ * as it does for the matrix: enabling or withdrawing a locale changes which
+ * URLs land in which bucket without anybody editing this file.
+ *
+ * `/{locale}` with nothing after it is home; `/{locale}/anything` is a detail
+ * page. A trailing slash and a query or fragment are tolerated on the home
+ * pattern because the run against a protected preview carries
+ * `x-vercel-set-bypass-cookie` and a redirect through it must not silently
+ * move a URL out of its bucket.
+ */
+const HOME_URL_PATTERN = `^${escapeRegExp(baseUrl)}/(?:${localeAlternation})/?(?:[?#].*)?$`;
+const DETAIL_URL_PATTERN = `^${escapeRegExp(baseUrl)}/(?:${localeAlternation})/[^?#]`;
+
+/**
+ * A URL in no bucket is asserted against no script budget, and LHCI says
+ * nothing about it: `getAllAssertionResultsForUrl` returns early on an empty
+ * LHR set, so a pattern that matches nothing passes silently. That is the
+ * fail-open shape this repository keeps cataloguing, so the matrix is checked
+ * against the patterns here rather than trusted to match at run time.
+ */
+for (const url of urls) {
+  const buckets = [HOME_URL_PATTERN, DETAIL_URL_PATTERN].filter((pattern) =>
+    new RegExp(pattern).test(url),
+  );
+  if (buckets.length !== 1) {
+    die(
+      `${url} matches ${String(buckets.length)} of the two script-size patterns and must match exactly one, or it would be measured against no script budget at all (or two).`,
+    );
+  }
+}
+
 module.exports = {
   ci: {
     collect: {
@@ -150,48 +248,77 @@ module.exports = {
           : undefined,
       },
     },
+    // `assertMatrix` rather than `assertions` because the script budget is per
+    // route. LHCI refuses the two together — "Cannot use assertMatrix with
+    // other options" — and refuses a sibling `preset`, `budgetsFile` or
+    // top-level `aggregationMethod` as well [verified: `@lhci/utils` 0.15.1].
+    // Nothing is lost: `median()` already carries `aggregationMethod` per
+    // assertion, which is where 08 §7 wanted it anyway. Every entry runs
+    // against every URL, filtered by its own `matchingUrlPattern`, so the
+    // entries below are three groups of assertions and not three alternatives.
     assert: {
-      assertions: {
-        "categories:performance": median({ minScore: 0.9 }),
-        "categories:accessibility": median({ minScore: 1 }),
-        "categories:best-practices": median({ minScore: 0.95 }),
-        "categories:seo": median({ minScore: 1 }),
+      assertMatrix: [
+        {
+          // No `matchingUrlPattern`: everything 08 §7 asserts about every page.
+          assertions: {
+            "categories:performance": median({ minScore: 0.9 }),
+            "categories:accessibility": median({ minScore: 1 }),
+            "categories:best-practices": median({ minScore: 0.95 }),
+            "categories:seo": median({ minScore: 1 }),
 
-        // **There is no `largest-contentful-paint` row, and the absence is the
-        // decision.** It carried `2500` until 2026-08-24; 08 §7's closing
-        // paragraph is the record and the evidence. In short: measured at
-        // `15beead`, the best LCP any URL in this matrix produced was 3,930 ms,
-        // and `/privacy` — the lightest route in the site — sits at 3,533 ms
-        // while scoring `categories:performance` 0.90, so the floor is the
-        // architecture and not the page. It was removed rather than loosened
-        // or downgraded to `warn` because a number left in this table reads as
-        // enforcement whatever its severity, and a threshold nothing can fail
-        // is the shape the header above already names. LCP is not unwatched:
-        // it is a weighted input to `categories:performance`, asserted `error`
-        // in the block above and medianing 0.81 today, and the number that
-        // governs is the Speed Insights field p75 (08 §7, §12.3; the
-        // integration is PR-7.1's).
+            // **There is no `largest-contentful-paint` row, and the absence is
+            // the decision.** It carried `2500` until 2026-08-24; 08 §7's
+            // closing paragraph is the record and the evidence. In short:
+            // measured at `15beead`, the best LCP any URL in this matrix
+            // produced was 3,930 ms, and `/privacy` — the lightest route in the
+            // site — sits at 3,533 ms while scoring `categories:performance`
+            // 0.90, so the floor is the architecture and not the page. It was
+            // removed rather than loosened or downgraded to `warn` because a
+            // number left in this table reads as enforcement whatever its
+            // severity, and a threshold nothing can fail is the shape the
+            // header above already names. LCP is not unwatched: it is a
+            // weighted input to `categories:performance`, asserted `error`
+            // above and medianing 0.81 today, and the number that governs is
+            // the Speed Insights field p75 (08 §7, §12.3; the integration is
+            // PR-7.1's).
 
-        // 08 §7: this is Lighthouse's whole-page, cold-load, mobile-emulated
-        // CLS and is deliberately looser than the animation budget. The 0.02
-        // that 03 §3 fixes for reveals, count-up, loops and the locale toggle
-        // is asserted separately and per phase by 08 §5's `@perf` tag, and
-        // neither number relaxes the other.
-        "cumulative-layout-shift": median({ maxNumericValue: 0.05 }),
-        "total-blocking-time": median({ maxNumericValue: 200 }),
-        "speed-index": medianWarn({ maxNumericValue: 3400 }),
+            // 08 §7: this is Lighthouse's whole-page, cold-load, mobile-emulated
+            // CLS and is deliberately looser than the animation budget. The 0.02
+            // that 03 §3 fixes for reveals, count-up, loops and the locale toggle
+            // is asserted separately and per phase by 08 §5's `@perf` tag, and
+            // neither number relaxes the other.
+            "cumulative-layout-shift": median({ maxNumericValue: 0.05 }),
+            "total-blocking-time": median({ maxNumericValue: 200 }),
+            "speed-index": medianWarn({ maxNumericValue: 3400 }),
 
-        "resource-summary:script:size": median({ maxNumericValue: 184320 }),
-        "resource-summary:image:size": median({ maxNumericValue: 512000 }),
-        "resource-summary:font:size": median({ maxNumericValue: 122880 }),
-        "resource-summary:third-party:count": median({ maxNumericValue: 3 }),
+            "resource-summary:image:size": median({ maxNumericValue: 512000 }),
+            "resource-summary:font:size": median({ maxNumericValue: 122880 }),
+            "resource-summary:third-party:count": median({ maxNumericValue: 3 }),
 
-        "unsized-images": "error",
-        "modern-image-formats": "error",
-        "uses-responsive-images": "error",
-        "offscreen-images": "error",
-        "third-party-summary": "warn",
-      },
+            "unsized-images": "error",
+            "modern-image-formats": "error",
+            "uses-responsive-images": "error",
+            "offscreen-images": "error",
+            "third-party-summary": "warn",
+          },
+        },
+        {
+          matchingUrlPattern: HOME_URL_PATTERN,
+          assertions: {
+            "resource-summary:script:size": median({
+              maxNumericValue: SCRIPT_TRANSFER_BYTES.home,
+            }),
+          },
+        },
+        {
+          matchingUrlPattern: DETAIL_URL_PATTERN,
+          assertions: {
+            "resource-summary:script:size": median({
+              maxNumericValue: SCRIPT_TRANSFER_BYTES.detail,
+            }),
+          },
+        },
+      ],
     },
     upload: {
       // Never `temporary-public-storage`: those reports are public, and this

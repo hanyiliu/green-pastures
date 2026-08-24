@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, extname, join, relative, resolve } from "node:path";
 import process from "node:process";
-import { gzipSync } from "node:zlib";
+import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 
 import { routing } from "@/i18n/routing";
 
@@ -17,9 +17,10 @@ import { routing } from "@/i18n/routing";
  * runs, its quality setting and the negotiated encoding, none of which exist on
  * a build machine; a locally invented gzip number asserted against a budget
  * written for a real CDN is a guess dressed as a gate. So the transfer budgets
- * — `resource-summary:script:size <= 184320`, `largest-contentful-paint`,
- * `total-blocking-time` and the rest — live in `lighthouserc.cjs` and are
- * asserted by `lighthouse-preview` / `lighthouse-prod` against a deployment.
+ * — `resource-summary:script:size` (230400 on home, 184320 on every detail
+ * page), `largest-contentful-paint`, `total-blocking-time` and the rest — live
+ * in `lighthouserc.cjs` and are asserted by `lighthouse-preview` /
+ * `lighthouse-prod` against a deployment.
  *
  * What is left is everything the build output settles on its own, and this file
  * is all of it:
@@ -117,11 +118,18 @@ const DOC_08_7 = {
   /** `resource-summary:third-party:count <= 3`. */
   thirdPartyCount: 3,
   /**
-   * `resource-summary:script:size <= 184320` — 180 KiB transfer, home.
+   * `resource-summary:script:size`, which since the Zod patch
+   * (`patches/zod@4.4.3.patch`) is **per route**: 225 KiB transfer on
+   * `/{locale}`, the only page that renders the inquiry form and so the only
+   * one that ships Zod, and 08 §7's original 180 KiB on every detail page.
+   * `lighthouserc.cjs` holds the same two numbers and the patterns that decide
+   * which URL is held to which.
+   *
    * Printed, never asserted here: transfer size is `lighthouserc.cjs`'s to
-   * assert against a real CDN, per the header.
+   * assert against a real CDN, per the header. This file measures home pages
+   * only, so `home` is the number the summary row prints against.
    */
-  scriptTransferBytes: 184_320,
+  scriptTransferBytes: { home: 230_400, detail: 184_320 },
 } as const;
 
 /** 09 §4.9, the editor guide's own rule: "JPEG or WebP, <= 400 KB each". */
@@ -136,14 +144,20 @@ const DOC_09_4_9 = {
 /**
  * The ratchet: each route's measurement rounded up to the next
  * {@link CEILING_GRANULARITY_KIB}. Recorded on 2026-08-24 from a `next build`
- * of `origin/main` at 947bdf6 — nine routes, three locales, and no photography
- * (`public/images/` does not exist until PR-8.3). The measurement each ceiling
- * was rounded up from is in the comment beside it.
+ * of `origin/main` at 481d193 with `patches/zod@4.4.3.patch` applied — nine
+ * routes, three locales, and no photography (`public/images/` does not exist
+ * until PR-8.3). The measurement each ceiling was rounded up from is in the
+ * comment beside it.
  *
- * The privacy page in flight in this wave is deliberately absent: an unrecorded
- * route is measured against the largest ceiling here and reported as such, so
- * the lane that adds it is not red for adding it, and whoever records it does
- * so with its real number in front of them.
+ * Two rows move with this recording, and both move down. `/[locale]` was 960
+ * against 945.7 KiB and is 800 against 789.5 KiB: the Zod patch takes 161,266
+ * bytes of unreachable locale tables and JSON-Schema conversion out of the one
+ * route that renders the inquiry form. `/[locale]/privacy` was the page "in
+ * flight in this wave" that the 947bdf6 recording deliberately left out; it has
+ * landed, it measures 632.5 KiB like its five siblings, and it is recorded here
+ * rather than left to be measured against the largest ceiling — an unrecorded
+ * route is a route whose real number nobody is watching, which is the state
+ * this file exists to avoid.
  *
  * Read the header before changing a number here. Lowering one is ordinary
  * housekeeping after a real improvement; raising one is a claim that the site
@@ -152,13 +166,14 @@ const DOC_09_4_9 = {
 const CEILING_GRANULARITY_KIB = 16;
 
 const FIRST_LOAD_CEILINGS: ReadonlyMap<string, number> = new Map([
-  ["/[locale]", 960], // 945.7 KiB
-  ["/[locale]/gallery", 656], // 640.8 KiB
-  ["/[locale]/menu", 640], // 631.6 KiB
-  ["/[locale]/philosophy", 640], // 631.6 KiB
-  ["/[locale]/programs", 640], // 631.6 KiB
-  ["/[locale]/reviews", 640], // 631.6 KiB
-  ["/[locale]/team", 640], // 631.6 KiB
+  ["/[locale]", 800], // 789.5 KiB
+  ["/[locale]/gallery", 656], // 641.7 KiB
+  ["/[locale]/menu", 640], // 632.5 KiB
+  ["/[locale]/philosophy", 640], // 632.5 KiB
+  ["/[locale]/privacy", 640], // 632.5 KiB
+  ["/[locale]/programs", 640], // 632.5 KiB
+  ["/[locale]/reviews", 640], // 632.5 KiB
+  ["/[locale]/team", 640], // 632.5 KiB
   ["/_not-found", 496], // 495.2 KiB — the 404's own route since `gp-dln.266`
 ]);
 
@@ -493,31 +508,50 @@ for (const [locale, html] of homePages) {
  * ------------------------------------------------------------------------- */
 
 /**
- * The transfer figure, printed and never asserted (see the header). gzip
- * rather than brotli because every CDN negotiates at least gzip, so this is the
- * worst case a visitor can be served, and because gzip's output does not move
- * between library versions the way brotli's does.
+ * The transfer figure, printed and never asserted (see the header).
+ *
+ * **Both encodings, and the verdict reads brotli.** 08 §7's `230400` is stated
+ * against a brotli-11 measurement of exactly these files, because brotli is
+ * what the CDN negotiates with every browser this site supports and so is what
+ * `lighthouse-preview` will report. Printing gzip alone and calling it "over"
+ * would compare one encoding's bytes to another encoding's budget and red a
+ * summary that Lighthouse is about to pass — the wrong kind of wrong, since
+ * this row exists to tell a reader where they stand before the deployment does.
+ * gzip stays beside it as the worst case: it is what a client that cannot take
+ * brotli receives, and its output does not move between library versions the
+ * way brotli's does, so it is the more stable of the two to eyeball across
+ * builds.
  */
-const homeTransfer = (): { readonly locale: string; readonly gzip: number } | undefined => {
+const homeTransfer = ():
+  { readonly locale: string; readonly gzip: number; readonly brotli: number } | undefined => {
   const first = [...homePages.entries()][0];
   if (first === undefined) return undefined;
   const [locale, html] = first;
   const seen = new Set<string>();
   let gzip = 0;
+  let brotli = 0;
   for (const src of moduleScripts(html)) {
     if (seen.has(src)) continue;
     seen.add(src);
     const path = assetPath(src);
-    if (existsSync(path)) gzip += gzipSync(readFileSync(path), { level: 9 }).length;
+    if (!existsSync(path)) continue;
+    const bytes = readFileSync(path);
+    gzip += gzipSync(bytes, { level: 9 }).length;
+    brotli += brotliCompressSync(bytes, {
+      params: {
+        [constants.BROTLI_PARAM_QUALITY]: constants.BROTLI_MAX_QUALITY,
+        [constants.BROTLI_PARAM_SIZE_HINT]: bytes.length,
+      },
+    }).length;
   }
-  return { locale, gzip };
+  return { locale, gzip, brotli };
 };
 
 const transfer = homeTransfer();
 if (transfer !== undefined) {
   summaryRows.push(
-    `| script transfer \`/${transfer.locale}\` (gzip) | ${kib(transfer.gzip)} | ${kib(DOC_08_7.scriptTransferBytes)} | ${
-      transfer.gzip > DOC_08_7.scriptTransferBytes
+    `| script transfer \`/${transfer.locale}\` | ${kib(transfer.brotli)} brotli-11 (${kib(transfer.gzip)} gzip) | ${kib(DOC_08_7.scriptTransferBytes.home)} | ${
+      transfer.brotli > DOC_08_7.scriptTransferBytes.home
         ? "over — asserted by `lighthouse-preview`, not here"
         : "ok"
     } |`,

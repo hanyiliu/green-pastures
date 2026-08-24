@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  zod@4.4.3: b3686adfcb2a182aebd37154b8d50902588bd741bc7fac25309b42160b848539
+
 importers:
 
   .:
@@ -25,7 +28,7 @@ importers:
         version: 19.2.8(react@19.2.8)
       zod:
         specifier: 4.4.3
-        version: 4.4.3
+        version: 4.4.3(patch_hash=b3686adfcb2a182aebd37154b8d50902588bd741bc7fac25309b42160b848539)
     devDependencies:
       '@eslint/js':
         specifier: 9.39.5
@@ -6120,8 +6123,8 @@ snapshots:
       '@babel/parser': 7.29.8
       eslint: 9.39.5(jiti@2.7.0)
       hermes-parser: 0.25.1
-      zod: 4.4.3
-      zod-validation-error: 4.0.2(zod@4.4.3)
+      zod: 4.4.3(patch_hash=b3686adfcb2a182aebd37154b8d50902588bd741bc7fac25309b42160b848539)
+      zod-validation-error: 4.0.2(zod@4.4.3(patch_hash=b3686adfcb2a182aebd37154b8d50902588bd741bc7fac25309b42160b848539))
     transitivePeerDependencies:
       - supports-color
 
@@ -8489,10 +8492,10 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-validation-error@4.0.2(zod@4.4.3):
+  zod-validation-error@4.0.2(zod@4.4.3(patch_hash=b3686adfcb2a182aebd37154b8d50902588bd741bc7fac25309b42160b848539)):
     dependencies:
-      zod: 4.4.3
+      zod: 4.4.3(patch_hash=b3686adfcb2a182aebd37154b8d50902588bd741bc7fac25309b42160b848539)
 
   zod@3.25.76: {}
 
-  zod@4.4.3: {}
+  zod@4.4.3(patch_hash=b3686adfcb2a182aebd37154b8d50902588bd741bc7fac25309b42160b848539): {}
