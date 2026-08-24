@@ -4,6 +4,7 @@ import { routing } from "../src/i18n/routing";
 
 import {
   alternateLinks,
+  anchorHrefs,
   BUILT_PAIRS,
   BUILT_ROUTE_PATHS,
   canonicalHref,
@@ -57,20 +58,28 @@ import {
  * arrives empty, because a matrix of zero URLs is a green run that measured
  * nothing.
  *
- * ── Why the assertions use `request` and the 404 uses a browser ──────────
+ * ── Every assertion here reads the served bytes, the 404 included ────────
  *
  * Every `@seo` assertion reads the *served* document through `request`: it is
  * the document a crawler gets, it needs no engine, and it is the form
  * `lighthouse-prod` re-runs this tag in against the production base URL (08
- * §10). The 404 is the exception and the reason is a finding rather than a
- * preference — Next serves the not-found boundary as an empty streamed shell
- * (`<html id="__next_error__">`, no `lang`, no body) and fills it on the
- * client, so a `request.get` there would assert nothing about the page anyone
- * sees. Those three tests load it in a browser and read the hydrated result.
+ * §10).
+ *
+ * The 404 used to be the exception, and the exception was hiding the defect it
+ * was written around (`gp-dln.266`). Next served the not-found boundary as an
+ * empty streamed shell — `<html id="__next_error__">`, no `lang`, no body —
+ * and filled it on the client, so these three tests loaded a browser and read
+ * the hydrated result: green on a page that a crawler, a screen reader and a
+ * reader with JavaScript off all received blank. They read the response now,
+ * which is the only reader that can tell the two apart. `D-06.14`'s
+ * `global-not-found.tsx` is what makes the response worth reading.
  */
 
-/** The path used to reach the `[...rest]` catch-all. Nothing links to it. */
+/** The path that matches no route in any locale. Nothing links to it. */
 const UNKNOWN_PATH = "/no-such-page";
+
+/** An unknown path with a dot — the shape the proxy's matcher excludes. */
+const DOTTED_UNKNOWN_PATH = "/no-such-page.txt";
 
 /** Metadata routes, and the one route handler `robots.txt` excludes. */
 const SITEMAP_PATH = "/sitemap.xml";
@@ -347,35 +356,83 @@ test.describe("robots.txt", () => {
   });
 });
 
+/** The `lang` on the served `<html>`, or `null` when the tag declares none. */
+function htmlLang(html: string): string | null {
+  const tag = /<html\b[^>]*>/i.exec(html)?.[0];
+  const lang = tag === undefined ? undefined : /\blang="([^"]*)"/i.exec(tag)?.[1];
+  return lang ?? null;
+}
+
+/** Every `<meta name="robots">` in the served document, in source order. */
+function robotsDirectives(html: string): string[] {
+  const directives: string[] = [];
+  const pattern = /<meta\b[^>]*\bname="robots"[^>]*>/gi;
+  let match = pattern.exec(html);
+  while (match !== null) {
+    directives.push(/\bcontent="([^"]*)"/i.exec(match[0])?.[1] ?? "");
+    match = pattern.exec(html);
+  }
+  return directives;
+}
+
 test.describe("the localised 404", () => {
   for (const locale of routing.locales) {
     const url = `${urlFor(locale, HOME_PATH)}${UNKNOWN_PATH}`;
 
-    test(`${url} is the reader's own 404, not English and not indexable @smoke`, async ({
-      page,
+    test(`${url} is the reader's own 404, served whole and not indexable @smoke`, async ({
+      request,
     }) => {
-      const response = await page.goto(url);
-      expect(response?.status(), `${url} did not answer 404`).toBe(404);
+      const response = await request.get(url, { failOnStatusCode: false });
+      expect(response.status(), `${url} did not answer 404`).toBe(404);
+      const html = await response.text();
 
+      // The whole point of reading the response: the copy has to be *in* it.
+      // The old shell carried this string only inside the Flight payload, so
+      // an assertion that ran in a browser passed on a blank document.
+      //
       // Read from the content tree, deep-merged the way the production loader
       // merges it (INV-08.5, 02 `D-02.8`): `zh-Hant` has no `errors.notFound`
       // of its own yet, so the expected string is the English one *because the
       // server would render the English one*, and it moves by itself the day
       // the file is translated.
       const expectedTitle = copy(localeMessages(locale, "errors"), "notFound.title");
-      await expect(page.locator("h1")).toHaveText(expectedTitle);
+      expect(html, `${url} rendered no <h1> on the server`).toContain(`<h1>${expectedTitle}</h1>`);
 
-      // `[...rest]` is what makes this the locale layout's 404 rather than the
-      // root one (06 `D-06.3`): the reader's own `<html lang>`, and a CTA that
-      // goes to *their* home page rather than to `/en`.
-      await expect(page.locator("html")).toHaveAttribute("lang", locale);
-      await expect(page.locator(`main a[href="${urlFor(locale, HOME_PATH)}"]`)).toHaveCount(1);
+      // INV-06.6: a real 404 declares the reader's own language and points home
+      // to *their* locale, not to `/en`. `D-06.14`'s `global-not-found.tsx`
+      // reads the locale from the cookie the proxy wrote for this request.
+      expect(htmlLang(html), `${url} declared no document language`).toBe(locale);
+      expect(anchorHrefs(html)).toContain(urlFor(locale, HOME_PATH));
+
+      // One `robots`, and it says `noindex` (`gp-dln.266`). Two used to be
+      // served — Next's `noindex` for the 404 status and the `[locale]`
+      // layout's `index, follow` — because the 404 rendered inside a layout
+      // that had already claimed the page was indexable.
+      expect(robotsDirectives(html)).toEqual(["noindex"]);
 
       // 06 §6.7: a 404 carries no canonical and no alternates. It is not a
       // page, and telling a crawler it has three locale variants would be
       // three more URLs to not index.
-      await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
-      await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(0);
+      expect(canonicalHref(html)).toBeNull();
+      expect(alternateLinks(html)).toHaveLength(0);
     });
   }
+
+  test(`${DOTTED_UNKNOWN_PATH} is a whole document too @smoke`, async ({ request }) => {
+    // The path with a dot is the one the proxy's matcher excludes (`D-06.5`),
+    // so it reaches the router with no locale negotiated. It used to enter
+    // `[locale]` as `locale = "nope.txt"` and throw from the layout's own
+    // guard; `dynamicParams = false` refuses the match instead, which is what
+    // turns 63 KiB of empty shell into a served page.
+    const response = await request.get(DOTTED_UNKNOWN_PATH, { failOnStatusCode: false });
+    expect(response.status(), `${DOTTED_UNKNOWN_PATH} did not answer 404`).toBe(404);
+
+    const html = await response.text();
+    const reference = routing.defaultLocale;
+    expect(html).toContain(
+      `<h1>${copy(localeMessages(reference, "errors"), "notFound.title")}</h1>`,
+    );
+    expect(htmlLang(html)).toBe(reference);
+    expect(robotsDirectives(html)).toEqual(["noindex"]);
+  });
 });

@@ -34,17 +34,22 @@ Status: draft · seat writer-routing · 2026-08-22 · revised 2026-08-22 (HD-3, 
   only the Chinese locales' URLs and needs a redirect map.
 - **D-06.3 Explicit folders, no `[slug]` page.** Each detail page is its own folder under `app/[locale]/`
   (`philosophy/page.tsx`, …) because each has a distinct composition (04) and metadata; a `[slug]` page would
-  move the route set into runtime data and lose per-page typing. One catch-all `app/[locale]/[...rest]/page.tsx`
-  exists only to turn unknown paths into a localised 404.
+  move the route set into runtime data and lose per-page typing. There is no catch-all: PR-6.1's
+  `app/[locale]/[...rest]/page.tsx` existed only to turn unknown paths into a localised 404, and `gp-dln.266`
+  removed it because a `notFound()` thrown inside the segment is exactly what Next cannot render on the server
+  (`D-06.14`). An unknown path now matches *nothing*, which is the one 404 Next serves as a whole document.
 - **D-06.4 Rendering mode.** Every page is prerendered at build time per locale — with three locales that is
   three prerenders of every page: `generateStaticParams` over
   `routing.locales` in `app/[locale]/layout.tsx` and locale resolution via `next/root-params` in
   `src/i18n/request.ts` (next-intl's Next 16.3 recipe; `setRequestLocale` is the legacy API) `[verified]`.
   No ISR, no `dynamic` overrides, no request-time APIs in pages/layouts. The only Functions are the proxy and
   `POST /api/inquiry`; `sitemap.ts`, `robots.ts` and `manifest.ts` are cached Route Handlers. **One exception
-  to "static":** `app/[locale]/[...rest]/page.tsx` is a catch-all with no enumerable params, so `next build`
-  marks it `ƒ Dynamic` and renders it on demand. That is by construction (it exists only to 404) and it is the
-  only dynamic page; every gate that asserts "all static" exempts it by name (INV-06.7, §6.10).
+  to "static":** `/_not-found`, the route `src/app/global-not-found.tsx` renders, reads the locale cookie
+  (`D-06.14`) and so `next build` marks it `ƒ Dynamic`. That is by construction (it exists only to 404) and it
+  is the only dynamic page; every gate that asserts "all static" exempts it by name (INV-06.7, §6.10). Before
+  `gp-dln.266` the same single exception was `app/[locale]/[...rest]/page.tsx`, for the same reason.
+  `dynamicParams = false` on the `[locale]` layout is what keeps the rest of the tree honest: an unknown
+  locale segment is refused by the router instead of rendering.
   `output: 'export'` is never set (ADR-007, memo ADJ-2).
 - **D-06.5 Proxy.** `src/proxy.ts` is a thin wrapper around `createMiddleware(routing)` from
   `next-intl/middleware` (default export, matcher `'/((?!api|_next|_vercel|.*\\..*).*)'`) that adds exactly two
@@ -157,12 +162,34 @@ Status: draft · seat writer-routing · 2026-08-22 · revised 2026-08-22 (HD-3, 
   sample defaults**, not `TODO` (HD-7 / `D-02.20`): the object always renders, and `validate:content --release`
   fails while their paths remain in `site.json.provisional` (INV-02.10). Real values are still a launch-gate
   requirement (gp-dln.13, **OQ-06.9**).
-- **D-06.14 Errors.** `app/[locale]/not-found.tsx` (localised, `errors.notFound.*`), `app/[locale]/error.tsx`
-  (client, `errors.serverError.*` via `NextIntlClientProvider`), `app/[locale]/global-error.tsx` (own
-  `<html lang="en">`, statically imported `en` messages). Unknown locale prefixes are not locales: the proxy
-  treats `/fr/x` as an unprefixed path and redirects to `/{detected}/fr/x`, which the catch-all turns into a
-  localised 404 (status 404). `experimental.globalNotFound` is not enabled; paths with a dot that bypass the proxy
-  and match nothing (asset typos) get Next's built-in 404. No `loading.tsx` anywhere (keeps 404 status real).
+- **D-06.14 Errors.** `app/global-not-found.tsx` (the whole 404 document — `<html lang>`, fonts,
+  `globals.css`, `errors.notFound.*`), `app/[locale]/error.tsx` (client, `errors.serverError.*` via
+  `NextIntlClientProvider`), `app/[locale]/global-error.tsx` (own `<html lang="en">`, statically imported `en`
+  messages). Unknown locale prefixes are not locales: the proxy treats `/fr/x` as an unprefixed path and
+  redirects to `/{detected}/fr/x`, which matches no route and 404s in the detected locale. No `loading.tsx`
+  anywhere (keeps 404 status real).
+
+  **`experimental.globalNotFound` is on** (`gp-dln.266`), reversing the earlier "not enabled until stable",
+  and the reason is a measurement rather than a preference. Next cannot run a React error boundary in the SSR
+  shell, so a `notFound()` thrown from any segment makes it abandon the shell and answer with its recovery
+  document: `<html id="__next_error__">`, **no `lang`**, an empty `<body>`, the page left in the inlined
+  Flight payload for the client to mount. Measured on `next start`, Next 16.3.2: `/en/no-such-page` was
+  22 604 bytes of that shell carrying **two** `<meta name="robots">` (Next's `noindex` and the `[locale]`
+  layout's `index, follow`, which contradict each other); it is now 5 197 bytes with `<html lang="en">`, the
+  panel in the body and one `noindex`. The behaviour is Next's, not this tree's — a pristine 16.3.2 app
+  reproduces it for a `notFound()` from a static page, from a dynamic page, and with `cacheComponents` on.
+  A `Suspense` above the throw does change it, into a **200** with the fallback, which INV-06.6 already
+  forbids for that reason. The only 404 Next renders whole is the route it serves when a URL matches nothing,
+  which is why the catch-all is gone (`D-06.3`) and the `[locale]` layout sets `dynamicParams = false`
+  (`D-06.4`). Turning the flag off again means restoring `app/not-found.tsx`, which — measured — Turbopack
+  prefers over `global-not-found.tsx` whenever both exist.
+
+  The 404 is still the reader's own: with no `[locale]` segment above it, `global-not-found.tsx` reads the
+  `NEXT_LOCALE` cookie the proxy has already written for this request (`D-06.5`) and falls back to the
+  reference locale for anything not in `routing.locales`, which is 02's "unknown-locale 404 renders in `en`"
+  for the dotted paths the proxy never sees. What it loses is the chrome — `SiteHeader` and `SiteFooter` read
+  messages through the provider the locale layout mounts, and this route has no layout — so the 404 is the
+  panel and a link home. That is the trade against a document that was blank without JavaScript.
 - **D-06.15 Chinese negotiation and canonical casing (HD-10).** Two things three locales need that
   `createMiddleware(routing)` cannot do alone, both implemented in `src/proxy.ts` around it (§6.3).
   (a) **Accept-Language.** Browsers send `zh-CN`, `zh-TW` and rarely a script subtag, and best-fit lookup
@@ -199,7 +226,7 @@ payload at build. No row is per-locale: every page below exists three times.
 | `/{l}/enroll` | page · static · **reserved** | `app/[locale]/enroll/page.tsx` | Enrollment page, the optional `visit.kicker\|heading\|meta.*` keys (`D-02.17`); not at launch (OQ-06.1, HD-5) |
 | `/{l}/faq` | page · static · **reserved** | `app/[locale]/faq/page.tsx` | no reference content (R1); reserved by `D-02.17` — ships when `site.json.faq[]` is non-empty |
 | `/{l}/privacy` | page · static · **conditional** | `app/[locale]/privacy/page.tsx` | only if OQ-07.5 says yes |
-| `/{l}/<anything else>` | 404 · on demand (`ƒ Dynamic` — the one non-static page, `D-06.4`) | `app/[locale]/[...rest]/page.tsx` → `not-found.tsx` | localised, `noindex` (Next injects it on 404) |
+| `/{l}/<anything else>` | 404 · on demand (`ƒ Dynamic` — the one non-static page, `D-06.4`) | matches no route → `/_not-found` → `app/global-not-found.tsx` | localised from the `NEXT_LOCALE` cookie, `noindex` (Next injects it on 404) |
 | `/<unprefixed path>` | proxy redirect 307 | `src/proxy.ts` | → `/{detected}/<path>`; Chinese negotiation per `D-06.15`(a); legacy CRA paths are redirected first (§6.9) |
 | `/zh-hans/...`, `/ZH-HANT/...`, `/EN/...` | proxy redirect 308 | `src/proxy.ts` | wrong-cased locale segment → canonical casing (`D-06.15`(b)); one hop, then the prefixed URL is served |
 | `/api/inquiry` | route handler · Node function | `app/api/inquiry/route.ts` | `POST` only; `GET` → 405 (07 §2); excluded from proxy + sitemap; it sits outside `[locale]` and **receives the locale as a form field (07), never from the path** (02 Routing) |
@@ -211,7 +238,7 @@ payload at build. No row is per-locale: every page below exists three times.
 
 Count at launch: 7 page routes × 3 locales = **21** indexable URLs (+ 3 per reserved/conditional page if
 enabled); 3 metadata routes; 1 API route; 3 redirect classes (root/unprefixed 307, wrong-case 308, trailing
-slash 308); 1 catch-all. Nothing multiplies by hand: the number falls out of `routing.locales`, so holding
+slash 308); no catch-all. Nothing multiplies by hand: the number falls out of `routing.locales`, so holding
 `zh-Hant` back under INV-02.11 yields 14 with no edit here (`D-06.12`). Trailing slashes: Next's default
 (`trailingSlash: false`) — `/en/menu/` 308-redirects to `/en/menu`; canonical and sitemap URLs carry no slash.
 
@@ -226,10 +253,9 @@ src/app/
 │   ├── page.tsx            home — PageTransition (05) → 8 sections, <JsonLd>
 │   ├── philosophy/ programs/ menu/ gallery/ reviews/ team/   (each: page.tsx — PageTransition → SubpageBar → main → SubpageHeader)
 │   ├── enroll/ faq/ privacy/                                  (reserved / conditional, D-06.1)
-│   ├── [...rest]/page.tsx  notFound()
-│   ├── not-found.tsx       localised 404 (server component)
 │   ├── error.tsx           'use client' — errors.serverError.* + reset()
 │   └── global-error.tsx    'use client' — own <html lang="en"><body>, en messages by static import
+├── global-not-found.tsx    the 404: own <html lang><body>, locale from the NEXT_LOCALE cookie (D-06.14)
 ├── api/inquiry/route.ts    07
 ├── sitemap.ts · robots.ts · manifest.ts
 └── icon.png · apple-icon.png
@@ -246,9 +272,12 @@ with status 200 `[verified: not-found docs]`). `PageTransition` wraps each page'
 
 Rendering: with `generateStaticParams` returning `routing.locales.map((locale) => ({ locale }))` —
 `[{locale:'en'},{locale:'zh-Hans'},{locale:'zh-Hant'}]` at launch — and no request-time API in any
-layout/page, `next build` marks every route `○ Static` — except `[...rest]`, which has no enumerable params and
-is `ƒ Dynamic` by construction (`D-06.4`). `dynamicParams` is left at its default; unknown locales
-never reach the layout because the proxy redirects them (§6.7), and the layout keeps next-intl's own guard —
+layout/page, `next build` marks every route `○ Static` — except `/_not-found`, which reads the locale cookie
+and is `ƒ Dynamic` by construction (`D-06.4`, `D-06.14`). **`dynamicParams = false`** on the `[locale]`
+layout (`gp-dln.266`): a locale segment outside `generateStaticParams` is refused by the router, which is what
+makes a dotted path like `/nope.txt` — excluded from the proxy's matcher, so it used to enter the segment as
+`locale = "nope.txt"` — a real 404 rather than a throw from the layout itself. The proxy redirects unknown
+prefixes before they get that far (§6.7), and the layout keeps next-intl's own guard —
 `if (!hasLocale(routing.locales, locale)) notFound()` before anything renders `[verified: next-intl
 getting-started]` — so a locale that arrives another way (a direct RSC request, a stale prefetch) 404s instead
 of rendering with an unknown `lang`. `src/i18n/request.ts` resolves the locale from `next/root-params` when
@@ -561,10 +590,10 @@ schema.org types in CI (what, not how).
 
 | Case | Result |
 |---|---|
-| `/{l}/nonexistent` | `[...rest]` → `notFound()` → `app/[locale]/not-found.tsx` inside the locale layout: correct `lang`, nav/footer, `errors.notFound.title|body|cta` (cta → `/` via `Link`), status **404**, `noindex` meta, no canonical/hreflang |
+| `/{l}/nonexistent` | matches no route → `/_not-found` → `app/global-not-found.tsx`, the whole document: correct `lang` (from the `NEXT_LOCALE` cookie), `errors.notFound.title\|body\|cta` (cta → `/{l}` as a plain `<a>` — there is no provider here for next-intl's `Link`), status **404**, one `noindex` meta, no canonical/hreflang, no nav/footer (`D-06.14`) |
 | `/fr/anything`, `/about` | not a locale → proxy treats as unprefixed → 307 `/{detected}/fr/anything` → 404 as above (no redirect to a "best" locale page — a 404 is honest and keeps crawlers from indexing junk). Note the 404 renders in the **detected** locale, not always `en`: 02's Routing sentence "Unknown-locale 404 renders the root `not-found` in `en`" describes only the matcher-excluded case in the row below, where the proxy never runs — requirement to 02, §6.12 |
 | `/api/inquiry` with `GET` | 405 from the handler (07 §2) — never a page |
-| `/favicon.ico` typo or other dotted path | bypasses the proxy; Next's built-in 404 (no app chrome; `experimental.globalNotFound` stays off until stable) |
+| `/favicon.ico` typo or other dotted path | bypasses the proxy, so no locale is negotiated and no cookie is written; `dynamicParams = false` refuses the `[locale]` match and `app/global-not-found.tsx` answers in whatever locale the reader's existing cookie names, else `en` |
 | Render error inside a page | `app/[locale]/error.tsx` (client): `errors.serverError.title|body|retry` with `reset()`; wrapped by the layout's `NextIntlClientProvider`, so `errors` must be a client namespace — 02 lines 97-98 (`D-02.16`) already list it; 04 adopts 02's list (memo ADJ-12) |
 | Error in the root layout itself | `app/[locale]/global-error.tsx`: renders its own `<html lang="en"><body>` with `errors.serverError.*` from `content/en/messages/errors.json` imported statically (no provider exists here; INV-02.1 still holds — no literal text in JSX) |
 | Form request paths | 07 owns status codes; the 303 fallback lands on `/{locale}#visit` — the `homeHref` form with no slash before the `#` (`D-06.6`), so it does not take a `trailingSlash` 308 first — a valid anchor in every locale. The handler itself is outside `[locale]` and reads the locale from a form field, never from the path (02 Routing, 07) |
@@ -578,8 +607,8 @@ schema.org types in CI (what, not how).
   images go through `next/image` with `images.remotePatterns: []` (no remote hosts — everything is in `public/`
   per `D-02.12`) and AVIF/WebP formats; fonts are self-hosted by `next/font` (03, 07 §6).
 - Prefetching: `Link`s prefetch static routes on viewport entry in production (default); the locale-changing
-  `Link` has prefetch disabled by next-intl (cookie safety) `[verified]`; the catch-all is on demand and is never
-  linked.
+  `Link` has prefetch disabled by next-intl (cookie safety) `[verified]`; the 404 is on demand and nothing in
+  the app links to a path that reaches it.
 - The proxy runs on Node (Next 16 default) — Edge is not an option for proxy files; nothing in it needs Node
   APIs, so it stays portable.
 
@@ -615,7 +644,7 @@ target has no slash before the `#`, per `D-06.6`. (b) nothing for `www` — hand
   `routes.length × routing.locales.length`, so the gate follows INV-02.11 instead of breaking on it), every
   URL has alternates for every locale + `x-default`,
   every URL returns 200; robots contains `Disallow: /api/` and the sitemap URL; `next build` output lists every
-  page as `○ Static` **except `/[locale]/[...rest]`, which is expected to be `ƒ Dynamic`** (`D-06.4`), and
+  page as `○ Static` **except `/_not-found`, which is expected to be `ƒ Dynamic`** (`D-06.4`), and
   lists only the proxy + `/api/inquiry` as functions. Both halves are allowlists — one dynamic page, two
   functions — so a second dynamic page or a third function fails the gate. A third Function was proposed and
   settled against: 08's `src/app/api/vercel-dispatch/route.ts` relay is dropped because Lighthouse CI triggers
@@ -672,9 +701,11 @@ target has no slash before the `#`, per `D-06.6`. (b) nothing for `www` — hand
   canonical form (`D-06.15`(b)) — after that hop the URL is prefixed and never redirects again. No
   `loading.tsx` / `Suspense` above a `not-found`.
 - **INV-06.7 Static by construction.** No `output: 'export'`, no `dynamic`/`revalidate` overrides, no
-  `headers()`/`cookies()`/`searchParams` in layouts or pages; `next build` shows every page static **except the
-  catch-all `/[locale]/[...rest]`, which is `ƒ Dynamic` by construction** (`D-06.4`) and is the only permitted
-  exception; the only functions are the proxy and `/api/inquiry`.
+  `headers()`/`cookies()`/`searchParams` in layouts or pages; `next build` shows every page static **except
+  `/_not-found`, which is `ƒ Dynamic` by construction** (`D-06.4`, `D-06.14` — `global-not-found.tsx` reads
+  the locale cookie because it has no `[locale]` segment to read) and is the only permitted exception; the only
+  functions are the proxy and `/api/inquiry`. The exception is one route, as it always was: it named the
+  catch-all until `gp-dln.266` deleted it.
 - **INV-06.8 The switcher preserves path, query and hash**, writes the cookie, never scrolls, and offers one
   option per entry of `routing.locales` — adding or holding back a locale changes the control's contents and
   nothing else.

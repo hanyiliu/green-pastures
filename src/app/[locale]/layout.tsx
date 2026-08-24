@@ -49,6 +49,29 @@ export function generateStaticParams(): Array<{ locale: string }> {
 }
 
 /**
+ * The list above is the whole list (`gp-dln.266`).
+ *
+ * A `[locale]` value that is not in `generateStaticParams` is refused by the
+ * router, before `generateMetadata` or this layout runs. That is not a second
+ * spelling of the guard below — it is what makes `/nope.txt` a *real* 404
+ * rather than a `notFound()` throw. Dotted paths are excluded from the proxy's
+ * matcher (`D-06.5`), so one used to arrive here with `locale = "nope.txt"`,
+ * reach the guard, and throw from the layout itself — a throw no boundary in
+ * this segment can catch, which Next answers with its recovery shell
+ * (`<html id="__next_error__">`, no `lang`, empty body). With no match there is
+ * no render, and `src/app/global-not-found.tsx` answers instead.
+ *
+ * It costs nothing that `D-06.4` was not already paying: every locale is
+ * prerendered, so there was never a dynamic `[locale]` to serve. The one price
+ * is a log line: Next writes a bare `Error: Internal: NoFallbackError` to
+ * stderr for each refused match (measured — one per dotted 404, none for
+ * `/{locale}/nope`, which matches no route rather than a refused one). The
+ * response is a correct 404 either way; the line is Next's own bookkeeping and
+ * carries no request in it, so treat it as noise rather than as an incident.
+ */
+export const dynamicParams = false;
+
+/**
  * The metadata every page inherits (06 `D-06.10`, `D-06.11`) — `metadataBase`,
  * the `"%s · {brandName}"` title template, the shared social card, the robots
  * and format defaults. Each `page.tsx` adds its own title, description,

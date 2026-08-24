@@ -254,7 +254,8 @@ src/
 │   ├── globals.css                  @import tailwindcss; imports styles/tokens.css; html { overflow-x: clip } (05 §5.8)
 │   ├── [locale]/layout.tsx          html/body, fonts, providers, SkipLink, SiteHeader, SiteFooter (06 routes; 04 content)
 │   ├── [locale]/page.tsx            home · [locale]/{philosophy,programs,menu,gallery,reviews,team}/page.tsx
-│   ├── [locale]/{faq,enroll}/       RESERVED, not built (D-02.17) · not-found.tsx · [...rest]/page.tsx · error.tsx* · global-error.tsx* (06)
+│   ├── [locale]/{faq,enroll}/       RESERVED, not built (D-02.17) · error.tsx* · global-error.tsx* (06)
+│   ├── global-not-found.tsx         the 404 — its own html/body, outside every layout (06 D-06.14)
 ├── components/
 │   ├── layout/        SiteHeader, PrimaryNav*, LangSwitcher*, BookTourButton, TrackedLink*, Hamburger*,
 │   │                  MobileMenu*, SiteFooter, LogoCard, FooterLinks*, Copyright, SkipLink, Section,
