@@ -26,12 +26,25 @@ const isCI = !!process.env.CI;
 const isFullMatrix = process.env.E2E_FULL === "1";
 
 /**
- * Note (b) of 08 §5: three tags observe something only Chromium has, so a run
+ * Note (b) of 08 §5: four tags observe something only Chromium has, so a run
  * in another engine would report a pass having measured nothing. They are
  * pinned to `chromium-desktop`; every other project inverts them.
  * `@nav-instant` is deliberately not a `@motion-vt` substring so it survives.
+ *
+ * `@a11y-keys` (PR-8.4) is the fourth, and it is here for the opposite reason
+ * to the other three: not something only Chromium *has*, but something WebKit
+ * deliberately does not do. Safari ships with Full Keyboard Access off, so its
+ * default tab sequence contains text fields and popup menus and **no links and
+ * no buttons** — measured in this project's own engine, the first `Tab` on `/`
+ * lands on `#menu-day-mon` and never on the skip link. A Tab-driven assertion
+ * about the skip link, the nav order, the sheet's focus cycle, the lightbox's
+ * trap or the gallery filters therefore measures a browser preference rather
+ * than this site, and would red on a page with nothing wrong with it. Every
+ * other `@a11y` test — the axe sweep, the allowlist witnesses, the no-JS page,
+ * reduced-motion parity, and the keyboard paths that move focus with `focus()`
+ * and `Enter` rather than `Tab` — runs in every project.
  */
-const CHROMIUM_ONLY = /@perf|@visual|@motion-vt|@motion-obs/;
+const CHROMIUM_ONLY = /@perf|@visual|@motion-vt|@motion-obs|@a11y-keys/;
 
 /** D-08.13: quarantined tests run only in the `flaky-known` project. */
 const FLAKY_KNOWN = /@flaky-known/;

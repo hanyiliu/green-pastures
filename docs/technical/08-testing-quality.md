@@ -83,7 +83,13 @@ gate (`gp-dln.206`–`.208`)
   `e2e/axe-exceptions.json` — `{ selector, fg, bg, ratio, reason: '03 §10 / D-03.12', expires }`, where
   `expires` is the phase gate that answers OQ-03.2. A contrast violation on any pair *not* in that file fails
   the job, and so does an entry past its expiry. A new contrast regression is therefore blocked from day one
-  while the known design debt is visible, enumerated and dated.
+  while the known design debt is visible, enumerated and dated. **Built by PR-8.4** (`gp-dln.287`), with three
+  additions this decision did not anticipate and §6 states in full: `@axe-core/playwright` and `axe-core` are
+  devDependencies now (closing `gp-dln.233`, whose stand-in walked pnpm's virtual store); each entry also
+  carries a `witness` — the route and viewport widths where the run proves it still excuses something — and an
+  `audit` naming its provenance, because eleven of the thirty-four pairs the sweep finds are **not** rows of 03
+  §10; and `expires` is machine-read from 03's own open-question register rather than from a calendar, so the
+  day OQ-03.2 is marked answered the list stops being accepted on trust.
 - **D-08.9 Performance.** Lighthouse CI (`@lhci/cli`) runs on the Vercel **preview URL** as an advisory PR
   check, and on the production URL after promotion as a launch/regression gate. Trigger: GitHub's native
   **`deployment_status`** event, which Vercel's Git integration emits for every deployment once 09 turns
@@ -575,15 +581,26 @@ as well**; Chinese gaps are caught earlier and better by `validate:content` thre
 than it did with two: an untranslated `zh-Hant` page renders as fluent English and passes every e2e assertion
 in this table, so the *only* gate that sees it is the `content` job. We do not add a dev-mode smoke run: it
 would duplicate a stronger gate.
-**(b) Three tags are Chromium-only, for three different reasons.** The `LayoutShift` interface — and therefore
+**(b) Four tags are Chromium-only, for four different reasons.** The `LayoutShift` interface — and therefore
 `PerformanceObserver('layout-shift')` — exists only in Chromium, so a `@perf` run in `webkit-mobile` would
 observe nothing at all and report a pass; `@motion-vt` asserts the *typed* View-Transition behaviour 05 §5.7
 specifies, whose support 05 states for Chromium; `@visual` is chromium-only by D-08.10's own scope decision.
 All three are pinned to `chromium-desktop`, which covers both viewports by `test.use` (1280×800 and 390×844 —
 the 390 measurement 03 §3.3 asks for thus runs on every PR, without moving `chromium-mobile` off `main` and
-without spending OQ-08.3's budget). The other projects carry
-`grepInvert: /@perf|@visual|@motion-vt|@motion-obs/` — the last of those for the different reason in note (c) —
-so a silently-observing no-op can never be mistaken for a pass. The instant-swap fallback path carries its own
+without spending OQ-08.3's budget). The fourth, **`@a11y-keys`** (PR-8.4), is here for the opposite reason to
+the other three: not something only Chromium *has*, but something WebKit deliberately does not do. Safari ships
+with Full Keyboard Access **off**, so its default tab sequence holds text fields and popup menus and **no links
+and no buttons** — measured in this repository's own `webkit-mobile` project, the first `Tab` on `/` lands on
+`#menu-day-mon` and never on the skip link, and a lap of the open hamburger sheet leaves it on the first press.
+A `Tab`-driven assertion about the skip link, the nav order, the sheet's cycle, the lightbox's trap or the
+gallery filters therefore measures a browser preference and not this site, and would red a page with nothing
+wrong with it. What that gate costs is worth naming and is not this site's to fix: a keyboard visitor on a
+default macOS or iOS Safari cannot reach *any* website's skip link until they turn Full Keyboard Access on.
+Every other `@a11y` test — the axe sweep, the allowlist witnesses, the no-JavaScript page, reduced-motion
+parity, and the four keyboard paths that move focus with `focus()` and `Enter` rather than `Tab` — runs in
+every project. The other projects carry
+`grepInvert: /@perf|@visual|@motion-vt|@motion-obs|@a11y-keys/` — the fourth of those for the different reason
+in note (c) — so a silently-observing no-op can never be mistaken for a pass. The instant-swap fallback path carries its own
 tag, `@nav-instant` — deliberately not a `@motion-vt` substring — precisely so it *does* run in every project.
 **(c) `@motion-obs`'s expected value is viewport-dependent, so it runs at 1280 only.** 04 §3.3 and 05 §5.4 both
 mount `AmbientScope` on `HeroSection` **and, at 390, additionally on `PhilosophySection`**. The "exactly two
@@ -611,26 +628,30 @@ the row below states three rather than two.
 | `@perf` (chromium-desktop, both viewports) | `PerformanceObserver('layout-shift')` buffered during load + reveals + count-up + loops + locale toggle → CLS ≤ **0.02** per phase, at 1280×800 **and** 390×844 via `test.use` (03 §3.3 asks for 390; the LayoutShift API is Chromium-only, note (b) above, so this tag never runs in `webkit-mobile` where it would observe nothing); LCP element (hero image) has computed `opacity: 1` in SSR HTML; **no** request matching `fonts.gstatic\|_next/static/media/.*\.woff2` during the toggle; section-height snapshot: nav height and each `section[id]` height at 390 and 1280 for **every locale in `routing.locales`** written to `reports/section-heights.json` and compared to the committed baseline — a delta > one line-height of that section fails (04 adds `min-height`, 03 §3.3). Three locales make this snapshot more valuable, not just wider: Traditional glyphs are on average wider than Simplified at the same size, so `zh-Hant` is the locale most likely to overflow a fixed-height section, and it is the row that would otherwise only be caught by eye | INV-05.7, 03 §3.3 |
 | `@thirdparty` | all request hosts on `/` ∈ {self, `challenges.cloudflare.com`, `va.vercel-scripts.com`, `vitals.vercel-insights.com`} [last two appear only on Vercel — assumed] | INV-07.8 |
 | `@headers` | response headers on `/en` equal the set 06/09 declare (`x-content-type-options`, `referrer-policy`, `permissions-policy`, CSP incl. Turnstile hosts, HSTS on Vercel) | 06/09 |
-| `@a11y` | §6 | |
+| `@a11y` | §6 — `e2e/a11y-axe.spec.ts` (route × locale × viewport, the four interactive states, 404, and the sticky nav over every ground it can overlap), `e2e/a11y-exceptions.spec.ts` (the allowlist's witnesses, orientation and expiry), `e2e/a11y-noscript.spec.ts` (the `<noscript>` blind spot), `e2e/a11y-reduced-motion.spec.ts` (05 §5.14 parity), and the four keyboard paths that need no `Tab` | D-08.8, 05 §5.9/§5.14, INV-05.10 |
+| `@a11y-keys` (chromium-desktop — note (b)) | the five keyboard scripts that press `Tab` past a link or a button: skip link, nav order, hamburger cycle + `Esc` + return, lightbox arrows/trap/return, gallery filters | D-08.8 |
 | `@visual` | §8 | |
 | `@flaky-known(gp-…)` | quarantine project, `retries: 1` | D-08.13 |
 
 ### 6 · Accessibility
 
 axe (`AxeBuilder().withTags([...])`) runs on: every route × locale (idle); `/` with hamburger open (390),
-lightbox open, menu day switched; the form idle / error / success; 404. Rules: all WCAG 2.2 AA; 0 violations.
-`color-contrast` is **not** blanket-disabled (D-08.8): each violation is matched against
-`e2e/axe-exceptions.json`, whose only entries at launch are the pairs 03 §10 already computes as failing
-(each with `selector`, the two hex values, the computed ratio, `reason: '03 §10 / D-03.12'` and an `expires`
-phase gate). A matched violation is reported into the job summary; an **unmatched** one fails the job, so a
-contrast regression introduced by new markup or a token edit is blocked on the PR that introduces it. Entries
-leave the file as OQ-03.2's replacements land, and an entry past its `expires` gate fails the job as well. No
-other per-rule disables — any further exception needs a bead and its own entry with an expiry. Keyboard
-scripts: skip link is first `Tab` and lands on `main`; nav order matches the visual order; hamburger: `Tab`
-cycles inside, `Esc` closes and returns focus to the trigger; lightbox: arrows, `Esc`, focus trapped and
-returned; form: `Tab` through all controls, `Enter` submits, error focus management (D-07.4); the
-`:focus-visible` ring has a computed `outline-width` of `3px` (D-03.11). Colour-scheme and zoom: 200 % zoom
-at 1280 — a 640 px CSS viewport — shows no horizontal scroll, **and so does 390 px unzoomed** (INV-05.2's
+lightbox open, gallery filtered, menu day switched; the form idle / error / success; 404. Rules: all WCAG 2.2
+AA; 0 violations. `color-contrast` is **not** blanket-disabled (D-08.8): each violation is matched against
+`e2e/axe-exceptions.json`, whose entries are the pairs that fail AA on the shipped tokens (each with
+`selector`, the two hex values, the computed ratio, a `reason`, a `witness` and an `expires` phase gate). A
+matched violation is reported into the job summary; an **unmatched** one fails the job, so a contrast
+regression introduced by new markup or a token edit is blocked on the PR that introduces it. Entries leave the
+file as OQ-03.2's replacements land, and an entry past its `expires` gate fails the job as well. No other
+per-rule disables — any further exception needs a bead and its own entry with an expiry. Keyboard scripts:
+skip link is first `Tab` and lands on `main`; nav order matches the visual order; hamburger: `Tab` cycles
+inside, `Esc` closes and returns focus to the trigger; lightbox: arrows, `Esc`, focus trapped and returned;
+day chips rove with one tab stop between them; gallery filters toggle from the keyboard; form: `Tab` through
+all controls, `Enter` submits, error focus management (D-07.4), and the honeypot stays out of the tab order;
+the Back pill returns home and lands focus on the origin heading; the `:focus-visible` ring has a computed
+`outline-width` of `3px` (D-03.11). Five of those press `Tab` past a link or a button and therefore carry
+`@a11y-keys` — see §5 note (b) for why Safari cannot be asked that question. Colour-scheme and zoom: 200 %
+zoom at 1280 — a 640 px CSS viewport — shows no horizontal scroll, **and so does 390 px unzoomed** (INV-05.2's
 `overflow-x: clip` on `html`). Both halves of that sentence are corrections, and both were measured in
 chromium and webkit on a production build carrying a +150 px bleed, by the row that placed the rule in
 `src/app/globals.css`:
@@ -647,6 +668,110 @@ chromium and webkit on a production build carrying a +150 px bleed, by the row t
   px both ways in the measurement above, while user-driven horizontal scrolling went from 126 px to 0. The
   assertion is `window.scrollX === 0` after a real horizontal input (`mouse.wheel(500, 0)` and `ArrowRight`),
   which is both what a user experiences and the only reading that changes when the rule is removed.
+
+**A scan has to be settled before it is read, and this is the finding that shaped the suite** (PR-8.4). axe
+composites the colour it reports out of the element's rendering *at that instant*, so an element caught
+mid-entrance reports the colour it has part-way through a fade, not the colour it comes to rest at. The first
+sweep of every route × locale × viewport produced **61 distinct colour pairs**; the same sweep after waiting
+for the page to stop moving produced **34**. The 27 that vanished were things like `#f1f2f0 on #6b865c` and
+`#96b288 on #364a2f` — the submit button and the Visit panel's labels, photographed at 62 % and 91 % of the
+way in. An allowlist keyed on hex values cannot be written against numbers like those. So every scan opens
+through PR-8.6's `openSettled` (which walks the page so every `IntersectionObserver` fires and waits for the
+last reveal and the fonts) and then waits for `document.getAnimations()` to hold no running finite animation —
+infinite ones excluded by construction, because 05 §5.4's ambient loops never finish.
+
+**Scans are taken from scroll 0, and the sticky nav is asked its question separately.** The header paints no
+background of its own: a sibling layer at `-z-10` carries `--color-nav-bg`, which is 92 % opaque (03 §2.4).
+Eight per cent of whatever is scrolled underneath therefore shows through the ground behind the nav's own
+text, and axe reports the composite — clicking a day chip scrolls it into view and turned the locale toggle's
+audited `#8a8170 on #fbf8f0` into `#8a8170 on #fbf8ee`, the same 3.62:1 and an unmatched violation. Returning
+to the top is what makes the hex reproducible; it is not what makes the question go away, so the sweep also
+asks it directly and as arithmetic: for every route × locale, `--color-nav-link` composited against **every
+distinct painted background the document has** must still clear 4.5:1. That is the check that fails the day a
+dark section lands, and it does not depend on where a scan happened to be taken.
+
+**The `<noscript>` blind spot, and how it is closed** (`gp-dln.264`, PR-8.4). A browser with scripting
+**enabled** parses `<noscript>` content as raw text: one text node, no elements, nothing in the accessibility
+tree. axe walks the DOM, so everything inside a `<noscript>` is not "hard to reach" but *absent* — a real AA
+contrast failure lived in `NoscriptFallback` (sage links at 14 px bold, 3.83:1) through every green axe run
+this repository had, and was found because a human read the file. `e2e/a11y-noscript.spec.ts` pins the gap
+itself (`document.querySelectorAll("noscript *").length` is 0 with scripting on and non-zero with it off) and
+then closes it with two instruments, because one is not enough:
+
+- **The true no-JavaScript DOM** (`javaScriptEnabled: false`) is measured with synchronous DOM reads: every
+  text-bearing element inside a `<noscript>`, its computed colour, the first opaque background above it, and
+  the WCAG ratio between them against 4.5:1 (or 3:1 for large text), on every route × locale. This is the
+  check a human was doing by hand. It cannot be axe: with script execution disabled **`setTimeout` and
+  `requestAnimationFrame` never fire** — measured, a promise resolved from a 50 ms timer was still pending
+  after 4 s — and axe-core's `run` is built on those timers, so it attaches and never resolves.
+- **Every other WCAG 2.2 AA rule** is taken by axe over a *reconstruction*: the page loaded with every script
+  request aborted, so React never hydrates and the DOM is the server's, and then each `<noscript>` replaced in
+  place by its own parsed content — marked, not moved, so the cascade reaching those elements is the real one.
+  Scripting is enabled in that context, so axe runs, scoped to the reconstructed elements. The same pass
+  asserts INV-05.10 from the only vantage point that can see it: without JavaScript no `Reveal` ever animates,
+  so the stylesheet inside `MotionProvider`'s own `<noscript>` is the only thing between a reader and a page of
+  `opacity: 0`.
+
+**`MC-08.2 no-JavaScript section grounds on a real iPhone` — a named manual check** (PR-8.4). Measured while
+building the reconstruction above: in `webkit-mobile`, and **only** with `isMobile` emulation on, a narrow
+viewport and no JavaScript, WebKit drops the five inline custom properties on the Visit `<section>`. Its
+`--section-bg` computes empty, the forest ground disappears, and the section's light type lands on white —
+`#c8d6bd` on `#ffffff` is **1.52:1**. Chromium at the same width is fine with and without scripts; desktop
+WebKit without scripts is fine; `isMobile: true` at 1280 is fine; and running the page's own JavaScript fixes
+it in every engine. Re-setting the identical `style` attribute does not heal it, so it is not a stale
+invalidation. Every other section on the same page keeps its ground. That combination reads as an emulation
+artefact of Playwright's WebKit rather than a defect in this site — nothing here can cause "inline custom
+properties dropped on one element" — but the shape of the failure is severe enough that it is not being
+concluded from an emulator. Owner: the 04 implementer; evidence is `/en` opened on a **real iPhone** with
+JavaScript disabled in Settings → Safari → Advanced, at the phase gate and again at launch, confirming the
+Visit section is forest and not cream. Its own bead follows this row.
+
+**Reduced-motion parity is asserted as two pages, not one** (05 §5.14). The default run is
+`playwright.config.ts`'s stated `reducedMotion: "no-preference"`, the second context asks for `reduce`, and
+the settled `[data-reveal]` styles, every `section[id]` height and every `[data-countup]` value must be equal
+— with identity values normalised, because a finished animation leaves `matrix(1, 0, 0, 1, 0, 0)` and
+`blur(0px)` behind where a run that never animated leaves the keyword, and comparing the raw strings would
+fail on *whether an animation ran* rather than on where it landed. Both of those were measured on `/`.
+"No transform/filter animations" cannot be read off a settled page at all, so a `requestAnimationFrame`
+sampler installed with `addInitScript` records `getKeyframes()` off every animation the run creates and the
+union of animated properties must contain `opacity` and neither `transform` nor `filter` — which covers CSS
+animations, Motion's own, the sheet, the day chip's `WordSwap` and the count-up without naming any of them.
+Loops are `animation-name: none`, `scroll-behavior` is `auto`, hover changes colour and leaves `transform`
+alone, and the count-up's first paint already carries its final value.
+
+**Every allowlist entry is proved load-bearing on every run** (`e2e/a11y-exceptions.spec.ts`). The reason is a
+defect: an exception in `e2e/form-axe.ts` compared its colour pair **unordered**, so the allowance written for
+the submit button (`#ffffff` on `#6f8a5f`, 3.83) silently excused sage used as *text* on white — the same two
+colours, the same ratio, a different element, and a failure 03 §10 had never passed. One entry, two defects,
+one of them undiscovered; it surfaced only because a seat deleted an exception expecting red and got green.
+So the match is oriented (`fg` is the text colour, always), and three facts compose into the deletion proof:
+the loader refuses a file in which two entries claim the same oriented pair at the same ratio, `matchException`
+returns the first match, and an unmatched `color-contrast` node fails the sweep. An entry shown to have matched
+a node is therefore an entry whose removal reds the suite. Each entry names a `witness` — the route and the
+viewport widths where that proof is taken — and the run also asserts the entry's `selector` still selects
+something, so documentation that has rotted fails rather than misleads.
+
+**What the allowlist actually contains, and the eleven pairs 03 §10 does not have.** The settled sweep finds
+34 distinct failing pairs across every route × locale × viewport and every interactive state. Twenty-three are
+03 §10 rows verbatim. The other **eleven are the same design debt on combinations that table never
+enumerated**, they are reported here rather than fixed, and OQ-03.2 has to grow to cover them: `#8a8170` on
+`#ffffff` (3.84) and on the programs tint `#f7ecdd` (3.29), and `#a89e8a` on the menu tint `#fbf2db` (2.37),
+where 03 §10 audits both muted tokens on cream only; the programs and teachers eyebrows on a card's white
+(`#c08552` 3.12, `#8677a3` 4.05), where the table audits them on their section tint only; the philosophy
+attribution `#7e8a72` on `#e8efe0` (3.09), a token 03 §2.3 mints and 03 §10 has no row for at all; and the
+five meal labels the table never mentions — breakfast `#bd9326` on its 15 % wash `#f5efe1` (2.48) and on white
+(2.85), lunch `#5e7a4e` on `#e5eae3` (3.93, though the same token passes on white at 4.81), and snack
+`#bd7a55` on `#f6ebe5` (2.95) and on white (3.45). None of them is a regression and none is a colour this row
+may choose (INV-03.5, and OQ-03.2 is unanswered), so each carries `audit: "unaudited"`, names this bead, and
+expires with the rest.
+
+**The `expires` gate is read, not remembered.** D-08.8 dates every entry to "the phase gate that answers
+OQ-03.2", and a phase gate is not a date a runner can read — but the event the gate *is* has one written form
+in this repository: 03 marks an answered question by putting the word `answered` in its bullet, which is what
+OQ-03.3, OQ-03.4 and OQ-03.7 already look like. `expiryGateHasPassed()` reads that bullet out of
+`docs/technical/03-design-system-tokens.md`, and the day the palette decision is recorded the whole allowlist
+fails until it is re-cut against it — token edit and doc edit in the same PR, INV-03.5.
+
 
 ### 7 · Performance budgets (Lighthouse CI)
 
@@ -772,7 +897,19 @@ are **68,856 bytes** in two preloaded `woff2` against `122880` — the "Fredoka 
 arithmetic predates both faces shipping as single variable files, so the real figure is a little over half
 the budget; third-party count is **0** against `≤ 3`; and `unsized-images`, `modern-image-formats`,
 `uses-responsive-images` and `offscreen-images` all pass, on a site that has no photography in it yet.
-`categories:accessibility` medians **0.97** against `= 1`, which is PR-8.4's row and not this one's.
+`categories:accessibility` medians **0.97** against `= 1`, which was PR-8.4's row and is now answered.
+
+**What the 0.97 is** (PR-8.4, re-measured on `/en` against a local production build). The gap is
+`color-contrast` and nothing else: it is the only audit in the accessibility category that scores 0, it
+carries weight **7** of the category's **235** scored weight, and 228/235 is 0.9702 — the 0.97 to the two
+places Lighthouse reports, with nothing else missing. Every other audit passes, and the axe
+sweep of §6 agrees — across every route × locale × viewport and every interactive state it reports **no
+violation of any rule other than `color-contrast`**. So the 0.97 is not a defect this row could close by
+writing tests: it is 03 §10's known design debt, plus the eleven pairs §6 adds to it, and closing it means
+choosing replacement colours. That is `OQ-03.2`, which is unanswered, and INV-03.5 forbids a token change
+without the decision recorded in 03 first. **The budget therefore still reads `= 1` and the site still
+measures 0.97**; nothing here was relaxed to fit, and the number moves the moment the palette question is
+answered and `e2e/axe-exceptions.json` is re-cut against it.
 
 What is still open is the detail pages' `resource-summary:script:size` described above, and
 `largest-contentful-paint`, which medians ≈ 3.3–3.4 s and is untouched by a script-size change — the
@@ -912,6 +1049,9 @@ runner can produce it.
 | INV-05.11 | `no-restricted-imports` gsap/framer-motion **and** `motion` from `motion/react` (`m`-only, §2) · `LazyMotion strict` provider unit test · Stylelint keyframes file list · `scripts/ci/deps-allowlist.sh` | `static` · `unit` | CI |
 | D-05.12 (no INV in 05; 05 §5.14 requires the check) | `@hover` pointer gating: no hover transform under `(hover: none)` | `e2e` | CI |
 | 03 §5 glyph fallback (no INV; 03 defers to 08) | `MC-08.1 per-OS glyph render` — manual, §8 · Linux baselines by `@visual` | phase gate · `e2e` | manual + CI |
+| D-08.8 (no INV; §6 owns it) | `@a11y` axe sweep over route × locale × viewport + states + 404 · `@a11y-keys` keyboard scripts · allowlist witnesses, orientation and `expires` · sticky-nav ground arithmetic | `e2e` | CI |
+| INV-05.10 · `gp-dln.264` (the `<noscript>` blind spot) | `@a11y` no-JavaScript page — synchronous AA maths in a `javaScriptEnabled: false` context, plus axe over the reconstruction (§6) | `e2e` | CI |
+| 03 §2.4 nav ground on the no-JS path (no INV) | `MC-08.2 no-JavaScript section grounds on a real iPhone` — manual, §6 | phase gate | manual |
 | INV-07.1 | `react/jsx-no-literals` on form · DOM-literal test · template tests · handler response-shape test | `static` · `unit` | CI |
 | INV-07.2 | handler tests bypassing the client | `unit` | CI |
 | INV-07.3 | `bundle-secrets.sh` · `env-example.ts` · ESLint `process.env` secret-name selector · gitleaks | `build` · `static` · `audit` | CI / advisory |
@@ -1308,7 +1448,12 @@ baseline-aligned and the Traditional pages rendering in a TC face; owner: the
 this glyph question to 08 and no runner can answer it; **every invariant the phase's documents declare has a
 §9 row** (the wave-2 backlog named in §9's scope note — INV-04.*, INV-06.*, INV-09.*, INV-10.* — is drained
 this way rather than in one sweep); any `axe-exceptions.json` entry whose `expires` is this gate is either
-removed or re-dated with the design owner (§6, OQ-03.2). **At the Phase 2 gate specifically** (D-08.19,
+removed or re-dated with the design owner (§6, OQ-03.2) — and the run enforces that half on its own, because
+`expires` is read out of 03's open-question register rather than remembered (§6); **from the Phase 8 gate
+onward, `MC-08.2 no-JavaScript section grounds` run on a real iPhone** (§6 — `/en` with JavaScript disabled
+in Settings → Safari → Advanced, confirming the Visit section renders on forest and not on cream; owner: the
+04 implementer), because the only engine that has ever shown that failure is an emulator and the only
+instrument that can settle it is a device. **At the Phase 2 gate specifically** (D-08.19,
 HD-2): the repository ruleset's ref-name include list names the default branch and the six check names of
 D-08.12 are listed as required — until it does, "the required checks are green" is a habit, not a gate, and
 nothing mechanically prevents a merge with `content` red (OQ-11.3, 09).
@@ -1493,7 +1638,7 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   (09 D-09.17, shipped by 10's PR-2.9), `.editorconfig`, `.nvmrc`. **Generated, never in the repository:**
   `reports/content-coverage.md` — earlier revisions listed it as shipped, and it was, until D-08.20 made it
   CI output; it exists in a work tree after `pnpm validate:content --report` and nowhere else.
-  **Specified, not built:** `e2e/visual.spec.ts`, `e2e/axe-exceptions.json`, `tests/e2e/__screenshots__/`
+  **Specified, not built:** `e2e/visual.spec.ts`, `tests/e2e/__screenshots__/`
   (the one path deliberately outside `e2e/` — the shipped config's `snapshotPathTemplate` already points
   there, D-08.10), `lighthouserc.cjs`, `scripts/ci/{bundle-secrets.sh, env-example.ts,
   check-tokens.ts, deps-allowlist.sh}` — the first two of those four are the ones no PR schedules (§10);
