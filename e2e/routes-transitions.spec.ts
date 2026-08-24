@@ -102,20 +102,22 @@ const SLIDE_OUT = "gp-slide-out";
 /**
  * The detail routes the home page does **not** link to, by id.
  *
- * One entry, and it is a decision rather than an omission: 04 §3.5 sends the
- * home Testimonials section's link to `site.yelp.url` instead of to the reviews
- * subpage, overruling the design's own `data-subpage="reviews"` on the grounds
- * that the label says "on Yelp" and the subpage keeps its own Yelp button. So
- * `/{locale}/reviews` is reachable by URL and from `sitemap.xml` and from no
- * anchor anywhere, and there is no typed forward navigation into it to measure.
+ * **Empty, and that is the decision.** It held `reviews` for as long as 04 §3.5
+ * sent the home Testimonials link to `site.yelp.url` instead of to the subpage,
+ * overruling the design's own `data-subpage="reviews"`; `/{locale}/reviews` was
+ * then reachable by URL and from `sitemap.xml` and from no anchor anywhere. 04
+ * §3.5 now sends that link to the subpage and Yelp is the reviews page's own
+ * button, one hop further on — so every detail route this site builds is linked
+ * from home and has a typed forward navigation to measure.
  *
- * The list is **asserted, not assumed** — the first describe below reads the
- * served home page in every locale and fails if the linked set is anything
- * other than "every detail route except these". So a route quietly losing its
- * "learn more →" reds here, and 04 changing its mind about reviews reds here
- * too, naming this constant either way.
+ * The list is **asserted in both directions, not assumed** — the first describe
+ * below reads the served home page in every locale and fails if the linked set
+ * is anything other than "every detail route except these". Empty, that
+ * assertion is not weaker but stronger: it now says *every* detail route is
+ * linked, so a route quietly losing its "learn more →" reds here, and 04
+ * changing its mind again reds here too, naming this constant either way.
  */
-const UNLINKED_ROUTE_IDS: readonly string[] = ["reviews"];
+const UNLINKED_ROUTE_IDS: readonly string[] = [];
 
 const LINKED_DETAIL_ROUTES = BUILT_DETAIL_ROUTES.filter(
   (route) => !UNLINKED_ROUTE_IDS.includes(route.id),
@@ -161,9 +163,36 @@ const TYPED_CASES = [
   ),
 ];
 
-/** Every locale × the detail routes reachable only by URL — Back half only. */
-const EXIT_ONLY_CASES = routing.locales.flatMap((locale) =>
-  UNLINKED_DETAIL_ROUTES.map((route) => ({ locale, route })),
+/**
+ * The routes the Back-half describe drives by loading their URL directly.
+ *
+ * While `UNLINKED_ROUTE_IDS` had an entry this was that entry, because a page
+ * nothing links to has no other way in. The mechanism it measures was never
+ * about being unlinked, though — a direct load runs no transition and the Back
+ * pill still has to slide typed, and a reader arriving from a search result or
+ * a shared link gets exactly that on any of the six. So an empty list falls
+ * back rather than evaporating: emptying `UNLINKED_ROUTE_IDS` must not silently
+ * delete a describe, which is the one way a two-way guard can go quiet without
+ * failing.
+ *
+ * **The fallback is deliberately not `FIRST_ROUTE`.** Every other per-locale
+ * describe in this file drives that one, and pointing a fourth at it made three
+ * locales' worth of workers load, navigate and freeze the same two pages at
+ * once — measured, not feared: the trio flaked on a `philosophy` timeout twice
+ * in a row that way and ran clean once the load was spread. Picking the next
+ * route instead costs nothing and buys a second page under the Back pill.
+ */
+const NOT_FIRST_ROUTES = BUILT_DETAIL_ROUTES.filter((route) => route.id !== FIRST_ROUTE?.id);
+
+/** `NOT_FIRST_ROUTES` unless the site is down to a single detail route. */
+const DIRECT_LOAD_FALLBACK = NOT_FIRST_ROUTES.length > 0 ? NOT_FIRST_ROUTES : BUILT_DETAIL_ROUTES;
+
+const DIRECT_LOAD_ROUTES: readonly SiteRoute[] =
+  UNLINKED_DETAIL_ROUTES.length > 0 ? UNLINKED_DETAIL_ROUTES : DIRECT_LOAD_FALLBACK.slice(0, 1);
+
+/** Every locale × a detail route entered by URL — Back half only. */
+const DIRECT_LOAD_CASES = routing.locales.flatMap((locale) =>
+  DIRECT_LOAD_ROUTES.map((route) => ({ locale, route })),
 );
 
 /** Every locale × the first linked route. */
@@ -283,6 +312,14 @@ test.describe("the matrix these tests run over", () => {
     expect(BUILT_DETAIL_ROUTES.length, "no detail route has a page.tsx").toBeGreaterThan(0);
     expect(LINKED_DETAIL_ROUTES.length, "no detail route is linked from home").toBeGreaterThan(0);
 
+    // `UNLINKED_ROUTE_IDS` is empty today, so the Back-half describe would
+    // generate nothing at all if it still keyed off that list directly. It
+    // keys off `DIRECT_LOAD_ROUTES` instead, and this is where that fallback
+    // is held to producing tests rather than an empty describe.
+    expect(DIRECT_LOAD_CASES.length, "the direct-load describe would run no tests").toBeGreaterThan(
+      0,
+    );
+
     // Every detail route is in exactly one of the two halves, so a route
     // cannot fall out of the file by being in neither.
     expect(LINKED_DETAIL_ROUTES.length + UNLINKED_DETAIL_ROUTES.length).toBe(
@@ -294,7 +331,7 @@ test.describe("the matrix these tests run over", () => {
     // locale is driven. A sample that quietly stopped covering one of them
     // would otherwise be a green run over a smaller site than the one shipped.
     const drivenRoutes = new Set(
-      [...TYPED_CASES, ...EXIT_ONLY_CASES].map((entry) => entry.route.id),
+      [...TYPED_CASES, ...DIRECT_LOAD_CASES].map((entry) => entry.route.id),
     );
     expect([...drivenRoutes].sort()).toEqual(BUILT_DETAIL_ROUTES.map((route) => route.id).sort());
 
@@ -418,16 +455,17 @@ test.describe("typed subpage slide", () => {
   }
 });
 
-test.describe("typed Back out of a page nothing links to", () => {
+test.describe("typed Back after a direct URL load", () => {
   /**
-   * The half of the cycle a route without a "learn more →" can still be held
-   * to.
+   * The half of the cycle a reader who never touched the home page still gets.
    *
-   * `/{locale}/reviews` is entered here by URL, which is the only way a reader
-   * can enter it (see `UNLINKED_ROUTE_IDS`). That changes the enter — a direct
-   * load runs no transition at all, 05 §5.7 — but not the exit: the "← Back"
-   * pill is the same typed `router.replace`, and skipping these routes would
-   * leave the one page whose Back pill nobody clicks in a test.
+   * The route is entered here by its URL — a search result, a shared link, or,
+   * while `UNLINKED_ROUTE_IDS` had an entry, the only way into that page at all
+   * (see `DIRECT_LOAD_ROUTES`). That changes the enter — a direct load runs no
+   * transition at all, 05 §5.7 — but not the exit: the "← Back" pill is the
+   * same typed `router.replace`, and it is worth one describe of its own
+   * because the describe above only ever reaches a Back pill on a page the
+   * router already had in hand.
    *
    * Focus is not asserted after Back here for the reason given above
    * `clickLearnMore`, and least of all here: this page was reached by URL, so
@@ -435,7 +473,7 @@ test.describe("typed Back out of a page nothing links to", () => {
    * two-second search for the origin heading has a fetch in front of it as well
    * as a render.
    */
-  for (const { locale, route } of EXIT_ONLY_CASES) {
+  for (const { locale, route } of DIRECT_LOAD_CASES) {
     test(`${urlFor(locale, route.path)} still slides out on Back @motion-vt`, async ({ page }) => {
       await spyOnViewTransitions(page);
       await page.goto(urlFor(locale, route.path));

@@ -95,7 +95,7 @@ export function InfoPanel({ hours, city, languages }: InfoPanelProps) {
               computation, and "Open in Mapsopens in a new tab" is what a screen
               reader would then read. A JSX space expression is the one spelling
               that is a space and never a translatable string (the shape
-              `YelpLink` established).
+              `YelpButton` established).
             */}{" "}
             <span className="sr-only">{tCommon("links.newTab")}</span>
           </a>

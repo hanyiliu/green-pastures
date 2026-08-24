@@ -895,7 +895,7 @@ must correct it; the substitution is mechanical except where noted.
 | Programs section | `home.programs.eyebrow|title|intro|link` + `collections.programs.*` |
 | Menu section | `home.menu.eyebrow|title|intro|sampleLine|link`, `menu.meals.*`, `collections.menu.*` |
 | Gallery section | `home.gallery.eyebrow|title|intro|link` + `collections.gallery.*` |
-| Testimonials section | `home.testimonials.title|countLine|link`, `common.brand.yelp`, `common.rating.ariaLabel`, `common.links.newTab` + `collections.testimonials.*` |
+| Testimonials section | `home.testimonials.title|countLine|link`, `common.brand.yelp`, `common.rating.ariaLabel` + `collections.testimonials.*` |
 | Teachers section | `home.teachers.eyebrow|title|intro|introShort|link`, `team.roles.head|assistant` + `collections.teachers.*` |
 | Cross-cutting punctuation/format | `common.punctuation.quoteOpen|quoteClose`, `common.format.dayRange|timeRange`, `common.brand.yelp` |
 | Visit section + footer | `home.visit.title|subtitle|subtitleShort|info.*|map.alt`, `visit.form.*`, `common.footer.copyright` (both views) |

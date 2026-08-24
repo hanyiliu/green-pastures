@@ -7,8 +7,8 @@ import { getSite } from "@/content/site";
 
 import { TESTIMONIALS_GRID, TESTIMONIALS_LINK_ROW, TESTIMONIALS_MIDDLE_PUSH } from "./layout";
 import { ReviewsHeader } from "./ReviewsHeader";
+import { ReviewsLink } from "./ReviewsLink";
 import { SpeechBubble } from "./SpeechBubble";
-import { YelpLink } from "./YelpLink";
 
 /**
  * The testimonials section (04 §3.5, §6, §7; 05 §5.3; `docs/design/desktop` §06
@@ -17,7 +17,7 @@ import { YelpLink } from "./YelpLink";
  * It composes what Phase 4 built — `Section`, `Reveal`/`RevealItem`,
  * `SectionTitle`, `Chip`, `PhotoSlot`, `StarRow`, `CountUp`, `TrackedLink` —
  * and adds only its own five leaves (`ReviewsHeader`, `YelpBadge`,
- * `SpeechBubble`, `Bubble`, `YelpLink`) and its geometry (`layout.ts`,
+ * `SpeechBubble`, `Bubble`, `ReviewsLink`) and its geometry (`layout.ts`,
  * `D-04.6`).
  *
  * ── The only async section so far, and why ────────────────────────────────
@@ -47,10 +47,14 @@ import { YelpLink } from "./YelpLink";
  * ── `site.yelp` is required here, unlike in the trust row ─────────────────
  *
  * The schema makes it optional and `TrustRow` honours that, because the hero
- * row has an age range to fall back on. This section does not: the rating, the
- * count line and the outbound link are all Yelp, and a section that quietly
- * dropped three of its four parts is worse than one readable failure. So it
- * throws, the way `HeroSection` throws for a missing `philosophy` route.
+ * row has an age range to fall back on. This section does not: the rating and
+ * the count line are both Yelp, and a section that quietly dropped two of its
+ * four parts is worse than one readable failure. So it throws, the way
+ * `HeroSection` throws for a missing `philosophy` route.
+ *
+ * `site.yelp.url` is no longer among the fields read here — the link row goes
+ * to the reviews subpage (`ReviewsLink`) and Yelp is that page's own button, so
+ * the outbound href is read once, where it is used.
  */
 
 /** The `h2`'s id, which the `Section` points `aria-labelledby` at (INV-04.8). */
@@ -69,7 +73,7 @@ export async function TestimonialsSection() {
   if (yelp === undefined) {
     throw new Error(
       "TestimonialsSection needs site.yelp, which content/site.json does not declare " +
-        "(02 D-02.12): the rating, the count line and the outbound link all read it.",
+        "(02 D-02.12): the rating and the count line both read it.",
     );
   }
 
@@ -98,7 +102,7 @@ export async function TestimonialsSection() {
       </Reveal>
 
       <Reveal id="testimonials.link" variant="rise" className={TESTIMONIALS_LINK_ROW}>
-        <YelpLink href={yelp.url} />
+        <ReviewsLink />
       </Reveal>
     </Section>
   );
