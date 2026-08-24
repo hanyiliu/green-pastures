@@ -59,6 +59,27 @@ const securityHeaders: { readonly key: string; readonly value: string }[] = [
 
 const nextConfig: NextConfig = {
   /**
+   * The one experimental flag in this file, and the only thing that makes
+   * INV-06.6's "unknown paths are real 404s (status 404, **correct `lang`**)"
+   * true (06 `D-06.14`, `gp-dln.266`).
+   *
+   * Without it the 404 is `app/[locale]/not-found.tsx` behind a `notFound()`
+   * throw, and React cannot run an error boundary in the SSR shell: Next
+   * abandons the shell and answers with `<html id="__next_error__">`, no `lang`
+   * and an empty `<body>`, leaving the page for the client to mount. With it,
+   * `src/app/global-not-found.tsx` is the document Next serves for a URL that
+   * matches no route — real HTML, real `lang`, no JavaScript required. That
+   * file's header carries the measurements and the two route changes that put
+   * every unknown path on the no-match path.
+   *
+   * Experimental in 16.3.2 (`global-not-found.js` landed in 15.4). What the
+   * flag gates is the file convention, not a rendering mode: turning it off
+   * again means restoring a root `not-found.tsx`, and nothing else in the tree
+   * reads it.
+   */
+  experimental: { globalNotFound: true },
+
+  /**
    * 06 §6.9. This is also Next's default, and it is written down anyway: 06
    * §6.10 makes `/en/menu/` → 308 `/en/menu` an asserted row of the redirect
    * matrix, and a matrix row that rests on a framework default is one major

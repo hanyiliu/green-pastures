@@ -159,8 +159,7 @@ const FIRST_LOAD_CEILINGS: ReadonlyMap<string, number> = new Map([
   ["/[locale]/programs", 640], // 631.6 KiB
   ["/[locale]/reviews", 640], // 631.6 KiB
   ["/[locale]/team", 640], // 631.6 KiB
-  ["/[locale]/[...rest]", 640], // 630.2 KiB
-  ["/_not-found", 496], // 495.3 KiB
+  ["/_not-found", 496], // 495.2 KiB — the 404's own route since `gp-dln.266`
 ]);
 
 /* ------------------------------------------------------------------------- *

@@ -424,14 +424,3 @@ describe("BackLink click", () => {
     release();
   });
 });
-
-describe("the [...rest] catch-all", () => {
-  it("404s instead of rendering anything (D-06.3)", async () => {
-    const { default: CatchAllNotFound } = await import("@/app/[locale]/[...rest]/page");
-
-    // `notFound()` signals by throwing; Next's `not-found` boundary catches it,
-    // which is what puts the reader on the *localised* 404 rather than the
-    // root one. The route has no other behaviour to test.
-    expect(() => CatchAllNotFound()).toThrow();
-  });
-});
