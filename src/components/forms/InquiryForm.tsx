@@ -249,9 +249,15 @@ const PRIVACY_CLASS = "font-body text-form-label text-muted";
  */
 const PRIVACY_LINK_CLASS = "font-bold text-form-link underline";
 
-/** 44px desktop / 46px mobile, radius 11, cream fill, one-pixel divider border. */
+/**
+ * 44px desktop / 46px mobile, radius 11, cream fill, one-pixel divider border.
+ *
+ * The invalid border is `--color-form-error` (03 §2.3) — the same `#d3402e` it
+ * drew as `--color-yelp`, now named for the role rather than for the review
+ * site. Non-text at 3:1, and it measures 4.62 against the card's white.
+ */
 const CONTROL_CLASS =
-  "w-full rounded-input border border-divider bg-cream px-3 font-body text-input text-ink transition-colors duration-(--dur-word-swap) ease-soft aria-invalid:border-yelp md:px-3.5";
+  "w-full rounded-input border border-divider bg-cream px-3 font-body text-input text-ink transition-colors duration-(--dur-word-swap) ease-soft aria-invalid:border-form-error md:px-3.5";
 
 const INPUT_CLASS = `h-(--input-h) ${CONTROL_CLASS}`;
 

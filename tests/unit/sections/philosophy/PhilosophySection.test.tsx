@@ -223,13 +223,15 @@ describe("the quote mark", () => {
     expect(mark).toHaveTextContent(reference.common.punctuation.quoteOpen);
   });
 
-  it("names both token namespaces, because `text-quote-mark` is two tokens", () => {
+  it("reaches both tokens by name, because they no longer share a utility stem", () => {
     const { container } = renderPhilosophy();
 
-    // 03 mints `--text-quote-mark` and `--color-quote-mark`; both would generate
-    // the utility spelled `text-quote-mark`, so each is written explicitly.
+    // 03 INV-03.7: the size keeps `text-quote-mark` and the colour is
+    // `--color-quote-mark-text`, so neither needs an arbitrary modifier. The
+    // pair used to be `--text-quote-mark` / `--color-quote-mark`, one stem, and
+    // Tailwind emitted the colour alone.
     const mark = container.querySelector('blockquote > [aria-hidden="true"]');
-    expect(mark).toHaveClass("text-(length:--text-quote-mark)", "text-(color:--color-quote-mark)");
+    expect(mark).toHaveClass("text-quote-mark", "text-quote-mark-text");
   });
 });
 

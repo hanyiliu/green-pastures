@@ -53,11 +53,20 @@ const LABEL_CLASS = "font-body text-form-label font-bold text-body";
 
 /**
  * The error sits at the label's size so the field's box does not jump between
- * states, and takes its colour from `--color-yelp` — the only red 03 mints.
+ * states, and takes its colour from `--color-form-error` (03 §2.3).
+ *
+ * That token is `#d3402e` — the one red the handoff carries, which reached this
+ * line as `--color-yelp` until 03 named it for this role as well. The value did
+ * not move; what moved is that a field saying "this is wrong" no longer points
+ * at a token named after a review site, and 03 §10's standing rule (red is a
+ * badge or button fill, not text on a tint) now has a spelling that says where
+ * the exception is. It holds here: 11–12px bold on the card's white measures
+ * 4.62:1, over AA's 4.5:1.
+ *
  * It is never colour-only: the text itself says what is wrong, and the control
  * carries `aria-invalid`.
  */
-const ERROR_CLASS = "font-body text-form-label font-bold text-yelp";
+const ERROR_CLASS = "font-body text-form-label font-bold text-form-error";
 
 const HELP_CLASS = "font-body text-form-label text-muted";
 

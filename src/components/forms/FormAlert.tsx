@@ -36,7 +36,13 @@ export type FormAlertProps = {
   readonly contact?: InquiryContact;
 };
 
-const ALERT_CLASS = "flex flex-col gap-1 rounded-input border border-yelp bg-cream p-3 md:p-3.5";
+/**
+ * `--color-form-error` (03 §2.3), the same `#d3402e` this border drew as
+ * `--color-yelp` before 03 named the red for its second job. A border is
+ * non-text, so AA asks 3:1 of it and it measures 4.36 on the banner's cream.
+ */
+const ALERT_CLASS =
+  "flex flex-col gap-1 rounded-input border border-form-error bg-cream p-3 md:p-3.5";
 const TEXT_CLASS = "font-body text-input text-ink";
 const CONTACT_CLASS = "font-body text-form-label text-body";
 

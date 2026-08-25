@@ -140,6 +140,19 @@ one thing that differs, `--font-cjk` (D-03.14). `--font-cjk-sc` / `--font-cjk-tc
 `font-cjk-tc` utilities; components must never use them (INV-03.6). Components never write `md:text-[64px]`;
 they write `text-headline`.
 
+**Two namespaces, one `text-…` stem.** The table above hides one overlap: `--color-*` and `--text-*` both
+generate a `text-<name>` utility — `--color-sage` gives `text-sage` (a colour) and `--text-headline` gives
+`text-headline` (a size). The stems are only ever distinct because the names are. Declare one name in both
+namespaces and Tailwind emits **one** rule for it, resolved to the colour; the size is not shadowed by a
+later rule, it is never generated, and the only way left to reach it is the explicit
+`text-(length:--text-<name>)` modifier. `--color-quote-mark` and `--text-quote-mark` were exactly that pair
+until this document renamed the colour to `--color-quote-mark-text` (§2.4), and `PHILOSOPHY_QUOTE_MARK` had
+carried `text-(color:…) text-(length:…)` to work around it. The rule that prevents the next one is INV-03.7:
+a name belongs to one namespace, and where a colour and a size describe the same object the colour takes the
+`-text` suffix `--color-daychip-text` and `--color-benefitchip-text` already use. This is a naming
+constraint, not a value one — no token's value moves, and two tokens holding the *same value* under different
+names is a separate question this rule says nothing about.
+
 ### 2 · Colour tokens
 
 Source lines: `docs/design/README.md` L30–34 unless stated. `.dc.html` references are cited as `desktop LNN`
@@ -189,7 +202,7 @@ and no hue-named alias (`--color-lavender*`, `--color-amber-chip`) exists (D-03.
 | Section | `--color-accent-*` (eyebrow) | `--color-link-*` | `--color-link-underline-*` | `--color-sub-*` (subhead / blurb) | Source |
 |---|---|---|---|---|---|
 | hero | — (badge chip = chip tokens) | `#4f6b43` | `#c3d2b6` | `#6b7060` | desktop L115, L120 |
-| philosophy | `#6f8a5f` | `#4f6b43` | `#b6c9a6` | attribution `#7e8a72`; quote mark `#c2d4b6` (`--color-quote-mark`, §2.4) | desktop L143–146 |
+| philosophy | `#6f8a5f` | `#4f6b43` | `#b6c9a6` | attribution `#7e8a72`; quote mark `#c2d4b6` (`--color-quote-mark-text`, §2.4) | desktop L143–146 |
 | programs | `#c08552` (also age eyebrows) | `#b06a35` | `#e6bf95` | `#7d7468` | desktop L162–164 |
 | menu | `#bd9326` | `#a8852f` | `#e6cf86` | `#897a4e` | desktop L189–191 |
 | gallery | `#6f8a9a` | `#56707e` | `#b4c8d0` | `#6f7a80` | desktop L218–220 |
@@ -228,6 +241,28 @@ for exactly this role. The links previously took `--color-sage`, which is a fill
 the handoff and is text nowhere in it; at these sizes that measured 3.61 and 3.83 against §10's 4.5:1, and
 `#4f6b43` measures 5.63 and 5.97 (§10).
 
+**The form's error colour.** The form draws three error surfaces the design never draws — an invalid field's
+border, the inline error line under it, and the failure banner's border (07 §1, `D-07.4`; 04 §3.5). The handoff
+carries exactly one red, `--color-yelp` (§2.1, README L34), so all three took it, and a component that means
+"this field is wrong" was reaching for a token named after a review site. `--color-form-error` is that same
+`#d3402e` named once for the role that uses it, the way `--color-form-link` is `#4f6b43` named once for the
+surface that uses it.
+
+| Token | Hex | Role | Consumer | Source |
+|---|---|---|---|---|
+| `--color-form-error` | `#d3402e` | the form's error state — an invalid control's border, the inline error line (11–12px bold on the card's white), the failure banner's border | `FormField`, `FormAlert`, `InquiryForm` (04 §3.5) | ours — the design draws no error state; the value is §2.1's `--color-yelp` |
+
+No decision is pending on this one and it is not an OQ-03.2 replacement: it introduces no new brand value,
+overrides no design value, and moves no pixel — the three surfaces render `#d3402e` before and after. What
+changes is that the palette now says the red has two jobs, so §10's standing instruction (red is a badge or
+button **fill** with white text; do not set it as text on a tinted ground) survives contact with a form. The
+form is the one place the instruction bends, and it bends within AA: the error line is 11–12px bold on the
+card's **white**, where `#d3402e` measures 4.62 (§10) — the same pair §10 already passes for white-on-Yelp,
+read the other way round. The two borders are non-text at the 3:1 threshold (4.62 on white, 4.36 on the
+banner's cream). Red as text on a tinted section ground stays banned; the sizes that would need it do not
+exist in the form, and `--color-form-error` is scoped to the card so a later surface cannot borrow it by
+accident.
+
 **2.4 Chips, badges, menu graphics, decorations**
 
 | Token | Value | Use | Source |
@@ -241,7 +276,7 @@ the handoff and is text nowhere in it; at these sizes that measured 3.61 and 3.8
 | `--color-dot-label-breakfast` / `-lunch` / `-snack` | `#bd9326` / `#5e7a4e` / `#bd7a55` | dot captions | desktop L195–197 |
 | `--color-leaf-hero-1/2/3` | `#a9c39a` / `#e8c79a` / `#cdb38a` | hero leaves | desktop L111–113 |
 | `--color-leaf-philosophy` / `-teachers` / `-visit` | `#9fbb8f` / `#c3b7d6` / `#7e9a6e` | section leaves | desktop L140, L276, L309 |
-| `--color-quote-mark` | `#c2d4b6` | 84px decorative quote | desktop/README L11 |
+| `--color-quote-mark-text` | `#c2d4b6` | 84px decorative quote (the `-text` suffix is INV-03.7's — `--text-quote-mark` owns the `text-quote-mark` stem) | desktop/README L11 |
 | `--color-nav-bg` | `rgba(251,248,240,.92)` + `backdrop-filter: blur(6px)` | sticky nav | desktop/README L7 |
 | `--color-focus` | `var(--color-forest)`; Visit: `var(--color-sun)` | focus ring (D-03.11) | ours |
 
@@ -305,7 +340,7 @@ Sources: desktop/README L9–17, mobile/README L10–17; line numbers in the ref
 | `--text-section-title` | `40px/normal` (Reviews `36px`; Visit `42px/1.15`) | `28px/normal` (Reviews `26px`; Visit `28px/1.2`) | Fredoka 600 | section H2 (desktop L163, L242, L311; mobile L98, L169, L224) |
 | `--text-subhead` (+ `-section`) | `19px/1.6` hero; `17px/1.6` sections | `15px/1.6` hero; `13px/1.6` sections (Visit `14px`) | Nunito 600 | under titles |
 | `--text-quote` | `44px/1.32` | `26px/1.35` | Fredoka 500 | philosophy pull-quote |
-| `--text-quote-mark` | `84px` | `58px` | Fredoka 600 | decorative “ (mobile L82) |
+| `--text-quote-mark` | `84px` | `58px` | Fredoka 600 | decorative “ (mobile L82); owns the `text-quote-mark` stem — its colour is `--color-quote-mark-text` (§2.4, INV-03.7) |
 | `--text-program-title` | `23px` / `28px` (Toddler) | `20px` / `22px` | Fredoka 600 | stepping-stone titles |
 | `--text-name-lg` / `--text-name` | `26px` / `21px` | `22px` / `17px` | Fredoka 600 | Ms. Ping / assistants |
 | `--text-blurb` | `15px/1.6` head, `14px/1.55` assistants, `14px/1.5` programs | `13px` head/programs, `12px` assistants | Nunito 600 | teacher/program blurbs (mobile L103, L202, L208) |
@@ -658,6 +693,8 @@ computed from the hex values above (relative-luminance formula; ±0.01). Failure
 | amber stars `#f0a93a` on cream / white | 1.90 / 2.01 | decorative | stars `aria-hidden`; rating conveyed by the "5.0" text (ink) |
 | amber text `#f0a93a` on menu bg `#fbf2db` (README L31 "amber text") | 1.80 | **fail** | never use `--color-amber` for text on any section bg; text use needs `#b97a12`-class darkening (3.38 on cream — still short of 4.5; treat amber as decorative only) |
 | Yelp red `#d3402e` as text on blush `#f6ece4` | 3.97 | **fail** (if used as text) | the design uses red only as badge/button fill with white text (4.62 — pass); keep it that way |
+| form error `#d3402e` as text on the form card's white (11–12px bold) | 4.62 | AA | — (§2.3's `--color-form-error`; the row above is why the token is scoped to this card) |
+| form error `#d3402e` as a border — invalid control on white, failure banner on cream `#fbf8f0` (non-text 3:1) | 4.62 / 4.36 | AA | — |
 | sun `#f4c64e` on cream; quote mark `#c2d4b6` on `#e8efe0` | 1.52 / 1.33 | decorative | `aria-hidden` |
 | nav links `#4a5040` on cream; hover `#3f5538` | 7.87 / 7.71 | AAA | — |
 | footer links `#c8d6bd` on forest | 5.38 | AA | — |
@@ -702,6 +739,12 @@ every duration is a token so 05 can zero them in one place.
   never referenced outside those two rules (no `font-cjk-sc` utility in any component). The locale-comparison
   half is already machine-checked by 02 INV-02.9's ESLint rule; 08 adds the utility-name check to the
   Tailwind arbitrary-value regex sweep of INV-03.2.
+- **INV-03.7** No name is declared in both the `--color-*` and the `--text-*` namespace. The two share one
+  utility stem, so a name in both yields a single `text-<name>` rule that Tailwind resolves to the colour and
+  the type token becomes unreachable by its own utility (§1, *Two namespaces, one `text-…` stem*). Where a
+  colour and a size describe the same object, the colour takes the `-text` suffix `--color-daychip-text`
+  already uses: `--color-quote-mark-text` beside `--text-quote-mark`. Lint: a Vitest case parses `tokens.css`
+  and fails on any name present in both namespaces.
 
 ## Open questions
 
