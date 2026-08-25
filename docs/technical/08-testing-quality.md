@@ -969,9 +969,32 @@ OQ-08.4), so the collector followed Vercel's protection redirect and measured `v
 reported `categories:performance 0.39` and `resource-summary:script:size 1373281` **about a page this project
 does not own**. A confident verdict about the wrong page is worse than a red one and worse than no verdict,
 and it is a fail-open of the same family as the seven this repository has catalogued — the gate looks like it
-ran. The job now runs a preflight probe of `$URL/en` and refuses to collect at all on a 401, a 403 or a
+ran. The job answered it with a preflight probe of `$URL/en` that refused to collect on a 401, a 403 or a
 redirect to `vercel.com/login`, naming the missing secret. Both jobs still carry a `workflow_dispatch` with
 an explicit URL, which is how a human re-runs either against a chosen deployment (09 §5.1 item 16).
+
+**And that preflight was itself a fail-open — the eighth (`gp-dln.297`).** Vercel answers Deployment
+Protection with `302` → `https://vercel.com/sso-api?…`. The status is not 401 or 403 and the redirect path is
+`sso-api`, not `login`, so none of the probe's three conditions ever matched: it passed every protected
+preview through, and PR #99 reported `categories:performance 0.42`, `resource-summary:script:size 1354178`,
+`third-party.count 4` and `total-blocking-time 1794` about Vercel's login page behind a green tick — the same
+failure the probe had been written to stop, one revision later. Correcting the three conditions would have
+held until Vercel next changed its redirect shape. **The enumeration was the defect**: listing the ways a
+response can be wrong makes "none matched" the pass verdict, so every shape nobody has catalogued yet passes.
+The probe now asserts the response **is** this site's page — status 200, the `lang` attribute the root layout
+writes for the locale asked for, and a link to a route `content/site.json` declares under that locale prefix,
+all three required — following redirects the way Lighthouse follows them, so the bytes it checks are the
+bytes the collector would measure. Both markers are structural rather than prose: HTML escaping cannot turn a
+locale id or a URL slug into something else, where a brand name compared as a substring would go red the day
+it grew an apostrophe.
+
+The two versions of the step were run verbatim out of the workflow file against the same five responses. The
+old probe collects on the `302` → `sso-api`, on a 200 returning somebody else's HTML and on a 200 with an
+empty body, refusing only the 401 and the 403; the new one refuses all four wrong answers and collects only
+on our own `/en`. **Until OPS-2.1 provisions `VERCEL_AUTOMATION_BYPASS_SECRET` the honest verdict is a red
+`lighthouse-preview`**, because a protected preview cannot answer with our page — the job is advisory (09
+§3), it blocks no merge, and a red row that measured nothing is worth more than a green one that measured
+`vercel.com`.
 
 **What remains unscheduled is two scripts, and it is a gap in 10's tables rather than in this section.**
 `scripts/ci/bundle-secrets.sh` and `scripts/ci/env-example.ts` (D-08.11, INV-07.3): the `build` and `static`

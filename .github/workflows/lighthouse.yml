@@ -35,11 +35,25 @@
 # `upload-artifact` skips hidden files unless told not to (the same trap
 # `ci.yml`'s `build` job documents for `.next`, and `if-no-files-found: error`
 # is what surfaced it); and with no `VERCEL_AUTOMATION_BYPASS_SECRET` the
-# collector followed Vercel's protection redirect and measured
-# `vercel.com/login` — reporting `performance 0.39` and `script.size 1373281`
-# about a page that is not ours. A red verdict about the wrong page is worse
-# than either a green one or an honest red, so the preflight step now refuses to
-# collect at all in that state and says which secret is missing.
+# collector followed Vercel's protection redirect and measured Vercel's own
+# login page — reporting `performance 0.39` and `script.size 1373281` about a
+# page that is not ours. A red verdict about the wrong page is worse than either
+# a green one or an honest red, so the preflight step refuses to collect at all
+# in that state and says which secret is missing.
+#
+# **And it never once refused, because the preflight was an allowlist of
+# failure shapes** (`gp-dln.297`). It tested for a 401, a 403, or a redirect
+# whose URL contained `vercel.com/login`; Vercel answers Deployment Protection
+# with `302` → `https://vercel.com/sso-api?…`, which is none of those three, so
+# the guard written to stop exactly this failure passed it through and PR #99
+# reported `performance 0.42`, `script.size 1354178`, `third-party.count 4` and
+# `TBT 1794` about the login page behind a green tick. Correcting the three
+# conditions would have held until Vercel next changed its redirect shape. The
+# enumeration *was* the defect: listing the ways a response can be wrong makes
+# "none matched" the pass verdict, so every shape nobody has seen yet passes.
+# The step below asserts the response **is** this site's page instead, and
+# anything it cannot recognise — a new interstitial, an outage page, a 404, an
+# empty body, a request that never completes — fails closed.
 #
 # The check run `lighthouse-preview` creates is attached to
 # `github.event.deployment.sha` rather than to `github.ref`, which is what makes
@@ -130,10 +144,23 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # Two refusals, and neither may be softened into a warning: this step is
+      # the only thing standing between a protected preview and an hour of
+      # confident numbers about somebody else's page.
+      #
       # A missing URL is the one input that would make `lhci` measure nothing
       # while looking healthy, so it is refused here rather than in the
       # collector. Same discipline as `scripts/ci/todo-grep.sh`: a gate that
       # cannot run must not report clean.
+      #
+      # The second refusal is the one the file header records as `gp-dln.297`.
+      # It asserts the response **is** this site's page rather than enumerating
+      # the ways it might not be, so its default verdict is "not ours" and a
+      # response has to earn its way past. Three positive facts, all required:
+      # the status is 200, the document carries the `lang` attribute this
+      # repository's root layout writes for the locale asked for, and it links
+      # to a route `content/site.json` declares under that locale prefix. There
+      # is no fourth clause to keep in step with Vercel.
       - name: resolve the deployment URL
         id: target
         env:
@@ -147,20 +174,91 @@ jobs:
             echo "::error::no deployment URL in the payload and none dispatched — nothing would be measured."
             exit 1
           fi
+          # `lighthouserc.cjs` strips trailing slashes off `LHCI_BASE_URL`
+          # before it builds the URL list, so stripping them here too is what
+          # makes "the URL probed is the URL measured" literally true rather
+          # than nearly true.
+          url="${url%/}"
 
-          # 09 D-09.4: previews are protected. Without the bypass secret the
-          # collector follows the redirect and measures `vercel.com/login`,
-          # which produced a confident `performance 0.39` about a page this
-          # project does not own on this file's own first run. A wrong verdict
-          # is worse than no verdict, so the run stops here and names the
-          # secret. `-o /dev/null` because only the status line matters.
-          probe=$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' \
-            -H "x-vercel-protection-bypass: ${BYPASS:-}" "$url/en")
+          # The locale is written once and read twice — to build the path
+          # probed and to state the `lang` expected back — so the two cannot
+          # drift apart. `en` is the reference locale (02 `D-02.1`) and the
+          # first URL `lighthouserc.cjs`'s preview matrix collects. Withdraw it
+          # from `routing.locales` and this probe stops returning our page,
+          # which fails the step: the direction a guard is allowed to be wrong
+          # in.
+          locale=en
+
+          # The evidence a response must carry to be this site's page. Both
+          # markers are read out of the files that own them rather than spelled
+          # here, and both are *structural* tokens rather than prose — an
+          # attribute the root layout writes, and a link to a declared route.
+          # A prose marker (the brand name, a heading) would have to be
+          # compared through React's HTML escaping and would go red the day a
+          # brand name grew an apostrophe; a locale id and a URL slug cannot be
+          # escaped into something else.
+          #
+          # They do different work and neither is redundant. `lang` rules out
+          # the documents that are *nearly* ours — Next's recovery shell, which
+          # is `<html id="__next_error__">` with no `lang` at all (06 `D-06.14`
+          # records it), and a response in the wrong locale. It does not rule
+          # out somebody else's English page, and it is not asked to: Vercel's
+          # own login page opens `<html lang="en">` too. The route link is what
+          # says *this* site — a path only `content/site.json` declares, under
+          # a locale prefix only `localePrefix: "always"` produces.
+          #
+          # `routes[0]` rather than a fixed path, and it is safe to take the
+          # first: measured against the build of `311265f`, `/en` links to all
+          # seven of `routes[]`, so reordering that list still names a marker
+          # the page carries.
+          route=$(jq -r '.routes[0].path // ""' content/site.json)
+          case "$route" in
+            /?*) ;;
+            *)
+              echo "::error::content/site.json declares no usable routes[0].path, so the preflight marker would be the empty string — and an empty marker matches every document ever served. That is the fail-open this step exists to prevent, so nothing was measured."
+              exit 1
+              ;;
+          esac
+          lang_marker="<html lang=\"$locale\""
+          link_marker="href=\"/$locale$route\""
+
+          # Redirects are followed because Lighthouse follows them: the bytes
+          # asserted on below are the bytes the collector would measure, hop
+          # for hop. `--max-time` so a request that never completes fails
+          # closed in a minute instead of at the job's fifteen. The bypass
+          # header is sent only when there is a secret to put in it, which is
+          # what lets the message below say which of the two states it is in.
+          body=$(mktemp)
+          curl_args=(-sS -L --max-redirs 5 --connect-timeout 10 --max-time 60
+            -o "$body" -w '%{http_code} %{num_redirects} %{url_effective}')
+          if [ -n "${BYPASS:-}" ]; then
+            curl_args+=(-H "x-vercel-protection-bypass: $BYPASS")
+            secret="set"
+          else
+            secret="not set"
+          fi
+          rc=0
+          probe=$(curl "${curl_args[@]}" "$url/$locale") || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::the preflight request to $url/$locale did not complete (curl exited $rc), so there is no response to check and nothing was measured."
+            exit 1
+          fi
           status=${probe%% *}
-          redirect=${probe#* }
-          echo "preflight: $url/en -> $status ${redirect:-(no redirect)}"
-          if [ "$status" = "401" ] || [ "$status" = "403" ] || case "$redirect" in *vercel.com/login*) true ;; *) false ;; esac; then
-            echo "::error::$url is behind Vercel Deployment Protection and VERCEL_AUTOMATION_BYPASS_SECRET is not set (09 D-09.4, OQ-08.4, OPS-2.1). Lighthouse would follow the redirect, measure the login page and report budget failures about a page this project does not own. Nothing was measured."
+          rest=${probe#* }
+          hops=${rest%% *}
+          final=${rest#* }
+
+          # `$status` is the *final* response's — the whole point of following
+          # the hops — so `$hops` is reported beside it: a 200 reached after a
+          # redirect is a different fact from a 200 served directly, and the
+          # log should not make the two look alike.
+          missing=
+          grep -qF -- "$lang_marker" "$body" || missing="$missing $lang_marker"
+          grep -qF -- "$link_marker" "$body" || missing="$missing $link_marker"
+          echo "preflight: $url/$locale -> $status after $hops redirect(s), $final ($(wc -c <"$body" | tr -d ' ') bytes, bypass secret $secret)"
+
+          if [ "$status" != "200" ] || [ -n "$missing" ]; then
+            echo "::error::$url/$locale did not answer with this site's page, so nothing was measured (09 D-09.4, OQ-08.4, OPS-2.1). Status $status after $hops redirect(s), final URL $final, missing marker(s):$missing. VERCEL_AUTOMATION_BYPASS_SECRET is $secret — while it is unset every Vercel preview answers Deployment Protection with a 302 to vercel.com/sso-api and this refusal is the expected outcome, not a regression."
             exit 1
           fi
 
@@ -173,10 +271,13 @@ jobs:
           LHCI_BASE_URL: ${{ steps.target.outputs.url }}
           LHCI_MATRIX: preview
           # 09 D-09.4 / OQ-08.4: previews are protected and this is the only job
-          # that touches one. Absent (as it is until OPS-2.1 provisions it) the
-          # collector sends no bypass header and Lighthouse measures Vercel's
-          # login page — which fails these assertions loudly rather than passing
-          # quietly, so a missing secret cannot read as a green run.
+          # that touches one. Absent — as it is until OPS-2.1 provisions it —
+          # this step does not run at all: the preflight above establishes that
+          # the deployment answers with our page before anything is collected,
+          # and without the secret it cannot, so the job stops there. That is
+          # the point. The collector's own verdict was never the backstop it
+          # was written up as; unprotected by a working preflight it measured
+          # Vercel's login page and reported budget numbers about it.
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm exec lhci autorun --config=lighthouserc.cjs
 
