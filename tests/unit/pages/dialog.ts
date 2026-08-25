@@ -16,6 +16,13 @@
  * route the reader took out of the dialog, which is the same event the real one
  * dispatches for all three.
  *
+ * **Where that equivalence stops.** It holds for the *open state* and not for
+ * focus. A real `close()` restores focus to the opening thumbnail before it
+ * queues the `close` event, so the lightbox corrects focus in the same
+ * statement as the close rather than on the event — and a test about *where
+ * focus lands* has to drive the reader's own route (the button, or the `cancel`
+ * that `Escape` fires) instead of calling `close()` here.
+ *
  * Install once per file, in `beforeAll`. Not a `*.test.ts` file, so Vitest's
  * `include` never collects it.
  */
