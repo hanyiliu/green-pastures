@@ -494,27 +494,43 @@ describe("the lightbox", () => {
     expect([...seen].sort()).toEqual(outdoors.map((photo) => photoAlt(photo.id)).sort());
   });
 
+  /*
+   * The route out of the dialog is part of this assertion rather than a detail
+   * of it, and that is the one thing this block cannot take from `./dialog.ts`.
+   * A browser restores focus to the *opening* thumbnail **inside** `close()`
+   * and only then queues the `close` event, so a correction that travels with
+   * the event lands a task late — measured at 0.9–6.2 ms in this project's own
+   * Chromium, and red in CI. `Lightbox.dismiss` therefore corrects focus in the
+   * same statement as the close, and each route out has to be driven the way
+   * the browser delivers it: the button as a click, `Escape` as the `cancel`
+   * the platform fires before it closes anything. jsdom implements none of
+   * `Escape`, the top layer or the restoration, so the restoration is stood in
+   * for here — focus is put back on the opener first, which is the state the
+   * component has to correct.
+   */
   it("hands focus back to the photograph on screen, not to the one that opened it", async () => {
     await renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: photoAlt("g01") }));
-    fireEvent.keyDown(dialog(), { key: "ArrowRight" });
-    const onScreen = dialog().getAttribute("aria-label");
+    const stepOffG01 = () => {
+      fireEvent.click(screen.getByRole("button", { name: photoAlt("g01") }));
+      fireEvent.keyDown(dialog(), { key: "ArrowRight" });
+      const onScreen = dialog().getAttribute("aria-label");
+      const shown = photos.find((photo) => photoAlt(photo.id) === onScreen);
+      expect(shown?.id).not.toBe("g01");
+      // What the browser does inside `close()`, and jsdom does not.
+      document.getElementById("gallery-photo-g01")?.focus();
+      return document.getElementById(`gallery-photo-${shown?.id ?? ""}`);
+    };
 
-    /*
-     * `close()` is every route out — the button, the backdrop and `Escape` all
-     * arrive as one `close` event, which is why the component listens for that
-     * and not for three things. jsdom implements none of `Escape`, the top
-     * layer or the focus restoration, so this drives the event the browser
-     * would (see `./dialog.ts`).
-     */
-    dialog().close();
+    const byButton = stepOffG01();
+    fireEvent.click(within(dialog()).getByText(reference.common.lightbox.close));
+    expect(dialog().open).toBe(false);
+    expect(document.activeElement).toBe(byButton);
 
-    const expected = photos.find((photo) => photoAlt(photo.id) === onScreen);
-    expect(expected?.id).not.toBe("g01");
-    expect(document.activeElement).toBe(
-      document.getElementById(`gallery-photo-${expected?.id ?? ""}`),
-    );
+    const byEscape = stepOffG01();
+    fireEvent(dialog(), new Event("cancel", { bubbles: false, cancelable: true }));
+    expect(dialog().open).toBe(false);
+    expect(document.activeElement).toBe(byEscape);
   });
 
   it("closes when the reader clicks past the photograph, onto the dialog itself", async () => {

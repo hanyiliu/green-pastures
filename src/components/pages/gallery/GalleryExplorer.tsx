@@ -117,14 +117,8 @@ export function GalleryExplorer({ items, categories, allLabel, groupLabel }: Gal
   );
 
   const onClose = useCallback(() => {
-    // The platform restores focus to whatever opened the dialog; after the
-    // arrows have moved on, that is the wrong thumbnail. Re-point it at the
-    // photograph the reader was last looking at (04 §5.5).
-    const returnTo = openId;
     setOpenId(null);
-    if (returnTo === null) return;
-    document.getElementById(thumbnailId(returnTo))?.focus();
-  }, [openId]);
+  }, []);
 
   return (
     <>
@@ -144,7 +138,13 @@ export function GalleryExplorer({ items, categories, allLabel, groupLabel }: Gal
         thumbnailId={thumbnailId}
       />
 
-      <Lightbox item={open} items={visible} onStep={onStep} onClose={onClose} />
+      <Lightbox
+        item={open}
+        items={visible}
+        returnFocusId={open === null ? null : thumbnailId(open.id)}
+        onStep={onStep}
+        onClose={onClose}
+      />
     </>
   );
 }
