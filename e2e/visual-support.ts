@@ -44,9 +44,42 @@ import { stubTurnstile } from "./form-support";
  * reveals are driven to their end state by {@link playEveryReveal} rather than
  * waited out; the Turnstile script is stubbed so the Visit section does not
  * depend on Cloudflare being reachable; web fonts are settled before any
- * capture; and the two genuinely unpinnable regions — the menu's day selection,
- * which is *today* in `America/Los_Angeles`, and the review count-up — are
- * masked (08 §8 names both).
+ * capture; the menu's day selection is driven to one fixed weekday by
+ * {@link pinMenuDay}; and the one region that still cannot be pinned — the
+ * review count-up — is masked (08 §8 names it).
+ *
+ * ── The calendar is a source of movement, and it is not the browser's ──────
+ *
+ * The Menu section shows *today* in `America/Los_Angeles`, and the sample line
+ * for one weekday is not the length of another's — 69 characters on Monday
+ * against 58 on Tuesday in `en` — so it wraps to a different number of lines
+ * and the section is a different height. Measured in this container at 1280:
+ * `en` is 772 px on Mon/Wed/Thu and 748 px on Tue/Fri. A `toHaveScreenshot`
+ * whose image is a *different size* from its baseline fails before the
+ * tolerance is consulted at all, which is why this arrived as a hard red on a
+ * pull request that had changed nothing: `en/desktop/menu.png`, "expected an
+ * image 1280px by 773px, received 1280px by 749px", on the first CI run after
+ * local midnight.
+ *
+ * **Masking the day did not and could not fix it.** The mask paints over the
+ * chips and the line; it does not stop the box underneath them from changing
+ * height, and the height is what breaks the comparison.
+ *
+ * **Nor can a browser clock fix it.** `src/lib/menu-day.ts` is read on the
+ * *server*, and 06 `D-06.4` prerenders every page at build time — the built
+ * `/en` HTML ships `aria-selected="true"` on one chip, decided by the clock of
+ * the machine that ran `next build`, days before any browser opens it. Verified
+ * on this commit: a build run on a Tuesday writes `menu-day-tue` into
+ * `.next/server/app/en.html`. Playwright's `page.clock` patches `Date` inside
+ * the page, so there is nothing there for it to patch; and the day is not read
+ * again during hydration either, because `MenuDayChips` opens `useState` on the
+ * server's answer (`D-04.10`). Pinning it at the only other place it is decided
+ * would mean pinning the *build's* clock, which is a change to what every
+ * reader of the deployed site sees rather than to this suite.
+ *
+ * So the day is pinned where the suite can reach it: the tabs are driven to
+ * {@link PINNED_MENU_DAY} after the page settles and before anything is
+ * photographed or measured. See {@link pinMenuDay}.
  */
 
 /* -------------------------------------------------------------------------- *
@@ -109,7 +142,11 @@ export type SiteRoute = {
   readonly homeAnchor?: string;
 };
 
-type SiteJson = { readonly routes: readonly SiteRoute[] };
+type SiteJson = {
+  readonly routes: readonly SiteRoute[];
+  /** `site.menu` (02 `D-02.11`) — only its `days` are read here. */
+  readonly menu: { readonly days: readonly string[] };
+};
 
 const site = JSON.parse(readFileSync(join(REPO_ROOT, "content", "site.json"), "utf8")) as SiteJson;
 
@@ -319,26 +356,38 @@ export const SHOT = {
  * -------------------------------------------------------------------------- */
 
 /**
- * Everything a shot inside `scope` has to mask. Two regions, both named by
- * 08 §8, and both genuinely unpinnable rather than merely inconvenient.
+ * Everything a shot inside `scope` has to mask. Three regions, all named by
+ * 08 §8, for two different reasons.
  *
- * **The menu's day selection.** `src/lib/menu-day.ts` picks *today* in
- * `America/Los_Angeles` on the server, so the selected chip and the sample line
- * it controls both move once a day.
+ * **The review count-up**, which is genuinely unpinnable. `CountUp` guarantees
+ * the final value is in the server HTML, so this is not masking a number that
+ * might be wrong — that value is asserted in the unit suite. It is masked
+ * because the animation is JS-driven rather than CSS, so
+ * `animations: "disabled"` has no purchase on the frame it would otherwise be
+ * caught in.
  *
- * Masking only the selected chip does not work, which is worth stating because
- * it is the obvious thing to try. Suppose the baseline was taken on a Wednesday
- * and the run is a Monday: the mask covers Wednesday's chip in the baseline and
- * Monday's in the run, so the images differ at *both* positions — Monday is
- * selected in one and not the other, and Wednesday the reverse. The whole
- * roving row and the panel it controls have to go under the mask together,
- * which is what "mask for … the menu's `today` chip" means in practice.
+ * **The menu's roving chip row and the panel it controls**, which are not
+ * unpinnable any more. 08 §8 masked them because the selected day was *today*
+ * in `America/Los_Angeles` and nothing in a browser could change it;
+ * {@link pinMenuDay} now settles the day before any shot is taken, so both are
+ * as fixed as the rest of the section.
  *
- * **The review count-up.** `CountUp` guarantees the final value is in the
- * server HTML, so this is not masking a number that might be wrong — that value
- * is asserted in the unit suite. It is masked because the animation is
- * JS-driven rather than CSS, so `animations: "disabled"` has no purchase on the
- * frame it would otherwise be caught in.
+ * They stay masked here all the same, and the reason is about this pull request
+ * rather than about the pixels. Unmasking them is a coverage *increase* — it
+ * would put the amber selected chip, the four white ones and the sample line
+ * back under assertion, which is most of what the Menu section is — and it
+ * re-records six images that INV-08.8 asks a human to look at. A red-CI fix
+ * that also rewrites baselines is exactly the shape a bad fix takes, so the two
+ * are separated: this change rewrites none, and the images are a reviewer's own
+ * decision to make afterwards.
+ *
+ * Masking the *whole* row and panel, rather than the selected chip alone, was
+ * the right call while the day moved and is worth keeping written down. Suppose
+ * the baseline was taken on a Wednesday and the run is a Monday: a mask over
+ * the selected chip covers Wednesday's in the baseline and Monday's in the run,
+ * so the images differ at *both* positions. What that mask never covered, and
+ * could not, is the height of the box underneath it — which is the failure that
+ * brought the suite down and the reason the day is pinned instead.
  *
  * The masks are **scoped**, never document-wide. A mask that matches nothing is
  * free; a mask that matches something in another section blanks real coverage
@@ -579,17 +628,127 @@ export async function settleFonts(page: Page): Promise<void> {
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
 }
 
+/* -------------------------------------------------------------------------- *
+ * The menu's day — the one thing on this page that moves on its own
+ * -------------------------------------------------------------------------- */
+
+/**
+ * The weekday every `@visual` run renders the Menu section on.
+ *
+ * **Derived, not spelled.** `site.menu.days[0]` is the same expression
+ * `defaultMenuDay` falls back to for a day the sample week does not carry
+ * (`src/lib/menu-day.ts`), so this constant and the site agree by construction
+ * rather than by a comment: an owner who opens the week on Tuesday moves both
+ * at once, and a literal `"mon"` here would quietly start pinning a chip that
+ * no longer exists.
+ *
+ * **Why the first day and not the longest line.** Three reasons, in order.
+ *
+ * It is what the site *itself* shows on three days in seven — `D-04.10`'s
+ * weekend rule sends Saturday and Sunday to `days[0]`, and Monday is `days[0]`
+ * — so the pinned page is the page a reader gets more often than any other
+ * single day, and a build run on any of those three days needs no correcting at
+ * all.
+ *
+ * It is the day the committed baselines were taken on, so pinning here changes
+ * no image: `en/desktop/menu.png` stays 1280 × 773. That matters more than
+ * tidiness. A pull request that fixes a date-dependent baseline by *rewriting*
+ * the baseline is indistinguishable, in a diff, from one that fixes it
+ * properly; one that rewrites nothing cannot be mistaken for the first.
+ *
+ * And it is not the degenerate case. In `en` at 1280 the Monday line already
+ * wraps to two lines (772 px against 748 px on Tuesday and Friday), so the shot
+ * covers a wrapped sample line rather than a single-line one.
+ *
+ * The one thing it is *not* is the most adversarial choice for
+ * `visual-heights.spec.ts`. Measured in this container at 1280: Wednesday and
+ * Thursday are the only days on which the Chinese sections (785 px) stand
+ * *taller* than `en` (772 px), 13 px into that spec's 24 px one-line tolerance,
+ * and on Monday `zh` is 14 px shorter instead. Pinning to `wed` would put that
+ * spec's own failure mode under test on every run. It would also re-dimension
+ * six baselines and narrow a live margin, which is a deliberate trade for its
+ * own pull request rather than a rider on a red-CI fix.
+ */
+export const PINNED_MENU_DAY: string = (() => {
+  const [first] = site.menu.days;
+  if (first === undefined) {
+    throw new Error(
+      "content/site.json declares no menu.days, so @visual has no weekday to pin the Menu " +
+        "section to (02 D-02.11). `defaultMenuDay` throws on the same emptiness.",
+    );
+  }
+  return first;
+})();
+
+/**
+ * Put the Menu section on {@link PINNED_MENU_DAY}, whatever day the build ran.
+ *
+ * The module header carries the argument for why this is where the pin has to
+ * go. In short: the day is baked into prerendered HTML by `next build`, so it
+ * is decided long before a browser or a `page.clock` exists, and the only place
+ * a test can still change it is the control the design already gives a reader —
+ * the day chips.
+ *
+ * `dispatchEvent` rather than `click`, and the difference is not stylistic. A
+ * real click scrolls the chip into view and focuses it, which would leave every
+ * later shot's scroll position a function of where the Menu section happens to
+ * sit and put a `:focus-visible` outline (`tokens.css`, `D-03.11`) on one chip
+ * in the frame. A dispatched click runs the same React handler and does
+ * neither, so the page after this call differs from the page before it in
+ * exactly one respect: which day is selected.
+ *
+ * Hydration is already guaranteed by the time this runs. {@link openSettled}
+ * calls it after {@link playEveryReveal}, and a reveal only reaches opacity 1
+ * because Motion drove it in the client — so a page whose reveals have played
+ * is a page whose handlers are attached, and one dispatch is enough.
+ *
+ * A page with no tablist has no Menu section — every {@link BUILT_DETAIL_ROUTES}
+ * fold and the gallery lightbox open through {@link openSettled} too — and there
+ * is nothing to pin, so it returns. A page that *has* the tablist and not the
+ * pinned day is a different matter and fails with the reason: `site.menu.days`
+ * and the rendered chips have disagreed, which no baseline should paper over.
+ */
+export async function pinMenuDay(page: Page): Promise<void> {
+  const tablist = page.locator('[role="tablist"]');
+  if ((await tablist.count()) === 0) return;
+
+  const chip = tablist.locator(`[data-day="${PINNED_MENU_DAY}"]`);
+  await expect(
+    chip,
+    `The Menu section renders no chip for "${PINNED_MENU_DAY}", which is ` +
+      "content/site.json's own menu.days[0]. @visual pins the day there because the built " +
+      "HTML carries whichever day the build ran on (06 D-06.4).",
+  ).toHaveCount(1);
+
+  await chip.dispatchEvent("click");
+
+  // Both halves, because they are two different failures: an `aria-selected`
+  // that never flips is a handler that never ran, and a panel still showing the
+  // old key is `WordSwap`'s exit still in flight (`AnimatePresence mode="wait"`
+  // empties the panel for the length of one 200 ms fade before the new line
+  // mounts, and that intermediate state is a third height).
+  await expect(chip).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(`[data-word-swap="${PINNED_MENU_DAY}"]`)).toBeVisible();
+}
+
 /**
  * Navigate to `url`, stub what has to be stubbed, and settle the page.
  *
  * One function rather than a `beforeEach`, because the stub has to be installed
  * *before* the navigation and the settle has to happen after it, and a hook
  * cannot straddle a `goto` the test itself owns.
+ *
+ * {@link pinMenuDay} is last, and it has to be: it drives a control that only
+ * responds once React has hydrated, and {@link playEveryReveal} returning is
+ * the proof that it has. Both `visual.spec.ts` and `visual-heights.spec.ts`
+ * reach the home page through here, which is what makes one pin cover the
+ * screenshots and the section-height comparison alike.
  */
 export async function openSettled(page: Page, url: string): Promise<void> {
   await preparePage(page);
   await page.goto(url);
   await playEveryReveal(page);
+  await pinMenuDay(page);
 }
 
 /* -------------------------------------------------------------------------- *
