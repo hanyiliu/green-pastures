@@ -76,8 +76,17 @@ import {
  * `D-08.10`'s and is not tuned here, and everything that could move between two
  * runs is pinned rather than absorbed — reduced motion (which turns
  * `ambient.css`'s loops off outright), reveals driven to their end state, fonts
- * settled, Turnstile stubbed, and the two regions that genuinely cannot be
- * pinned masked.
+ * settled, Turnstile stubbed, the Menu section's weekday driven to one fixed
+ * day, and the one region that genuinely cannot be pinned masked.
+ *
+ * The calendar is on that list because it took the suite down. Every page here
+ * is prerendered (06 `D-06.4`), so the Menu section ships whichever weekday the
+ * *build* ran on, each weekday's sample line wraps to its own number of lines,
+ * and the section is a different height on a Tuesday than on a Monday — which
+ * `toHaveScreenshot` reports as an image-size mismatch before it ever consults
+ * `threshold`. Re-recording the baseline moves that failure to another weekday
+ * rather than removing it. `visual-support.ts`'s `pinMenuDay` is where it is
+ * removed, and its header says why a browser clock could not have done it.
  */
 
 /**

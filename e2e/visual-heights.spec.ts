@@ -57,6 +57,24 @@ import {
  * `zh-Hans` in denser glyph forms (02's CJK section, HD-10), so it is the
  * locale most likely to overflow a fixed-height box and the one no reviewer
  * would catch by eye against its Simplified twin.
+ *
+ * ── Self-calibrating is not the same as deterministic ──────────────────────
+ *
+ * Measuring both sides in one run removes every source of drift except one, and
+ * that one is the calendar. `section#menu` shows *today* in `America/Los_Angeles`
+ * as of the build (06 `D-06.4`), each weekday's sample line wraps differently,
+ * and the two sides of this comparison do not move together when it changes:
+ * measured at 1280 in the Playwright container, `en` is 772 px on Mon/Wed/Thu
+ * and 748 px on Tue/Fri, while both Chinese locales are 758 px on Mon/Tue/Fri
+ * and 785 px on Wed/Thu. So the margin this spec asserts against — one
+ * line-height, 24 px — is −14 px on a Monday and +13 px on a Wednesday, from
+ * the same code. A comparison that is a different comparison every day is not
+ * one whose green means anything.
+ *
+ * `openSettled` therefore drives the section to one fixed weekday before either
+ * side is measured (`visual-support.ts`'s `pinMenuDay`), which is the same call
+ * that makes `visual.spec.ts`'s images stable. One pin, both specs; neither has
+ * a clock of its own to get wrong.
  */
 
 test.use({ contextOptions: { reducedMotion: "reduce" } });
