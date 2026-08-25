@@ -59,17 +59,6 @@ const SCHEMA_DAY: Record<DayId, string> = {
   sun: "Sunday",
 };
 
-/**
- * The logo mark, as 03 `D-03.9` ships it and `LogoCard` draws it.
- *
- * `site.json.images` carries the hero, the philosophy photo, the map and the
- * share image, but not the logo — 03 treats it as a design asset rather than
- * owner-editable content, so the path has no home in the config to read it
- * from. It is spelled once here and once in `src/components/layout/LogoCard.tsx`;
- * moving it into `site.json.images` would leave one, and belongs to 02's row.
- */
-const LOGO_SRC = "/brand/logo.png";
-
 /** schema.org's `PostalAddress`, from `site.json` → `contact.address`. */
 type PostalAddress = {
   readonly "@type": "PostalAddress";
@@ -175,7 +164,10 @@ export function buildChildCareJsonLd({
       },
     ],
     image: absoluteUrl(site.images.hero.src),
-    logo: absoluteUrl(LOGO_SRC),
+    // The wordmark of 03 `D-03.9`, read from `site.json` `images.logo` — the
+    // same declaration `LogoCard` draws, so the mark this markup advertises
+    // cannot drift from the one the pages render.
+    logo: absoluteUrl(site.images.logo.src),
     sameAs: sameAs(site),
     // The locale ids **are** BCP 47 tags (02 `D-02.1`), so nothing maps here —
     // and the list shrinks with `routing.locales` if a locale is held back.

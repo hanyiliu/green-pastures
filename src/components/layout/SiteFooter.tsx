@@ -23,10 +23,14 @@ import { navLabel, resolveNavItems } from "./SiteHeader";
  * links take that section's link role, `--color-link-visit`, which 03 §10
  * records at 5.38:1 — AA, not AAA.
  *
- * **The `<nav>` landmark reuses `common.nav.label`.** 02 authored one nav name
- * and the page now has two landmarks that want one each; a distinct
- * `common.nav.footerLabel` is a content addition another row owns, and
- * inventing the string here would be the literal INV-02.1 forbids.
+ * **The `<nav>` landmark has its own name, `common.nav.footerLabel`.** 02
+ * authored one nav name and the page carries two `<nav>` landmarks, so both
+ * announced as "Main navigation" and neither told a screen-reader user which
+ * list it had reached. The second name is a content addition, authored in
+ * `content/en/messages/common.json` and read through `t` like every other
+ * string — not a literal here, which is what INV-02.1 forbids. The sheet in
+ * `MobileMenu` keeps `nav.label`: it is a `role="dialog"`, not a landmark, and
+ * it stands in for the header row it replaces below `lg`.
  */
 export function SiteFooter() {
   const t = useTranslations("common");
@@ -39,7 +43,7 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-(--container-content) flex-col items-center gap-5 border-t border-footer-rule pt-8 text-center lg:flex-row lg:justify-between lg:gap-8 lg:text-start">
         <LogoCard placement="footer" />
 
-        <nav aria-label={t("nav.label")} className="lg:flex-1">
+        <nav aria-label={t("nav.footerLabel")} className="lg:flex-1">
           <FooterLinks items={items} />
         </nav>
 

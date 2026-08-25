@@ -126,8 +126,17 @@ function fired(outcome: Outcome, rule: RuleId): boolean {
 
 /**
  * The flags CI passes today: both Chinese trees are mid-translation for the
- * whole of Phase 3 — `zh-Hans` because PR-3.5 seeded 33 of its 323 keys, and
- * `zh-Hant` because PR-3.9 converted exactly those 33 across (D-02.21).
+ * whole of Phase 3 — `zh-Hans` because PR-3.5 seeded a prototype fraction of
+ * the reference tree, and `zh-Hant` because PR-3.9 converted exactly those keys
+ * across (D-02.21). Every key neither seeded is simply absent from its file and
+ * falls back to `en`, which is why an `en` addition lands here as a demoted
+ * `parity-missing-key` rather than as an error or as invented copy.
+ *
+ * The two counts this comment used to carry are deliberately gone. They were
+ * already wrong — "33 of 323" against a true 35 of 343 — for the reason
+ * `D-08.20` gives for untracking `reports/content-coverage.md`: a written-down
+ * aggregate over `content/**` rots on the next PR that adds a key, and nothing
+ * fails when it does. `--report` prints the live numbers.
  */
 const PHASE_3 = ["--warn-locale", "zh-Hans", "--warn-locale", "zh-Hant"];
 
@@ -594,16 +603,35 @@ describe("schemas and cross-references", () => {
 
   it("is not woken by an asset nothing in site.json references", () => {
     // PR-4.5's public/brand/logo.png did exactly this: one file in a directory
-    // no reference lives in, which under the old "does public/ exist" trigger
-    // red the content job over sixteen photographs four phases early.
+    // no reference lived in, which under the old "does public/ exist" trigger
+    // red the content job over sixteen photographs four phases early. That file
+    // has a reference now (`images.logo`), so the regression is pinned with one
+    // that still has none — the trigger is a delivery into *this* reference's
+    // own directory, never "something, somewhere, exists under public/".
     const root = fixture(({ root: base }) => {
-      mkdirSync(join(base, "public/brand"), { recursive: true });
-      writeFileSync(join(base, "public/brand/logo.png"), "x");
+      mkdirSync(join(base, "public/downloads"), { recursive: true });
+      writeFileSync(join(base, "public/downloads/handbook.pdf"), "x");
     });
     const outcome = gate(root, ...PHASE_3);
     expect(fired(outcome, RULES.ASSET_MISSING)).toBe(false);
     expect(fired(outcome, RULES.ASSET_DORMANT)).toBe(true);
     expect(outcome.code).toBe(0);
+  });
+
+  it("catches a declared logo that is not on disk", () => {
+    // The mark is on every page, and while it lived as a literal in LogoCard
+    // no gate could see it go missing — which it did, for a day. Declaring it
+    // as `images.logo` is what puts it in reach of this rule: a delivery into
+    // public/brand/ wakes that directory, and the absent logo is then an error
+    // rather than a broken image on every route.
+    const root = fixture(({ root: base }) => {
+      mkdirSync(join(base, "public/brand"), { recursive: true });
+      writeFileSync(join(base, "public/brand/wordmark-draft.png"), "x");
+    });
+    const outcome = gate(root, ...PHASE_3);
+    expect(fired(outcome, RULES.ASSET_MISSING)).toBe(true);
+    expect(outcome.out).toContain("/brand/logo.png");
+    expect(outcome.code).toBe(1);
   });
 
   it("never sleeps under --release, whatever public/ looks like", () => {

@@ -119,14 +119,36 @@ describe("the link list renders whole on both views (OQ-04.6)", () => {
 });
 
 describe("the landmark and the logo", () => {
-  it("is a footer holding a named nav landmark", () => {
+  /**
+   * The name is asserted through the **accessibility tree** — `getByRole`'s
+   * `name` option runs the accessible-name computation — and not as an
+   * `aria-label` attribute. The attribute is one input to that computation, and
+   * a test that reads it back reports the string the component passed rather
+   * than the name a screen reader would announce; this project has already
+   * shipped a check that watched the DOM where the a11y tree was what mattered.
+   */
+  it("is a footer whose nav landmark is named from common.nav.footerLabel", () => {
     const { container } = renderFooter();
 
     expect(container.querySelector("footer")).not.toBeNull();
-    expect(screen.getByRole("navigation")).toHaveAttribute(
-      "aria-label",
-      reference.common.nav.label,
-    );
+    expect(
+      screen.getByRole("navigation", { name: reference.common.nav.footerLabel }),
+    ).toBeInTheDocument();
+  });
+
+  /**
+   * The defect this replaced: both landmarks answered to "Main navigation", so
+   * a user listing the page's landmarks got the same name twice and no way to
+   * tell the header's six links from the footer's eight. The two names are
+   * asserted to differ here rather than only to exist, because two keys that
+   * were edited to the same string would satisfy "each has a name" and rebuild
+   * the ambiguity.
+   */
+  it("does not answer to the header landmark's name", () => {
+    renderFooter();
+
+    expect(reference.common.nav.footerLabel).not.toBe(reference.common.nav.label);
+    expect(screen.queryByRole("navigation", { name: reference.common.nav.label })).toBeNull();
   });
 
   it("puts the logo in the white card, named from common.logo.alt", () => {
@@ -135,5 +157,25 @@ describe("the landmark and the logo", () => {
     const logo = container.querySelector("img");
     expect(logo?.getAttribute("alt")).toContain(getSite().brand.shortName[routing.defaultLocale]);
     expect(logo?.closest("span")?.className).toContain("rounded-logo-card");
+  });
+
+  /**
+   * The mark is drawn from `site.json` `images.logo` rather than a constant in
+   * `LogoCard`. Asserted against the config rather than against `/brand/
+   * logo.png` and 373×161 written out again here — restating them would put a
+   * fourth copy of the fact in the tree and would still pass if the component
+   * quietly stopped reading the config. A dropped dimension is what this
+   * catches: `next/image` needs both to reserve the box, and the logo is on
+   * every page, so getting it wrong is a broken image sitewide.
+   */
+  it("draws the logo from site.json images.logo, dimensions included", () => {
+    const { container } = renderFooter();
+
+    const logo = container.querySelector("img");
+    const declared = getSite().images.logo;
+
+    expect(logo?.getAttribute("src")).toContain(encodeURIComponent(declared.src));
+    expect(logo?.getAttribute("width")).toBe(String(declared.width));
+    expect(logo?.getAttribute("height")).toBe(String(declared.height));
   });
 });

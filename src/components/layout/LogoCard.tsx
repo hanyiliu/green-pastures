@@ -24,16 +24,17 @@ import { getSite } from "@/content/site";
  *
  * The alt text is `common.logo.alt` with `{brandShortName}` from the localized
  * value in `content/site.json` (02 `D-02.19`), never a literal (INV-02.1).
+ *
+ * **The file itself is `site.json` `images.logo`, not a constant here.** The
+ * path and its 373×161 (`D-03.9`) used to be written into this file, which made
+ * a component the home of a fact — the defect 02 is organised against — and
+ * left the same path spelled a second time in `src/lib/seo/json-ld.ts`. Both
+ * read the one declaration now. Both dimensions are still passed so Next
+ * reserves the box and the rendered height is CSS, which is what keeps the nav
+ * row at exactly `--nav-h`.
  */
 
 export type LogoPlacement = "nav" | "footer";
-
-/**
- * The source image is 373×161 (`D-03.9`), copied to `public/brand/logo.png`.
- * Both dimensions are passed so Next reserves the box and the rendered height
- * is CSS — which is what keeps the nav row at exactly `--nav-h`.
- */
-const LOGO = { src: "/brand/logo.png", width: 373, height: 161 } as const;
 
 const PLACEMENT_CLASS = {
   /** Nav: 38 px, 50 px from `md` (03 §4's nav row). */
@@ -49,13 +50,15 @@ export type LogoCardProps = {
 export function LogoCard({ placement }: LogoCardProps) {
   const t = useTranslations("common");
   const locale = useLocale();
-  const brandShortName = getSite().brand.shortName[locale];
+  const site = getSite();
+  const brandShortName = site.brand.shortName[locale];
+  const logo = site.images.logo;
 
   const image = (
     <Image
-      src={LOGO.src}
-      width={LOGO.width}
-      height={LOGO.height}
+      src={logo.src}
+      width={logo.width}
+      height={logo.height}
       alt={t("logo.alt", { brandShortName })}
       className={PLACEMENT_CLASS[placement]}
     />

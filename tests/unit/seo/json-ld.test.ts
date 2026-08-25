@@ -64,8 +64,12 @@ describe("src/lib/seo/json-ld", () => {
       });
 
       expect(graph.image).toBe(new URL(site.images.hero.src, home).toString());
-      expect(graph.logo.endsWith(".png")).toBe(true);
-      expect(graph.logo.startsWith(new URL(home).origin)).toBe(true);
+      // Pinned to `images.logo` the way `image` is pinned to `images.hero`. It
+      // used to be checked only for "ends with .png, absolute", which any wrong
+      // path satisfies — and the path was a literal in this module, a second
+      // spelling of the one `LogoCard` drew. Both read the config now, so the
+      // mark this graph advertises is the mark the pages render.
+      expect(graph.logo).toBe(new URL(site.images.logo.src, home).toString());
 
       // No field is empty, undefined or a leftover marker.
       const entries = Object.entries(graph);

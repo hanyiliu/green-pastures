@@ -186,7 +186,20 @@ const Nav = z.strictObject({
   cta: z.strictObject({ href: InternalHref }),
 });
 
+/**
+ * The images named once, for every component that draws one.
+ *
+ * `logo` is the brand mark of 03 `D-03.9` — the only entry that is a *design*
+ * asset rather than owner-supplied photography, and the only one already on
+ * disk. It is here because two call sites drew it from a literal in `src/`
+ * (`LogoCard` and the `logo` of the JSON-LD `ChildCare`), which is the fact-in-
+ * a-component INV-02.1 exists to keep out of the tree; declaring it makes both
+ * read the one spelling, and puts the file under the validator's
+ * asset-existence check, which cannot see a `public/` file nothing references.
+ * It is *not* `provisional`: the artwork is final, unlike `og`'s placeholder.
+ */
 const Images = z.strictObject({
+  logo: Image,
   hero: Image,
   philosophy: Image,
   map: Image,
