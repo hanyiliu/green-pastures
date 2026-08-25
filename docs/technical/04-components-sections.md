@@ -334,7 +334,7 @@ contract 08 checks. Sizes, radii, shadows and colours are always 03 tokens and a
 | `SectionHeader` | S | `eyebrow?`, `title`, `intro?`, `introShort?`, `align`, `as: 'h1' \| 'h2'` | caller's keys | every section/subpage header | intro hidden `< md` where the key is desktop-only; gap 12px → 9–10px | wrapped in `Reveal variant="rise"`; the id is the caller's — `<section>.header` from a home section, `subpage.<page>.header` from `SubpageHeader` (§3.3's id rule) | heading element provided by `as`; one `h1` per page |
 | `SubpageBar` | S | `routeId` | `<page>.kicker`; `common.back.label\|labelShort` | desktop reference L350–352: tinted bar (the page's section colour at `.94`) + `backdrop-filter: blur(6px)` — the `--color-nav-bg` recipe (03 §2.4); `--shadow-subnav` on the bar, white pill + `--shadow-back` on `BackLink` (03 §5); token `--color-subnav-bg` requested, §10 | kicker always; back label ↔ `labelShort` via `md:` toggle | — | sticky under the header; `BackLink` first in tab order on detail pages |
 | `BackLink` | C | `homeAnchor`, `children` | — (label passed from `SubpageBar`) | root README "Detail subpages" | — | `router.replace('/#'+homeAnchor, {transitionTypes:['subpage-exit']})` (05 §5.7) | rendered as `Link` (works without JS); after navigation focus moves to the origin section heading |
-| `SiteFooter` | S | — | `common.nav.<id>` for `site.nav.footer[]` (six + contact), `common.footer.copyright` `{year, brandName, brandNameOther, license}`, `common.logo.alt`; `site.brand.name` (localized value) via `brandArgs(locale)`, `site.license` | root README §8; desktop reference L336–342; mobile L245–249 | row `≥ lg` (logo card · links) vs centred column; license renders on both (D-02.13) | inside the Visit `fade` block | `<footer>` + `<nav aria-label>`; link colour `--color-link-visit`; contrast caveat 03 §10 |
+| `SiteFooter` | S | — | `common.nav.<id>` for `site.nav.footer[]` (six + contact), `common.nav.footerLabel`, `common.footer.copyright` `{year, brandName, brandNameOther, license}`, `common.logo.alt`; `site.brand.name` (localized value) via `brandArgs(locale)`, `site.license` | root README §8; desktop reference L336–342; mobile L245–249 | row `≥ lg` (logo card · links) vs centred column; license renders on both (D-02.13) | inside the Visit `fade` block | `<footer>` + `<nav aria-label={t('common.nav.footerLabel')}>` — its own name, not the header's (§10); link colour `--color-link-visit`; contrast caveat 03 §10 |
 | `LogoCard` / `FooterLinks` / `Copyright` | S / **C** / S | `height`, `items: {id, anchor, label, href}[]`, — | as `SiteFooter` | desktop/README §8 | logo 42px vs 34px | — | logo `alt` from `common.logo.alt`; copyright `<small>`; `FooterLinks` is client for the same reason as `PrimaryNav` — `usePathname()` per item (06 D-06.7) — and reads no messages, `SiteFooter` resolves the labels |
 | `SubpageHeader` | S | `page` | `<page>.eyebrow\|heading\|intro\|introShort` | desktop reference subpage headers | intro shortened `< md` | `Reveal rise`, id `subpage.<page>.header` — derived inside the component, never a prop, so a seventh detail page cannot forget it (§3.3) | `h1 tabIndex={-1}` focused after the slide (05 §5.7) |
 
@@ -699,7 +699,9 @@ invented.
 
 ### 10 · Requirements this doc places on other docs
 
-- **02** — add: `common.nav.label` (nav landmark name), `menu.dayChips.label` (tablist name); shared data
+- **02** — add: `common.nav.label` (header nav landmark name), `common.nav.footerLabel` (the footer's — the
+  page carries two `<nav>` landmarks and one name cannot serve both), `menu.dayChips.label` (tablist name);
+  shared data `site.images.logo` (03 `D-03.9`'s mark, so `LogoCard` holds no path of its own);
   `site.hero.mealsIcon` (🍎 — emoji-as-icon per D-02.5),
   optional `site.testimonials[].avatar {src,width,height}` (design avatar slots, README
   "optional testimonial avatars"), optional `blurDataURL` on image objects; `*Short` siblings for the four

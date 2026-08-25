@@ -76,6 +76,7 @@
     "cta": { "href": "/#visit" }
   },
   "images": {
+    "logo": { "src": "/brand/logo.png", "width": 373, "height": 161 },
     "hero": { "src": "/images/hero.jpg", "width": 1600, "height": 1200 },
     "philosophy": {
       "src": "/images/philosophy.jpg",

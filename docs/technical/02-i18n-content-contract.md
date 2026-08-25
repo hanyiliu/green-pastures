@@ -693,7 +693,7 @@ Fixed, non-repeating structured content stays in messages as keyed objects: phil
 | `ages` | `{ minMonths: 6, maxMonths: 54 }` — logic only; labels are text (D-02.3) |
 | `routes[]` | `{id, path, homeAnchor}` for the six detail pages — `philosophy → /philosophy → #philosophy`, `programs`, `menu`, `gallery`, `reviews`, `team → /team → #teachers` — the **stable** mapping the Back control and the section "learn more →" links use (05's slide, 06's routes); ids never change |
 | `nav` | `primary[] {id, routeId}` (philosophy, programs, menu, gallery, reviews, team), `footer[]` (the six + contact), `cta {href: "/#visit"}`; labels are `common.nav.<id>` |
-| `images` | `hero`, `philosophy`, `map`, `og` — `{src, width, height}`; alt text is per-locale |
+| `images` | `logo`, `hero`, `philosophy`, `map`, `og` — `{src, width, height}`; alt text is per-locale. `logo` is 03 `D-03.9`'s brand mark (`/brand/logo.png`, 373×161) — a design asset rather than owner-supplied photography, declared here so `LogoCard` and the JSON-LD `logo` read one spelling instead of a literal each, and so the asset-existence check can see it |
 | `programs[]` · `teachers[]` · `gallery.photos[]` · `gallery.categories[]` · `testimonials[]` · `faq[]` | per-collection shared fields as in the table above |
 | `menu` | `days`, `meals`, `dietary[] {id, onHome}` (chip emoji lives in the label text) |
 | `principles[]` · `dailyRhythm[]` | `{id, icon}` · `{id, time}` |

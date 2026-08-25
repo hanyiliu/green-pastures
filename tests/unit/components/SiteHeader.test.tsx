@@ -151,13 +151,19 @@ describe("the link set is content, not code (02 D-02.12, 06 D-06.6)", () => {
     expect(navLinks()[0]?.getAttribute("href")).not.toContain("/#");
   });
 
+  /**
+   * Read off the accessibility tree rather than the `aria-label` attribute, and
+   * paired with `SiteFooter`'s: the header keeps `common.nav.label` while the
+   * footer landmark answers to `common.nav.footerLabel`, so the two `<nav>`s a
+   * page carries no longer announce the same name.
+   */
   it("names the nav landmark from common.nav.label", () => {
     renderHeader();
 
-    expect(screen.getByRole("navigation")).toHaveAttribute(
-      "aria-label",
-      reference.common.nav.label,
-    );
+    expect(
+      screen.getByRole("navigation", { name: reference.common.nav.label }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: reference.common.nav.footerLabel })).toBeNull();
   });
 });
 

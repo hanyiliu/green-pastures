@@ -61,13 +61,19 @@ import { LOCALE_IDS, routing } from "@/i18n/routing";
  *    gate this project has shipped once already.
  *
  *    The trigger used to be "does `public/` exist", and PR-4.5's
- *    `public/brand/logo.png` — one file nothing in `site.json` references —
+ *    `public/brand/logo.png` — then one file nothing in `site.json` referenced —
  *    woke the whole Phase 8 check four phases early and red the `content` job
  *    over sixteen photographs the owner has said arrive later. "A file has
  *    landed in the folder this one belongs in" is the narrowest fact on disk
  *    that means *this* delivery has started: an unrelated asset cannot flip it,
  *    and neither can the empty parent directory `mkdir -p` leaves behind on its
  *    way to a subdirectory ({@link ContentTree.assetDirs}).
+ *
+ *    `images.logo` now declares that file, so `public/brand/` is a delivered
+ *    directory and the logo *is* checked — which is the point: this gate cannot
+ *    see a `public/` asset nothing references, and the logo went missing for a
+ *    day once with nothing to catch it. The per-directory trigger is what keeps
+ *    that from waking `public/images/` with it.
  * 3. **08 §3 rule 6 is applied to `SiteSchema`'s input.** `SiteSchema` enforces
  *    INV-02.10 for the loader as well and has no notion of a held-back locale,
  *    so it reads `brand.name.zh-Hant` as a stale marker. Left alone it would
