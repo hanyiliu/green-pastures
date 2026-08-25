@@ -13,7 +13,11 @@
 # the ruleset's required list when this PR merges.**
 #
 # Later PRs ADD jobs to this file and never edit an existing one (10 §10):
-# PR-3.4 the `content` job, PR-8.5 the `budget` job. Both have landed. PR-8.5's
+# PR-3.4 the `content` job, PR-8.5 the `budget` job, `gp-dln.307` the `tokens`
+# job — the last of those is 08 §2's three CSS scans, which 08 §10 had listed as
+# a future step of `static` and which arrive as an addition instead, because a
+# step appended to `static` would have been the edit the rule forbids. All three
+# have landed. PR-8.5's
 # other half — `lighthouse-preview` and `lighthouse-prod` — is **not** here and
 # could not be: both fire on `deployment_status`, an `on:` trigger this file
 # does not have, and adding one would start `static`, `content`, `unit`, `build`
@@ -32,12 +36,13 @@
 # not an edit: `check:coverage-report` is the job's last step.
 #
 # Every step here runs a script that exists in `package.json` today, `budget`'s
-# `check:budget` included. The steps
-# 08 §10's `static` row also names — `check:tokens` (PR-4.x), `check:env`, the
+# `check:budget` and `tokens`'s `check:tokens` included. The steps
+# 08 §10's `static` row also names — `check:env`, the
 # `@flaky-known` tag lint (D-08.13) and the dependency allowlist — are
 # deliberately absent: their scripts do not exist yet, and a job calling a
-# missing script fails on every PR. `check:todo` was in that list until its
-# script was written; it is a `package.json` entry now, like every step here.
+# missing script fails on every PR. `check:todo` and `check:tokens` were in that
+# list until their scripts were written; both are `package.json` entries now,
+# like every step here.
 name: ci
 
 on:
@@ -393,3 +398,50 @@ jobs:
 
       - name: check:budget
         run: pnpm run check:budget
+
+  # 08 §10 `tokens` · 5 min · advisory until a human adds the name to the
+  # ruleset — the same step `content` needed (see this file's header) and the
+  # same standing `budget` has: it is none of D-08.12's six required names, and
+  # a name made required before its job exists blocks every pull request.
+  #
+  # 08 §9 maps three invariants onto `scripts/ci/check-tokens.ts` and 08 §2
+  # states each scan in a sentence: `--font-cjk-(sc|tc)` referenced in
+  # `src/**/*.css` outside `src/styles/tokens.css` (INV-03.6), an `@media` or
+  # `@import` condition carrying a length `tokens.css` does not declare as a
+  # `--breakpoint-*` — or an `@variant` whose name is not one of those tokens',
+  # which today is `md`/`lg`/`xl` and nothing else
+  # (INV-03.3), and a `prefers-reduced-motion` guard missing from a stylesheet
+  # that declares `@keyframes` (INV-05.8). None of the three is visible to
+  # ESLint or Stylelint, because none of those reads a stylesheet the way this
+  # does — as one tree measured against the values `tokens.css` declares.
+  #
+  # This is a **new job and not a step inside `static`**, which is 10 §10's
+  # `ci.yml` rule as written: "additions are new jobs, never edits to an
+  # existing job". A step appended to `static` would have been the edit, and
+  # 10 §10 records two named exceptions to that rule — this needed neither, so
+  # none is claimed. `budget` made the same call for the same reason. 08 §10's
+  # `static` row named `check:tokens` as a future step of that job while it was
+  # plan; the row moved with the build, as that section's own convention
+  # requires ("the PR that builds a row flips its `Built?` cell in the same
+  # PR").
+  #
+  # One script, two callers (INV-08.6): `pnpm verify` runs the same
+  # `pnpm run check:tokens`, so a seat learns about a stray breakpoint on their
+  # own machine rather than here. The gate exits 0 clean, 1 on a finding and 2
+  # when it could not run — a missing `src/`, an unreadable stylesheet, a
+  # `tokens.css` that declares no breakpoints — because a gate that cannot scan
+  # must not report the same thing as a gate that scanned and found nothing.
+  tokens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: check:tokens
+        run: pnpm run check:tokens

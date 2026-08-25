@@ -18,7 +18,8 @@ samples moved onto the real domain, which the release gate did not see (§3 R4, 
 so failed open; it now reads `-nwE`, matching the shipped workflow; **reconciled with the repository
 2026-08-23** — §10 and §11 described a toolchain that is largely still plan (`check:tokens`, `check:secrets`,
 `check:env`, the flaky-tag lint, the dependency allowlist and `lhci` are not in
-`package.json`, and four jobs are not in `.github/workflows/**`), and gave `pnpm verify` a formula that was
+`package.json` — `check:tokens` has since been written and both tables say so, `gp-dln.307`, and four jobs
+are not in `.github/workflows/**`), and gave `pnpm verify` a formula that was
 neither what the script runs nor honest about the `--warn-locale` flags it carries. Both tables now carry a
 build-status column, the future rows keep their place with the PR that brings them, `pnpm verify` is quoted
 verbatim from `package.json`, and the stale "the build has never passed" note is retired; **ruleset ground
@@ -28,7 +29,12 @@ push, force-push and non-squash-merge protection on `main` is live; what is miss
 **INV-08.6's open divergence closed 2026-08-24** — §2's two greps moved out of `ci.yml` into
 `scripts/ci/todo-grep.sh`, which `static` and `pnpm verify` both call, they now search `--untracked`, and §2
 records what two files had each worked out on their own: prose *about* a marker is source text and trips the
-gate (`gp-dln.206`–`.208`)
+gate (`gp-dln.206`–`.208`); **§9's two unmapped invariants are mapped 2026-08-25** — §2 and §9 described
+`scripts/ci/check-tokens.ts` and §10 explained its absence by "no `tokens.css` to scan", which stopped being
+true when PR-4.1 landed both `src/styles/tokens.css` and `src/design/tokens.ts`; the script exists now, it
+runs in a `tokens` job and in `pnpm verify`, and §2's breakpoint sentence is rewritten to the form it
+shipped in — the allowed breakpoints are *read* from `tokens.css` rather than written down here, so the
+check cannot go stale against a value it does not hold a copy of (`gp-dln.307`)
 
 ## Decisions
 
@@ -289,8 +295,10 @@ gate (`gp-dln.206`–`.208`)
   reaches for either — as the Tailwind utilities `font-cjk-sc` / `font-cjk-tc` or as `var(--font-cjk-tc)` —
   is choosing a script by hand, which is the TypeScript locale branch INV-03.6 forbids wearing a CSS hat.
   `no-restricted-syntax` on `JSXAttribute[name.name='className'] Literal[value=/\bfont-cjk-(sc|tc)\b/]` plus
-  the `TemplateElement` twin, and `check-tokens.ts` fails on any `--font-cjk-(sc|tc)` reference in
-  `src/**/*.css` outside `src/styles/tokens.css`. Components use `font-display`/`font-body`, which resolve
+  the `TemplateElement` twin, and `check-tokens.ts`'s `font-stack` check fails on any
+  `--font-cjk-(sc|tc)` reference in `src/**/*.css` outside `src/styles/tokens.css` — block comments blanked
+  first, so prose that merely names a stack is not a reference and a reference cannot hide in one.
+  Components use `font-display`/`font-body`, which resolve
   through `--font-cjk` per `<html lang>` without knowing which script is in force.
   The locale-comparison selector's `/^(en|zh)/` covers all three ids as written — `'zh-Hans'` and `'zh-Hant'`
   both start `zh` — and it also still catches the retired `'zh'`, which INV-02.9 now forbids outright because
@@ -316,9 +324,32 @@ gate (`gp-dln.206`–`.208`)
   `src/components/motion/view-transitions.css` (04 §2, memo ADJ-15)
   (INV-05.11), which in turn get `property-allowed-list: [transform, translate, rotate, scale, opacity,
   animation*, offset*, filter]` (INV-05.1 — `filter` is for `ink` only, reviewed). `src/styles/tokens.css`
-  is exempt from the colour/px/ms rules. CSS-side breakpoints: `scripts/ci/check-tokens.ts` fails on any
-  `@media` with a numeric width or any `@variant` other than `md`/`lg`/`xl` in `src/**/*.css`, and on a
-  `prefers-reduced-motion` media query missing from a file that declares `@keyframes` (INV-05.8).
+  is exempt from the colour/px/ms rules. CSS-side breakpoints: `scripts/ci/check-tokens.ts`'s `breakpoints`
+  check fails on any `@media` or `@import` condition carrying a length `src/styles/tokens.css` does not
+  declare as a `--breakpoint-*`, and on any `@variant` whose name is not one of those tokens' — which today
+  resolves to exactly `48rem`/`64rem`/`80rem` and `md`/`lg`/`xl`, INV-03.3 verbatim, and keeps banning
+  Tailwind's stock `sm` and `2xl` because this project never declares them (03 §8). The allowed set is
+  **read** rather than written down: a media query cannot resolve a custom property, so
+  `src/components/motion/ambient.css` has to restate `48rem` in prose CSS and says so — "`--breakpoint-md:
+  48rem` in `src/styles/tokens.css` is the value of record and this is its one restatement". The restatement
+  is unavoidable; an unchecked one is not, and moving a breakpoint in `tokens.css` now reds every stylesheet
+  that did not move with it. The scan reads *every* length in the condition rather than the width features by
+  name, because `min-width`, `max-width` and the three range forms are five spellings of one thing and a
+  check written against the names would miss whichever spelling nobody thought of. `@supports` and
+  `@container` are out of scope: the first tests whether a declaration parses, the second sizes against an
+  element rather than the viewport, and neither is a breakpoint. The `reduced-motion` check fails on a
+  `prefers-reduced-motion` media query missing from a file that declares `@keyframes` (INV-05.8) — the
+  boolean form or `: reduce`, never `: no-preference`, and never one named only in a comment.
+  **A gate under `scripts/` is inside Tailwind's scan, and `gp-dln.307` learned it the funny way.** Tailwind
+  v4 detects sources automatically and `src/app/globals.css` excludes only `docs` and `.beads`, so
+  `scripts/**` is read for class candidates like any component. A draft of `check-tokens.ts` spelled both
+  script-stack utility names in a sentence explaining that components must never use them, and Tailwind duly
+  emitted both as real utilities into the production stylesheet — 128 bytes of dead CSS, generated by the one
+  file whose job is to forbid them. The script now writes them as a single alternation and never as two whole
+  names, which is the move `todo-grep.sh` makes with its own vocabulary. That keeps one file clean; the
+  general fix is an `@source not "../../scripts"` line beside the two `globals.css` already carries
+  (`b8b3a86`, the same defect for `docs/` and the bead ledger). `globals.css` is another lane's file, so the
+  pointer is here rather than the edit there — the same move this document makes for 10 §10.
 - **Prettier** with `prettier-plugin-tailwindcss` (class order) over `src`, `tests`, `e2e`, `scripts`,
   `content/**/*.json` and the root config files (02 requires stable JSON formatting so diffs show copy only).
   The shipped script is `prettier --check .` with the scope carved out by `.prettierignore` rather than by an
@@ -1032,10 +1063,10 @@ runner can produce it.
 | INV-02.11 | `validate:content --release` requires every locale in `routing.locales` complete and **ignores** `--warn-locale`; a held-out locale's tree is scanned reporting-only (§3) | `lighthouse-prod` preflight · `content` | launch / CI |
 | INV-03.1 | Stylelint `color-no-hex` + function list · ESLint hex/rgb regex on `className` **and** on `style={}` (both selectors, §2) | `static` | CI |
 | INV-03.2 | Stylelint px/ms/bezier disallowed values · ESLint arbitrary-value regex | `static` | CI |
-| INV-03.3 | ESLint breakpoint-variant regex · `check-tokens.ts` CSS `@media`/`@variant` scan | `static` | CI |
+| INV-03.3 | ESLint breakpoint-variant regex (`static`) · `check-tokens.ts` `breakpoints` scan — every `@media`/`@import` length and `@variant` name against the `--breakpoint-*` tokens (`tokens`, §2) | `static` · `tokens` | CI |
 | INV-03.4 | tokens parity test (both directions) | `unit` | CI |
 | INV-03.5 | tokens file-snapshot test · PR template "03 updated" box | `unit` · process | both |
-| INV-03.6 | ESLint `font-cjk-(sc\|tc)` className ban · `check-tokens.ts` `--font-cjk-(sc\|tc)` scan outside `src/styles/tokens.css` (§2 (c)) · INV-02.9's locale-comparison rule covers the TypeScript half · `MC-08.1` confirms the TC stack resolves on real machines | `static` · phase gate | CI + manual |
+| INV-03.6 | ESLint `font-cjk-(sc\|tc)` className ban · `check-tokens.ts` `--font-cjk-(sc\|tc)` scan outside `src/styles/tokens.css` (§2 (c), the `font-stack` scan in the `tokens` job) · INV-02.9's locale-comparison rule covers the TypeScript half · `MC-08.1` confirms the TC stack resolves on real machines | `static` · `tokens` · phase gate | CI + manual |
 | INV-05.1 | Stylelint `property-allowed-list` on keyframe files · variants catalogue test | `static` · `unit` | CI |
 | INV-05.2 | Stylelint overflow/contain/content-visibility ban · `@motion` computed-style scan · `@a11y` no-horizontal-scroll at 390 **and** at 1280/200 % (§6 — `window.scrollX` after a horizontal input, never `scrollWidth - clientWidth`) | `static` · `e2e` | CI |
 | INV-05.3 | Stylelint `will-change` ban · ESLint `willChange` ban · `@motion` rest scan | `static` · `e2e` | CI |
@@ -1043,7 +1074,7 @@ runner can produce it.
 | INV-05.5 | decoration component tests (id, ref, two layers) · `@smoke` unique `deco-*` ids | `unit` · `e2e` | CI |
 | INV-05.6 | ESLint motion-literal ban · Stylelint duration/easing values · catalogue test | `static` · `unit` | CI |
 | INV-05.7 | `@perf` CLS ≤ 0.02 phases · LCP opacity · Lighthouse CLS ≤ 0.05 | `e2e` · `lighthouse-*` | CI / advisory |
-| INV-05.8 | `@motion` reduced-motion parity · `@hover` colour-only hover under reduced motion · `@i18n` opacity-only cascade (not instant) · `check-tokens.ts` reduced-motion media presence | `e2e` · `static` | CI |
+| INV-05.8 | `@motion` reduced-motion parity · `@hover` colour-only hover under reduced motion · `@i18n` opacity-only cascade (not instant) · `check-tokens.ts` `reduced-motion` scan — a stylesheet that declares `@keyframes` carries a `prefers-reduced-motion` rule (`tokens`, §2) | `e2e` · `tokens` | CI |
 | INV-05.9 | Reveal registry unit test · `@motion-obs` observer count = 2 at 1280 (§5 note (c)) and ambient loops paused off-screen · ESLint scroll-listener ban | `unit` · `e2e` · `static` | CI |
 | INV-05.10 | `@nojs` project | `e2e` | CI |
 | INV-05.11 | `no-restricted-imports` gsap/framer-motion **and** `motion` from `motion/react` (`m`-only, §2) · `LazyMotion strict` provider unit test · Stylelint keyframes file list · `scripts/ci/deps-allowlist.sh` | `static` · `unit` | CI |
@@ -1116,7 +1147,7 @@ rewrote that sentence in the past tense on the day it landed. The `Built?` colum
 
 | Job | Built? | Trigger | Needs | Steps (abridged) | Timeout | Artifacts | Required |
 |---|---|---|---|---|---|---|---|
-| `static` | **partly** | PR, push `main` | — | **Running today:** checkout · `pnpm/action-setup` → `setup-node` (cache) · `install --frozen-lockfile` · `typecheck` · `lint` · `lint:css` · `format:check` · `check:todo`, the §2 marker gate, now a one-line call to `scripts/ci/todo-grep.sh` that `pnpm verify` makes too (INV-08.6 — the greps were inlined shell here until `gp-dln.206`). **Specified, not built:** `check:tokens` (PR-4.x — `check-tokens.ts` has no `tokens.css` to scan until the tokens PR lands), `check:env` (`env-example.ts`), the `@flaky-known` tag lint (D-08.13 — it reads `.beads/issues.jsonl`, and it has no tagged test to lint yet) and the dependency allowlist (`deps-allowlist.sh`, INV-05.11). A step that calls a script `package.json` does not define fails on every PR, which is why each one waits for the PR that writes its script | 10 min | — | yes |
+| `static` | **partly** | PR, push `main` | — | **Running today:** checkout · `pnpm/action-setup` → `setup-node` (cache) · `install --frozen-lockfile` · `typecheck` · `lint` · `lint:css` · `format:check` · `check:todo`, the §2 marker gate, now a one-line call to `scripts/ci/todo-grep.sh` that `pnpm verify` makes too (INV-08.6 — the greps were inlined shell here until `gp-dln.206`). **Moved, not missing:** `check:tokens` was listed here as a future step of this job for as long as it was plan; `scripts/ci/check-tokens.ts` exists now (`gp-dln.307`) and it runs in the `tokens` job below, because 10 §10's `ci.yml` rule makes an addition a new job and a step appended here would have been the edit — the same reasoning that put `check:budget` in `budget` rather than in `build`. **Specified, not built:** `check:env` (`env-example.ts`), the `@flaky-known` tag lint (D-08.13 — it reads `.beads/issues.jsonl`, and it has no tagged test to lint yet) and the dependency allowlist (`deps-allowlist.sh`, INV-05.11). A step that calls a script `package.json` does not define fails on every PR, which is why each one waits for the PR that writes its script | 10 min | — | yes |
 | `content` | yes | PR, push | — | `validate:content --report` plus one `--warn-locale` per lagging locale — the same flag list `pnpm verify` carries and never a different one (§11 (b)) — run under `continue-on-error` · job summary · sticky comment · upload report (`if-no-files-found: error`, because the artifact is one of the report's three copies and not a convenience) · a step that re-raises the validator's exit code (the earlier steps have to run even on a red gate — a red run is when the editor most needs the report) · `check:coverage-report`, last and `if: always()`, which reaches a verdict on a red gate too (D-08.20, §3) | 5 min | `content-coverage.md` | yes |
 | `unit` | yes | PR, push | — | `pnpm test:coverage` (= `vitest run --coverage`) · upload `coverage/` | 10 min | `coverage/` | yes |
 | `build` | **partly** | PR, push | — | **Running today:** restore `.next/cache` · `next build` · upload `.next` (minus cache, `include-hidden-files: true`). **Specified, not built:** the route summary into `$GITHUB_STEP_SUMMARY` (§7) and `bundle-secrets.sh` (D-08.11) — both arrive with the PR that writes `scripts/ci/bundle-secrets.sh` | 15 min | `next-build` | yes |
@@ -1126,6 +1157,7 @@ rewrote that sentence in the past tense on the day it landed. The `Built?` colum
 | `lighthouse-preview` | **partly** · `lighthouse.yml` | `deployment_status` (state `success`, preview environment) · `workflow_dispatch` | — | `lhci autorun --collect.url=$URL/en …` · `@smoke` + `@form` subset against `$URL` (with `x-vercel-protection-bypass` — previews are protected, 09 D-09.4) · check-run on `github.event.deployment.sha` via `actions/github-script` · summary | 15 min | `lhci/` | advisory |
 | `lighthouse-prod` | **partly** · `lighthouse.yml` | `deployment_status` (state `success`, production environment) · `workflow_dispatch` | — | `validate:content --release` (R1–R4 + locale completeness, §3) · full LHCI matrix, 42 collections at three locales · the `@seo` and `@headers` tags (§5) against the production base URL — sitemap/`hreflang`/canonical/robots and the 06/09 header set. Both tags live in `e2e/routes*` (PR-6.10, whose own assertions and PR-6.11's headers are the substance), so this job re-runs an existing spec against a different base URL and needs no spec file of its own | **60 min** (was 40; §7's re-cut matrix still needs the headroom at three locales) | `lhci/` | launch gate (§12.3) |
 | `budget` | yes · PR-8.5 | PR, push | `build` | download `next-build` · `pnpm check:budget` (`scripts/ci/build-budget.ts`) — 08 §7's font, image and third-party byte counts, 09 §4.9's per-file image rule, and the first-load ratchet; writes the route table into the job summary. Advisory: it is none of D-08.12's six. Green today — every budget it asserts is met, and `resource-summary:script:size`, which it prints rather than asserts, is inside its per-route number too since the Zod patch; `largest-contentful-paint` is the row §7 still records as missed, and it is `lighthouse-preview`'s to assert | 10 min | job summary | advisory |
+| `tokens` | yes · `gp-dln.307` | PR, push | — | `pnpm check:tokens` (`scripts/ci/check-tokens.ts`) — §2's three CSS scans over `src/**/*.css`: the `--font-cjk-(sc|tc)` references INV-03.6 confines to `tokens.css`, the `@media`/`@import` lengths and `@variant` names INV-03.3 confines to the declared `--breakpoint-*` set, and the `prefers-reduced-motion` rule INV-05.8 requires of any file that declares `@keyframes`. A **new job and not a step in `static`**, for 10 §10's rule and by `budget`'s precedent. Advisory for the same reason `budget` is — it is none of D-08.12's six, and **the human adds `tokens` to the ruleset's required list** when this lands, exactly as `content` was handled. Green on this tree: 4 stylesheets, 3 breakpoints, 0 findings | 5 min | — | advisory |
 | `e2e-full` | yes · PR-5.11, in `nightly.yml` | `workflow_dispatch` (the live trigger — the orchestrator dispatches it when it opens a gate bead) · `push` `main` and nightly `schedule` written but job-level guarded on a repository variable defaulting to **off** until OQ-08.3 closes, because neither fits the free tier as costed (D-10.15 (c)) | `build` | same `container:` as `e2e`; all 4 projects (`playwright.config.ts` already switches them on `E2E_FULL=1`, so the config half is done and only the workflow is missing), `retries: 0`; failure opens a bead via the orchestrator (no auto-issue) | 40 min | report | advisory |
 | `audit` | **no** · PR-2.10 | PR · weekly `schedule` | — | `pnpm audit --prod --audit-level=high` · `gitleaks` (PR diff) [gitleaks-action licence for orgs — assumed free for a personal repo] | 10 min | — | advisory |
 
@@ -1149,6 +1181,15 @@ does not have, and a single-owner file needs no serialisation rule at all"), so 
 pull request per workflow file and names four; there are five, and the fifth is `lighthouse.yml` PR-8.5.
 That file is another lane's and out of this pull request's set, so the pointer is here rather than the edit
 there — the same move this section made when it asked 10 for the `check:todo` line.
+
+**And 10 §10 is owed a second line, for the same reason and by the same route.** Its `ci.yml` rule reads
+"PR-2.6 creates it, PR-3.4 and PR-8.5 add a job each"; there is a third addition now — the `tokens` job of
+`gp-dln.307`, which is an *addition* and needs no exception, so the rule stands unamended and only the roll
+call is short. Worth noting while that line is open: this file's own header has said **three** named
+exceptions since `gp-dln.224` made `content`'s upload `if-no-files-found: error`, and 10 §10 still records
+two. The header is the accurate count; the third exception is real, was argued for on the pull request that
+took it, and 10 is owed the entry. Both are one edit to a document in another lane, which is why they are
+recorded here instead of made there.
 
 Both Lighthouse rows read `partly` rather than `yes` and each names what is missing. `lighthouse-preview`
 lacks the `@smoke` + `@form` subset the row specifies: `e2e/form*` belongs to another lane, D-08.7 points the
@@ -1298,7 +1339,7 @@ cell in the same PR. Rows marked `yes` are the shipped entries, read off `packag
 | `pnpm test:e2e [--project …] [--grep @tag]` / `test:e2e:ui` | yes | Playwright, host-native, with `--grep-invert @visual` baked in | `--grep @smoke` is the 2-minute local check. `@visual` is excluded because a macOS host cannot reproduce the container's fonts (D-08.10) — this is the one *intended* gap in INV-08.6, and now the only one: the missing `check:todo` script two rows down was the unintended one and it is written. `pnpm test:e2e:docker` closes this one |
 | `pnpm test:e2e:docker` / `test:e2e:update` | yes | the same `playwright test` inside `mcr.microsoft.com/playwright:v<version>-noble` with the repo mounted; `:update` adds `--grep @visual --update-snapshots` | D-08.10; Docker required. `:docker` is what to run before touching anything the baselines cover |
 | `pnpm verify` / `verify:e2e` | yes | the formula below | the local twin of `static`+`content`+`unit`+`build`; `verify:e2e` is `verify && test:e2e`. Not `ci`: `pnpm ci` is a reserved pnpm command — an undocumented alias for `clean-install` (`pnpm clean` + `pnpm install --frozen-lockfile`) — so `pnpm ci` would wipe and reinstall instead of running the gate. It is absent from `pnpm help -a`, so scanning the command list does not catch the collision; do not rename this script back |
-| `pnpm check:tokens` | **no** · PR-4.x | `tsx scripts/ci/check-tokens.ts` + `vitest run tests/unit/design` | CSS scans + parity/snapshot. Nothing to scan until `src/styles/tokens.css` and `src/design/tokens.ts` exist, which is the tokens PR |
+| `pnpm check:tokens` | yes | `tsx scripts/ci/check-tokens.ts` | §2's three CSS scans (INV-03.6, INV-03.3, INV-05.8). `ci.yml`'s `tokens` job and `pnpm verify` both call it — the same shape as `check:todo` and `check:coverage-report`, for the same INV-08.6 reason. Exit 0 clean, 1 fired, 2 could not run. This row read `tsx scripts/ci/check-tokens.ts` **+ `vitest run tests/unit/design`** while it was plan, and the second half is dropped rather than built: `tests/unit/design` is the parity and snapshot suite, `pnpm test` already runs it in `verify` and the `unit` job already runs it in CI, so bundling it here would have run it twice in both callers and bought nothing. The row was written when neither the tests nor the script existed |
 | `pnpm check:secrets` / `check:env` | **no** · with their scripts | `scripts/ci/bundle-secrets.sh` (needs a build) · `env-example.ts` | `scripts/ci/` holds only `bead-trailer.sh` today; each arrives with the PR that writes it, and joins `verify` and `static` in that same PR |
 | `pnpm check:coverage-report` | yes | `scripts/ci/coverage-report.sh` | §3, D-08.20. Run straight after `validate:content --report`: asserts the run produced a report, and that the report is still ignored and untracked. `content`'s last step and `pnpm verify` both call it — the same shape as `check:todo` below and for the same INV-08.6 reason. Exit 0 clean, 1 fired, 2 could not run |
 | `pnpm check:todo` | yes | `scripts/ci/todo-grep.sh` | §2. The two greps, in the one file that holds them; `static`'s step and `pnpm verify` both call it. Closing the INV-08.6 divergence *was* this row — the gate used to be an inlined body in `ci.yml`, so it ran in CI and not locally, which is how `main` went red on a violation the author's `pnpm verify` had reported clean. `--untracked`, so a marker in a not-yet-added file fails now rather than after `git add` |
@@ -1308,7 +1349,7 @@ cell in the same PR. Rows marked `yes` are the shipped entries, read off `packag
 
 ```sh
 pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:check \
-  && pnpm run check:todo \
+  && pnpm run check:todo && pnpm run check:tokens \
   && pnpm run validate:content --report --warn-locale zh-Hans --warn-locale zh-Hant \
   && pnpm run check:coverage-report \
   && pnpm run test && pnpm run build
@@ -1316,7 +1357,10 @@ pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:chec
 
 `check:todo` sits where it does because `static` runs it last, after `prettier` — this line reads as that
 job's steps in that job's order, which is what makes a drift between the two visible on sight. It is also by
-far the cheapest link in the chain, so nothing is bought by moving it earlier. `check:coverage-report` sits
+far the cheapest link in the chain, so nothing is bought by moving it earlier. `check:tokens` follows it for
+the same two reasons in the other order: it is the other sub-second script gate, and its CI twin is a job of
+its own rather than a step in `static` (§10), so there is no step order for it to mirror — beside the gate it
+most resembles is where it reads best. `check:coverage-report` sits
 directly after `validate:content` for the harder reason: it has nothing to look at until that run has written
 the report, and `content` runs it in the same relative position (D-08.20, §3).
 
@@ -1349,7 +1393,9 @@ locale that is **both** in `routing.locales` and still being translated, so it g
 discipline is two copies of a string that a reviewer has to keep equal; `check:todo` has no second copy to
 drift from, because `static`'s step and this line both run `scripts/ci/todo-grep.sh`. Every gate that can be
 a script rather than a workflow body should be, for exactly this reason: what INV-08.6 asks for is one
-command set, and a shared script is the only way to get it without asking anyone to remember. The gate was
+command set, and a shared script is the only way to get it without asking anyone to remember. `check:tokens` was written
+that way from the first line for the same reason, which is why it is a script `ci.yml` calls and not a body
+`ci.yml` holds. The gate was
 inlined in `ci.yml` until `gp-dln.206`, and the cost of that was not hypothetical — `main` went red on a
 marker while the author's own `pnpm verify` reported clean, because the check the PR needed did not exist on
 their machine.
@@ -1363,10 +1409,10 @@ of that rule; `content`'s last step and this line both run it. A seat that commi
 from their own `pnpm verify`, which is the whole of what (c) is about.
 
 Earlier revisions of this section gave `verify` a formula built on `check:tokens`, `check:todo`, `check:env`
-and `check:secrets`, and left the `--warn-locale` flags out. Three of those four scripts still do not exist
-(`check:todo` is the one that since has been written, and it is in the formula above); the flags have been in
-the script since PR-3.4 put `validate:content` into it. So the formula named four checks of which none could
-run and hid the one flag that changes what the gate asserts. The formula above is the script.
+and `check:secrets`, and left the `--warn-locale` flags out. Two of those four scripts still do not exist
+(`check:todo` and `check:tokens` have since been written, and both are in the formula above); the flags have
+been in the script since PR-3.4 put `validate:content` into it. So the formula named four checks of which
+none could run and hid the one flag that changes what the gate asserts. The formula above is the script.
 
 **Status, 2026-08-23 — `pnpm build` now completes locally; the earlier blocker is closed.** An earlier
 revision of this section recorded that the `build` step of `pnpm verify` had never passed in this worktree,
@@ -1633,7 +1679,8 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
 - Files this document names, split the same way §10 and §11 split their tables — **shipped** (present in the
   repository, verified 2026-08-23): `eslint.config.mjs`, `.stylelintrc.mjs`, `.prettierrc.json`,
   `.prettierignore`, `vitest.config.ts`, `playwright.config.ts` (root), `tests/unit/**`, `e2e/**`,
-  `scripts/validate-content.ts`, `scripts/ci/{bead-trailer.sh, todo-grep.sh, coverage-report.sh}`,
+  `scripts/validate-content.ts`, `scripts/ci/{bead-trailer.sh, todo-grep.sh, coverage-report.sh,
+  build-budget.ts, check-tokens.ts}`,
   `.github/workflows/{ci.yml, bead-trailer.yml}`, `.github/PULL_REQUEST_TEMPLATE.md`, `renovate.json`
   (09 D-09.17, shipped by 10's PR-2.9), `.editorconfig`, `.nvmrc`. **Generated, never in the repository:**
   `reports/content-coverage.md` — earlier revisions listed it as shipped, and it was, until D-08.20 made it
@@ -1641,7 +1688,7 @@ Renovate enabled (09 D-09.17); Speed Insights receiving data (INP read in the fi
   **Specified, not built:** `e2e/visual.spec.ts`, `tests/e2e/__screenshots__/`
   (the one path deliberately outside `e2e/` — the shipped config's `snapshotPathTemplate` already points
   there, D-08.10), `lighthouserc.cjs`, `scripts/ci/{bundle-secrets.sh, env-example.ts,
-  check-tokens.ts, deps-allowlist.sh}` — the first two of those four are the ones no PR schedules (§10);
+  deps-allowlist.sh}` — the first two of those three are the ones no PR schedules (§10);
   an earlier revision listed a sixth, `seo-smoke.ts`, which is retired: the launch SEO and header checks are
   the `@seo` and `@headers` tags of §5, not a script,
   `.github/workflows/{preview.yml, production.yml, nightly.yml, audit.yml}`, `.vscode/{settings,extensions}.json`,

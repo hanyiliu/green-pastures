@@ -37,7 +37,15 @@ export default defineConfig({
     server: { deps: { inline: ["next-intl"] } },
     coverage: {
       provider: "v8",
-      reporter: ["text-summary", "html", "lcov"],
+      // `json` writes `coverage/coverage-final.json`, the per-file summary in
+      // Istanbul's own shape. `text-summary` is for the console, `html` for a
+      // human and `lcov` for tools that read LCOV; none of the three is
+      // machine-readable per file, which is why seats had been passing
+      // `--coverage.reporter=json` by hand to get one. It is one more writer
+      // over the same already-collected data — no extra instrumentation, no
+      // measurable time — and `unit`'s `coverage/` artifact carries it too
+      // (`gp-dln.171`).
+      reporter: ["text-summary", "html", "lcov", "json"],
       reportsDirectory: "coverage",
       include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
       exclude: ["src/app/**/layout.tsx", "**/*.d.ts"],
