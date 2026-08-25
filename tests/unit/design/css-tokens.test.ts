@@ -75,3 +75,39 @@ describe("cssToken", () => {
     expect(() => cssToken("--color-not-a-token")).toThrow("--color-not-a-token");
   });
 });
+
+/**
+ * 03 INV-03.7 — a name belongs to one Tailwind namespace.
+ *
+ * `--color-*` and `--text-*` both generate `text-<name>`, so a name declared in
+ * both yields one utility and Tailwind resolves it to the colour: the size is
+ * never emitted and can only be reached as `text-(length:--text-<name>)`.
+ * `--color-quote-mark` / `--text-quote-mark` were that pair, and this is the
+ * check that keeps the next one out. It reads names, not values — two names
+ * holding the same value is a different question (03 §1) and passes here.
+ */
+describe("the --color-* / --text-* namespaces (INV-03.7)", () => {
+  const declared = parseCssTokens(readFileSync(TOKENS_CSS, "utf8"));
+
+  const stems = (prefix: string) =>
+    new Set(
+      [...declared.keys()]
+        .filter((name) => name.startsWith(prefix) && !name.endsWith("--line-height"))
+        .map((name) => name.slice(prefix.length)),
+    );
+
+  it("share no name, so every --text-* token is reachable as text-<name>", () => {
+    const colours = stems("--color-");
+    const sizes = stems("--text-");
+
+    expect(colours.size).toBeGreaterThan(0);
+    expect(sizes.size).toBeGreaterThan(0);
+    expect([...sizes].filter((stem) => colours.has(stem))).toEqual([]);
+  });
+
+  it("spells the quote mark's two tokens apart", () => {
+    expect(declared.has("--text-quote-mark")).toBe(true);
+    expect(declared.has("--color-quote-mark-text")).toBe(true);
+    expect(declared.has("--color-quote-mark")).toBe(false);
+  });
+});

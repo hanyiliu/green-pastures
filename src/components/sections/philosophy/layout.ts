@@ -51,12 +51,19 @@ export const PHILOSOPHY_PULL_QUOTE = "flex flex-col items-center gap-2.5 md:gap-
 
 /**
  * The decorative quote mark — 58px `< md`, 84px `≥ md` (`--text-quote-mark`),
- * Fredoka 600 in `--color-quote-mark`, with 8px / 10px of lift (D L144, M L82).
+ * Fredoka 600 in `--color-quote-mark-text`, with 8px / 10px of lift (D L144,
+ * M L82).
  *
- * **Both `text-*` values are written in the explicit `(length:…)` / `(color:…)`
- * form.** 03 mints `--text-quote-mark` *and* `--color-quote-mark`, and both
- * generate the utility spelled `text-quote-mark`; naming the namespace is what
- * makes each of the two land on the property it was minted for.
+ * **Both `text-*` values are plain named utilities.** They were written in the
+ * explicit `text-(length:…)` / `text-(color:…)` form because the colour used to
+ * be `--color-quote-mark`: `--color-*` and `--text-*` share one `text-…` stem,
+ * so a name in both namespaces emits a single rule and Tailwind resolves it to
+ * the colour — `text-quote-mark` set `color` and nothing set `font-size`.
+ * 03 INV-03.7 gave the stem to the type token and the colour the `-text` suffix
+ * `--color-daychip-text` already carries, so both are reachable by name and the
+ * two arbitrary modifiers are gone. The rendering is unchanged: a `--text-*`
+ * token with no `--…--line-height` companion emits `font-size` alone, exactly
+ * what `text-(length:…)` emitted.
  *
  * The sub-unit leading (0.5 / 0.55) is the references' own, and it is doing
  * real work: it collapses the glyph's box so the quote sits under the mark
@@ -64,7 +71,7 @@ export const PHILOSOPHY_PULL_QUOTE = "flex flex-col items-center gap-2.5 md:gap-
  * and a unitless ratio is not one of the units INV-03.2 restricts.
  */
 export const PHILOSOPHY_QUOTE_MARK =
-  "mt-2 font-display leading-[0.5] font-semibold text-(color:--color-quote-mark) text-(length:--text-quote-mark) md:mt-2.5 md:leading-[0.55]" as const;
+  "mt-2 font-display text-quote-mark leading-[0.5] font-semibold text-quote-mark-text md:mt-2.5 md:leading-[0.55]" as const;
 
 /**
  * The quote itself: Fredoka 500 at `--text-quote` (26px/1.35 → 44px/1.32) in

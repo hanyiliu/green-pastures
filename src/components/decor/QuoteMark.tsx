@@ -28,7 +28,7 @@ import { PHILOSOPHY_QUOTE_MARK } from "@/components/sections/philosophy/layout";
  *
  * Its drawing therefore stays in `sections/philosophy/layout.ts`, which is
  * where D-04.6 puts a section's geometry and where the two reference files'
- * 84/58px, `--text-quote-mark` and `--color-quote-mark` were read off. Only the
+ * 84/58px, `--text-quote-mark` and `--color-quote-mark-text` were read off. Only the
  * component moved; the numbers did not, and the one caller is still
  * `PullQuote`.
  */

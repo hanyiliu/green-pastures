@@ -116,7 +116,7 @@
 
   /* Subhead / blurb */
   --color-sub-hero: #6b7060;
-  --color-sub-philosophy: #7e8a72; /* 03 §2.3 "attribution"; the quote mark is --color-quote-mark */
+  --color-sub-philosophy: #7e8a72; /* 03 §2.3 "attribution"; the quote mark is --color-quote-mark-text */
   --color-sub-programs: #7d7468;
   --color-sub-menu: #897a4e;
   --color-sub-gallery: #6f7a80;
@@ -144,6 +144,21 @@
    */
   --color-form-link: #4f6b43;
 
+  /*
+   * The form's error state (03 §2.3, "The form's error colour"). The invalid
+   * field's border, the inline error line under it and the failure banner's
+   * border are three surfaces the design never draws, and the handoff carries
+   * exactly one red: `--color-yelp` (§2.1). This is that same `#d3402e`, named
+   * once for the role that uses it, the way `--color-form-link` is `#4f6b43`
+   * named once for the surface that uses it — no second red, no new value.
+   *
+   * The separate name is not decoration. §10 admits red as a badge/button fill
+   * with white text and as nothing else, and the two spellings now say which is
+   * which; the ratios that let this one be text are §10's own rows (4.62 on the
+   * card's white; the borders are non-text at 4.62 / 4.36).
+   */
+  --color-form-error: #d3402e;
+
   /* 2.4 · Chips, badges, menu graphics, decorations (03 §2.4) */
   --color-daychip-text: #a89a72;
   --color-benefitchip-text: #897a4e;
@@ -162,7 +177,18 @@
   --color-leaf-philosophy: #9fbb8f;
   --color-leaf-teachers: #c3b7d6;
   --color-leaf-visit: #7e9a6e;
-  --color-quote-mark: #c2d4b6;
+
+  /*
+   * The decorative quote mark's ink (03 §2.4). The name carries the `-text`
+   * suffix `--color-daychip-text` and `--color-benefitchip-text` already use in
+   * this same block, and it carries it for a mechanical reason as well as a
+   * readable one: `--color-*` and `--text-*` share the `text-…` utility stem, so
+   * a name declared in both namespaces yields one utility and Tailwind resolves
+   * it to the colour. `--color-quote-mark` and `--text-quote-mark` were that
+   * pair, `text-quote-mark` emitted `color:` alone, and the type token could be
+   * reached only as `text-(length:--text-quote-mark)` (03 INV-03.7).
+   */
+  --color-quote-mark-text: #c2d4b6;
   --color-nav-bg: rgb(
     251 248 240 / 92%
   ); /* 03 §2.4 rgba(251,248,240,.92); the blur(6px) beside it is a component style, 04 */
