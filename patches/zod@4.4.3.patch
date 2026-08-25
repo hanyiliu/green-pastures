@@ -1,0 +1,87 @@
+diff --git a/v4/classic/external.d.cts b/v4/classic/external.d.cts
+index ab7cbf1092f4d66bf313de79fdcda8046c362d33..f3f7063f3c64b7a0f259d957d1246832a8ff2954 100644
+--- a/v4/classic/external.d.cts
++++ b/v4/classic/external.d.cts
+@@ -1,4 +1,3 @@
+-export * as core from "../core/index.cjs";
+ export * from "./schemas.cjs";
+ export * from "./checks.cjs";
+ export * from "./errors.cjs";
+@@ -9,7 +8,6 @@ export type { JSONType } from "../core/util.cjs";
+ export { globalRegistry, type GlobalMeta, registry, config, $output, $input, $brand, clone, regexes, treeifyError, prettifyError, formatError, flattenError, TimePrecision, util, NEVER, } from "../core/index.cjs";
+ export { toJSONSchema } from "../core/json-schema-processors.cjs";
+ export { fromJSONSchema } from "./from-json-schema.cjs";
+-export * as locales from "../locales/index.cjs";
+ export { ZodISODateTime, ZodISODate, ZodISOTime, ZodISODuration } from "./iso.cjs";
+ export * as iso from "./iso.cjs";
+ export type { ZodCoercedString, ZodCoercedNumber, ZodCoercedBigInt, ZodCoercedBoolean, ZodCoercedDate, } from "./coerce.cjs";
+diff --git a/v4/classic/external.d.ts b/v4/classic/external.d.ts
+index 4586d8b758d27cc394e3e68bc1cae8e55a071b53..2905d5a84bd84a4602c57fa16d7e9f0b62227317 100644
+--- a/v4/classic/external.d.ts
++++ b/v4/classic/external.d.ts
+@@ -1,4 +1,3 @@
+-export * as core from "../core/index.js";
+ export * from "./schemas.js";
+ export * from "./checks.js";
+ export * from "./errors.js";
+@@ -9,7 +8,6 @@ export type { JSONType } from "../core/util.js";
+ export { globalRegistry, type GlobalMeta, registry, config, $output, $input, $brand, clone, regexes, treeifyError, prettifyError, formatError, flattenError, TimePrecision, util, NEVER, } from "../core/index.js";
+ export { toJSONSchema } from "../core/json-schema-processors.js";
+ export { fromJSONSchema } from "./from-json-schema.js";
+-export * as locales from "../locales/index.js";
+ export { ZodISODateTime, ZodISODate, ZodISOTime, ZodISODuration } from "./iso.js";
+ export * as iso from "./iso.js";
+ export type { ZodCoercedString, ZodCoercedNumber, ZodCoercedBigInt, ZodCoercedBoolean, ZodCoercedDate, } from "./coerce.js";
+diff --git a/v4/classic/external.js b/v4/classic/external.js
+index 9567900bbb57099481c0ea5864fbf697d62021a5..3108bd3ed8c9b3852009fae3c92c215e29c2e2cf 100644
+--- a/v4/classic/external.js
++++ b/v4/classic/external.js
+@@ -1,4 +1,3 @@
+-export * as core from "../core/index.js";
+ export * from "./schemas.js";
+ export * from "./checks.js";
+ export * from "./errors.js";
+@@ -11,7 +10,6 @@ config(en());
+ export { globalRegistry, registry, config, $output, $input, $brand, clone, regexes, treeifyError, prettifyError, formatError, flattenError, TimePrecision, util, NEVER, } from "../core/index.js";
+ export { toJSONSchema } from "../core/json-schema-processors.js";
+ export { fromJSONSchema } from "./from-json-schema.js";
+-export * as locales from "../locales/index.js";
+ // iso
+ // must be exported from top-level
+ // https://github.com/colinhacks/zod/issues/4491
+diff --git a/v4/core/index.d.cts b/v4/core/index.d.cts
+index 22c4dff0ffdafb113be4590d023daf0d8031759f..7b764c4512677b567e6b84d4e8e6dd47450c14d2 100644
+--- a/v4/core/index.d.cts
++++ b/v4/core/index.d.cts
+@@ -6,7 +6,6 @@ export * from "./checks.cjs";
+ export * from "./versions.cjs";
+ export * as util from "./util.cjs";
+ export * as regexes from "./regexes.cjs";
+-export * as locales from "../locales/index.cjs";
+ export * from "./registries.cjs";
+ export * from "./doc.cjs";
+ export * from "./api.cjs";
+diff --git a/v4/core/index.d.ts b/v4/core/index.d.ts
+index d334515bf004600f2e55ff85e3730f1b2f2ff703..a847f37f6dfe003cd40fa653eecbd3d8cffcffeb 100644
+--- a/v4/core/index.d.ts
++++ b/v4/core/index.d.ts
+@@ -6,7 +6,6 @@ export * from "./checks.js";
+ export * from "./versions.js";
+ export * as util from "./util.js";
+ export * as regexes from "./regexes.js";
+-export * as locales from "../locales/index.js";
+ export * from "./registries.js";
+ export * from "./doc.js";
+ export * from "./api.js";
+diff --git a/v4/core/index.js b/v4/core/index.js
+index d334515bf004600f2e55ff85e3730f1b2f2ff703..a847f37f6dfe003cd40fa653eecbd3d8cffcffeb 100644
+--- a/v4/core/index.js
++++ b/v4/core/index.js
+@@ -6,7 +6,6 @@ export * from "./checks.js";
+ export * from "./versions.js";
+ export * as util from "./util.js";
+ export * as regexes from "./regexes.js";
+-export * as locales from "../locales/index.js";
+ export * from "./registries.js";
+ export * from "./doc.js";
+ export * from "./api.js";
