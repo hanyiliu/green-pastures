@@ -12,24 +12,47 @@
  * (D-03.11). This file imports it and owns nothing else token-shaped.
  */
 
-@import "tailwindcss";
+/*
+ * ── What Tailwind is allowed to read (`source(none)` + one `@source`) ──────
+ *
+ * Tailwind v4's automatic source detection scans every non-ignored file in the
+ * project, prose included, and its extractor is not language-aware: a class
+ * name *written about* is indistinguishable from one used. Three separate
+ * incidents landed dead rules in the production stylesheet this way, each from
+ * a different tree:
+ *
+ *   • `docs/` — 03 §11 discusses the banned arbitrary value `bg-[#…]` and
+ *     Tailwind duly emitted a `.bg-\[\#…\]` rule.
+ *   • `.beads/` — a bead whose *title* quoted a class name minted that class,
+ *     and the bead filed against the rule above kept a second copy alive.
+ *   • `tests/` — a test asserting `not.toHaveClass(…)` mints the very class it
+ *     is proving absent, and a *comment* in a test does it just as well.
+ *
+ * Each was answered with one more `@source not`, which is a blocklist: it is
+ * only ever as complete as the last incident, and the tree that leaks next is
+ * by definition the one nobody has written a line for yet. So the direction is
+ * inverted here. `source(none)` turns automatic detection off and the single
+ * `@source` below turns it back on for one tree.
+ *
+ * **The convention, stated once: class names live in `src/`. Nothing else in
+ * this repository is markup, and nothing else is scanned.** That is the mirror
+ * image of the rule `CLAUDE.md` opens with — user-visible *words* live in
+ * `content/` and never in a component; class *names* live in a component and
+ * never anywhere else. `content/` is therefore prose to this scanner, exactly
+ * as `docs/` is, and it is not listed below: measured on this tree, it mints
+ * nothing today, and the day a locale file happens to contain a word that
+ * spells a utility it must keep minting nothing.
+ *
+ * Adding a tree here is a real decision, not a formality — it means that tree
+ * contains markup. A new tree that does *not* fails loudly (its components
+ * render unstyled), where the blocklist failed silently (dead CSS nobody sees).
+ * `tests/unit/app/tailwind-source-scan.test.ts` is the tripwire for the far
+ * commoner mistake in the other direction.
+ */
+@import "tailwindcss" source(none);
 @import "../styles/tokens.css";
 
-/*
- * Tailwind v4's automatic source detection scans every non-ignored file in the
- * project, prose included, so a class name *written about* in `docs/` is
- * indistinguishable from one used — 03 §11 discusses the banned arbitrary value
- * `bg-[#…]` and Tailwind duly emitted a `.bg-\[\#…\]` rule into the production
- * stylesheet. The docs tree is documentation, never markup; exclude it.
- */
-@source not "../../docs";
-
-/*
- * The bead ledger is tracked, so it is scanned too, and a bead whose *title*
- * quotes a class name mints that class — the bead filed against the rule above
- * spelled it out and kept a second copy alive. Tracker data, not markup.
- */
-@source not "../../.beads";
+@source "../../src";
 
 /*
  * INV-05.2 / 05 §5.8 — the one clipping site in the build.
@@ -68,4 +91,75 @@
  */
 html {
   overflow-x: clip;
+
+  /*
+   * 05 §5.8's smooth scroll. Hash anchors do the in-page navigation — the nav
+   * links, the hero CTAs, the scroll cue and the footer links are all
+   * `#programs`-style hrefs, so URL semantics and keyboard access work with no
+   * JS — and this one declaration is what makes the travel smooth.
+   *
+   * **`data-scroll-behavior="smooth"` on `<html>` is not this declaration.** It
+   * is Next's opt-in for the router's own scroll restoration, as the comment in
+   * `[locale]/layout.tsx` says where it is written: it tells Next that the page
+   * scrolls smoothly, it does not make it. Only this line does.
+   *
+   * It shares a block with `overflow-x` because stylelint's
+   * `no-duplicate-selectors` allows the root element exactly one rule here, not
+   * because the two are related.
+   */
+  scroll-behavior: smooth;
+}
+
+/*
+ * 05 §5.9's table, exactly: "Smooth scroll / snap → `scroll-behavior: auto`;
+ * snap kept (not motion)". Only the *travel* is motion — a visitor who asks for
+ * less of it gets an instant jump to the same place. The snap rule below is
+ * deliberately not gated: snapping is where a scroll comes to rest, not an
+ * animation, and turning it off would move the destination rather than the
+ * journey.
+ *
+ * Written above the `:has()` rule rather than below it to keep this file
+ * ascending in specificity (`no-descending-specificity`). The two set different
+ * properties, so their order carries no meaning of its own.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/*
+ * ── 05 §5.8 — the root half of scroll-snap ────────────────────────────────
+ *
+ * The section half already shipped: `Section.tsx` writes `snap-start
+ * scroll-mt-(--nav-h)` on every `<section>` and `page.tsx` writes
+ * `data-snap-root` on the home `<main>`. Neither does anything on its own —
+ * `scroll-snap-align` is inert until an ancestor scroll container declares
+ * `scroll-snap-type`, and until this rule landed no file under `src/` declared
+ * one. The attributes were markup waiting for a stylesheet.
+ *
+ * ── The values, and where they come from ───────────────────────────────────
+ *
+ * `y proximity`, not `mandatory`, and not a nested scroller. 05 §5.8 gives the
+ * selector verbatim — `html:has([data-snap-root]) { scroll-snap-type: y
+ * proximity }` — and `docs/design/README.md` ("Interactions & state") asks for
+ * the same `y proximity` with "smooth scrolling throughout". `proximity` is
+ * load-bearing rather than a softer default: it leaves a section taller than
+ * the viewport, and the Visit form, scrollable without the scroller fighting
+ * the caret or the mobile keyboard, which `mandatory` would do.
+ *
+ * The scroller is the document, so this belongs on the root element and the
+ * `:has()` is what keeps it off the detail pages: only the home `<main>`
+ * carries `data-snap-root` (04 §1), so `/en/programs` and the subpage slide are
+ * never inside a snapping scroller. Sections supply their own snap position via
+ * `scroll-margin-top: var(--nav-h)` — 58px below `md`, 86px at `md` and up —
+ * so a snapped section starts below the sticky nav rather than under it.
+ *
+ * This is also the rule the `overflow-x: clip` above is written to protect:
+ * `clip` establishes no scroll container, so the snap container resolved here
+ * stays the viewport. Changing that declaration to `hidden` would re-parent
+ * snapping to a box that never scrolls, and this rule would go quiet.
+ */
+html:has([data-snap-root]) {
+  scroll-snap-type: y proximity;
 }

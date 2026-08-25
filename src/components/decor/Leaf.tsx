@@ -69,7 +69,17 @@ export type LeafProps = {
   readonly speed?: LeafSpeed;
   readonly variant?: LeafVariant;
   readonly tint: LeafTint;
-  /** `false` for the seven leaves the design draws still. */
+  /**
+   * `false` for the seven leaves the design draws still.
+   *
+   * A boolean, and deliberately still one: it answers "does this instance ever
+   * move", which is the question 04 §3.4 counts. A loop that is on at one
+   * breakpoint and off at another is a *different* question, and it now has its
+   * own answer — `ambient.css` sits in `@layer components`, so a plain
+   * `md:[&>svg]:animate-none` in `className` outranks the keyframes on layer
+   * order alone, with no `!` and no second instance. Before that it could not:
+   * the stylesheet was unlayered and beat every utility outright.
+   */
   readonly loop?: boolean;
   /** Placement, resting rotation and opacity, from `layout.ts` (`D-04.6`). */
   readonly className?: string;

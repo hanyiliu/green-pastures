@@ -23,6 +23,14 @@ import { getSite } from "@/content/site";
  * If an owner renames an anchor in `content/site.json`, {@link toSectionId}
  * throws at import time and the build fails with the offending value, rather
  * than a section silently losing its colours.
+ *
+ * **`snap-start` names a snap point; it does not create a scroller.** The other
+ * half is `html:has([data-snap-root]) { scroll-snap-type: y proximity }` in
+ * `src/app/globals.css`, and it is what decides that these sections snap on the
+ * home page and nowhere else — the detail pages render the same shell and carry
+ * no `data-snap-root`, so `snap-start` there is inert by design (05 §5.8). The
+ * two shipped a wave apart and every snap attribute on the site did nothing in
+ * between, which is the argument for naming the other half here.
  */
 
 /* -------------------------------------------------------------------------- *
