@@ -91,12 +91,51 @@ function renderDecor(node: ReactNode) {
 }
 
 /**
+ * `ambient.css` with its `@layer components { … }` wrapper peeled off.
+ *
+ * **jsdom does not implement cascade layers.** Not partially — its CSS parser
+ * treats `@layer` as an unknown at-rule and discards the block whole, so an
+ * unmodified `ambient.css` puts *nothing* in the document and every loop
+ * computes `animation-name: none`. Measured against jsdom 27: the same rules
+ * injected bare compute `gpfloat` / `paused`, and wrapped compute `none` /
+ * `running`.
+ *
+ * So the wrapper is removed here rather than worked around, and what jsdom is
+ * asked about is what it can answer: the cascade *within* the layer, which is
+ * the whole of what the rules below assert — which selector beats which, and
+ * which hook the components emit. Layer order is a relation between this
+ * stylesheet and Tailwind's `utilities`, it has no meaning inside one file, and
+ * jsdom loads no Tailwind. The one thing this loses — that the wrapper is
+ * present at all — is asserted directly by "sits in @layer components" below,
+ * so a wrapper that got deleted still fails a test rather than silently turning
+ * this back into a stylesheet no utility can override.
+ */
+const AMBIENT_RULES = unwrapComponentsLayer(AMBIENT_CSS);
+
+/** Strip one `@layer components { … }` wrapper, brace-matched, if present. */
+function unwrapComponentsLayer(css: string): string {
+  const open = css.indexOf("@layer components {");
+  if (open === -1) return css;
+
+  const bodyStart = css.indexOf("{", open) + 1;
+  let depth = 1;
+  let index = bodyStart;
+  while (index < css.length && depth > 0) {
+    if (css[index] === "{") depth += 1;
+    if (css[index] === "}") depth -= 1;
+    index += 1;
+  }
+
+  return css.slice(0, open) + css.slice(bodyStart, index - 1) + css.slice(index);
+}
+
+/**
  * Puts `ambient.css` in the document for the length of one test, so jsdom has a
  * real cascade to compute instead of a stubbed import.
  */
 function installAmbientStylesheet(): void {
   const style = document.createElement("style");
-  style.textContent = AMBIENT_CSS;
+  style.textContent = AMBIENT_RULES;
   document.head.append(style);
   onTestFinished(() => {
     style.remove();
@@ -201,6 +240,28 @@ const loopHooks = (node: ReactNode) => hooks("data-loop", node);
 const speedHooks = (node: ReactNode) => hooks("data-speed", node);
 
 describe("the loops 05 §5.4 names", () => {
+  /**
+   * The wrapper the rest of this file has to remove before jsdom will read it.
+   *
+   * It is what lets a Tailwind utility reach a loop at all (05 §5.4): imported
+   * by a component, this stylesheet ships unlayered, and unlayered normal
+   * declarations outrank every layered one whatever their specificity — so
+   * before the wrapper, `md:[&>svg]:animate-none` lost to `.loop[data-loop=…]`
+   * on layer order with no specificity a caller could add to win. `components`
+   * is the layer Tailwind v4 declares immediately before `utilities`. Deleting
+   * the wrapper changes no rule in this file and silently removes the only way
+   * to turn one loop off at one breakpoint, which is exactly the kind of edit
+   * that needs a failing test rather than a comment.
+   */
+  it("sits in @layer components, so any utility can override it", () => {
+    const declarations = (css: string) => css.replaceAll(/\/\*[\s\S]*?\*\//gu, "");
+
+    expect(declarations(AMBIENT_CSS)).toMatch(/@layer\s+components\s*\{/u);
+    // One wrapper around the whole file, not a layer per section.
+    expect(declarations(unwrapComponentsLayer(AMBIENT_CSS))).not.toMatch(/@layer/u);
+    expect(declarations(unwrapComponentsLayer(AMBIENT_CSS))).toContain('.loop[data-loop="leaf"]');
+  });
+
   it("declares all four, under the design's own keyframe names", () => {
     expect([...keyframeBlocks().keys()].sort()).toEqual([
       "gpbounce",

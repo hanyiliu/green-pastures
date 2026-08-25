@@ -37,133 +37,49 @@
  * the rule below is correct and reachable but nothing on the shipping site has
  * paused. The order is the safe one either way — an unpaused loop is a wasted
  * frame, a paused-but-never-resumed one is a bug.
+ *
+ * ── Why the whole file sits in `@layer components` ────────────────────────
+ *
+ * Because it is imported by a component rather than by `globals.css`, this
+ * stylesheet ships as its own chunk, and a chunk that names no layer is
+ * *unlayered*. Unlayered normal declarations beat every layered one outright,
+ * so before this wrapper existed no Tailwind utility could reach a loop at all:
+ * `.md\:[&>svg]\:animate-none>svg` (0,1,1) lost to `.loop[data-loop="leaf"]`
+ * (0,2,0) twice over — on specificity, and again on the cascade's layer rule,
+ * which specificity cannot climb back over. `animate-none!` was the only
+ * utility that won, and an `!important` animation shorthand aimed at another
+ * component's stylesheet is not an override anyone should have to write. The
+ * measurement is recorded in `sections/philosophy/layout.ts`, which had to
+ * route around exactly this.
+ *
+ * `components` is the layer Tailwind v4 declares for precisely this — it sits
+ * immediately before `utilities` in the order `@import "tailwindcss"`
+ * establishes, so **every** utility now outranks these rules on layer alone,
+ * whatever its specificity. What that buys is the thing the design needs and
+ * a boolean prop cannot express: a loop that is on at one breakpoint and off
+ * at another, written as `md:[&>svg]:animate-none` on the caller's `className`
+ * with no `!` and no second element. `Leaf`'s `loop` prop stays the whole-page
+ * answer; the utility is the per-breakpoint one.
+ *
+ * Two things deliberately do not change. Within a layer the cascade is what it
+ * always was, so `data-speed` still overrides `data-loop` on source order and
+ * `[data-ambient="paused"]` still wins on specificity. And §5 still wins over
+ * every utility: `!important` *reverses* layer order, so an important
+ * declaration in `components` beats an important one in `utilities` — reduced
+ * motion silences the loops even against `animate-*!`, which is the one
+ * outcome that must never be overridable.
  */
 
-/* ---------------------------------------------------------------------- *
- * 1 · Keyframes (05 §5.4, transform-only).
- *
- * Lifted verbatim from the prototypes: `gpfloat` / `gpfloat2` / `gpsun` /
- * `gpbounce` are the design's own names and are the contract 05 §5.4 states.
- * The stops are keyframe *geometry*, which 03 §7 explicitly declines to
- * tokenise ("the keyframe recipes themselves … are owned by 05") — so the px
- * and deg below are literal on purpose, exactly as they are in `variants.ts`.
- * ---------------------------------------------------------------------- */
-@keyframes gpfloat {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-
-  50% {
-    transform: translateY(-12px) rotate(10deg);
-  }
-}
-
-@keyframes gpfloat2 {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-
-  50% {
-    transform: translateY(10px) rotate(-8deg);
-  }
-}
-
-@keyframes gpsun {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-
-  50% {
-    transform: rotate(22deg);
-  }
-}
-
-@keyframes gpbounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(6px);
-  }
-}
-
-/* ---------------------------------------------------------------------- *
- * 2 · Attaching a loop.
- *
- * `.loop` carries only the two things every ambient loop shares — 05 §5.4's
- * "`ease-in-out infinite`" — and names no animation, so it is harmless on its
- * own. The pair `.loop[data-loop="…"]` is what actually starts one.
- * ---------------------------------------------------------------------- */
-.loop {
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-.loop[data-loop="leaf"] {
-  animation-name: gpfloat;
-  animation-duration: var(--dur-leaf);
-}
-
-/* `Leaf variant="b"` — the desktop hero's 28 px leaf, which drifts the other way. */
-.loop[data-loop="leaf-b"] {
-  animation-name: gpfloat2;
-  animation-duration: var(--dur-leaf);
-}
-
-.loop[data-loop="sun"] {
-  animation-name: gpsun;
-  animation-duration: var(--dur-sun);
-}
-
-.loop[data-loop="cue"] {
-  animation-name: gpbounce;
-  animation-duration: var(--dur-cue);
-}
-
-/*
- * The leaf instances around the 8 s base (05 §5.4). Declared after the
- * `data-loop` rules and at the same specificity, so source order is what makes
- * the override work — and what keeps `speed="base"` a no-op rather than a third
- * duration to keep in step with `--dur-leaf`.
- */
-.loop[data-speed="fast"] {
-  animation-duration: var(--dur-leaf-fast);
-}
-
-.loop[data-speed="slow"] {
-  animation-duration: var(--dur-leaf-slow);
-}
-
-/* ---------------------------------------------------------------------- *
- * 3 · Paused off-screen (05 §5.4, INV-05.9).
- *
- * One `AmbientScope` per looping section toggles the attribute; a hidden tab
- * needs no rule at all, because a browser that is not painting is not running
- * the animation either.
- * ---------------------------------------------------------------------- */
-[data-ambient="paused"] .loop {
-  animation-play-state: paused;
-}
-
-/* ---------------------------------------------------------------------- *
- * 4 · The mobile float (05 §5.4).
- *
- * The two prototypes each declare their own `gpfloat`, and they differ by two
- * pixels of travel: −12 px on desktop, −10 px on mobile. Re-declaring the one
- * keyframe under the breakpoint is the same statement in one file — the later
- * matching `@keyframes` of a given name is the one that runs.
- *
- * The breakpoint is spelled out because a media query cannot read a custom
- * property: `--breakpoint-md: 48rem` in `src/styles/tokens.css` is the value of
- * record and this is its one restatement. Tailwind's `theme()` is not available
- * here — this file is imported by a component, not by the `@theme` entry point.
- * ---------------------------------------------------------------------- */
-@media (width < 48rem) {
+@layer components {
+  /* ---------------------------------------------------------------------- *
+   * 1 · Keyframes (05 §5.4, transform-only).
+   *
+   * Lifted verbatim from the prototypes: `gpfloat` / `gpfloat2` / `gpsun` /
+   * `gpbounce` are the design's own names and are the contract 05 §5.4 states.
+   * The stops are keyframe *geometry*, which 03 §7 explicitly declines to
+   * tokenise ("the keyframe recipes themselves … are owned by 05") — so the px
+   * and deg below are literal on purpose, exactly as they are in `variants.ts`.
+   * ---------------------------------------------------------------------- */
   @keyframes gpfloat {
     0%,
     100% {
@@ -171,23 +87,140 @@
     }
 
     50% {
-      transform: translateY(-10px) rotate(10deg);
+      transform: translateY(-12px) rotate(10deg);
     }
   }
-}
 
-/* ---------------------------------------------------------------------- *
- * 5 · Reduced motion (05 §5.9, D-05.7).
- *
- * `animation: none`, not a shortened one: an ambient loop has no destination,
- * so there is nothing to arrive at faster. `!important` rather than a more
- * specific selector because the rule has to beat every `data-loop` and
- * `data-speed` pair above at once, and because a reader should not have to
- * count specificity to be sure the loops are off — the same reasoning as
- * `view-transitions.css` §6.
- * ---------------------------------------------------------------------- */
-@media (prefers-reduced-motion: reduce) {
+  @keyframes gpfloat2 {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(10px) rotate(-8deg);
+    }
+  }
+
+  @keyframes gpsun {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+
+    50% {
+      transform: rotate(22deg);
+    }
+  }
+
+  @keyframes gpbounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(6px);
+    }
+  }
+
+  /* ---------------------------------------------------------------------- *
+   * 2 · Attaching a loop.
+   *
+   * `.loop` carries only the two things every ambient loop shares — 05 §5.4's
+   * "`ease-in-out infinite`" — and names no animation, so it is harmless on its
+   * own. The pair `.loop[data-loop="…"]` is what actually starts one.
+   * ---------------------------------------------------------------------- */
   .loop {
-    animation: none !important;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .loop[data-loop="leaf"] {
+    animation-name: gpfloat;
+    animation-duration: var(--dur-leaf);
+  }
+
+  /* `Leaf variant="b"` — the desktop hero's 28 px leaf, which drifts the other way. */
+  .loop[data-loop="leaf-b"] {
+    animation-name: gpfloat2;
+    animation-duration: var(--dur-leaf);
+  }
+
+  .loop[data-loop="sun"] {
+    animation-name: gpsun;
+    animation-duration: var(--dur-sun);
+  }
+
+  .loop[data-loop="cue"] {
+    animation-name: gpbounce;
+    animation-duration: var(--dur-cue);
+  }
+
+  /*
+   * The leaf instances around the 8 s base (05 §5.4). Declared after the
+   * `data-loop` rules and at the same specificity, so source order is what makes
+   * the override work — and what keeps `speed="base"` a no-op rather than a third
+   * duration to keep in step with `--dur-leaf`.
+   */
+  .loop[data-speed="fast"] {
+    animation-duration: var(--dur-leaf-fast);
+  }
+
+  .loop[data-speed="slow"] {
+    animation-duration: var(--dur-leaf-slow);
+  }
+
+  /* ---------------------------------------------------------------------- *
+   * 3 · Paused off-screen (05 §5.4, INV-05.9).
+   *
+   * One `AmbientScope` per looping section toggles the attribute; a hidden tab
+   * needs no rule at all, because a browser that is not painting is not running
+   * the animation either.
+   * ---------------------------------------------------------------------- */
+  [data-ambient="paused"] .loop {
+    animation-play-state: paused;
+  }
+
+  /* ---------------------------------------------------------------------- *
+   * 4 · The mobile float (05 §5.4).
+   *
+   * The two prototypes each declare their own `gpfloat`, and they differ by two
+   * pixels of travel: −12 px on desktop, −10 px on mobile. Re-declaring the one
+   * keyframe under the breakpoint is the same statement in one file — the later
+   * matching `@keyframes` of a given name is the one that runs.
+   *
+   * The breakpoint is spelled out because a media query cannot read a custom
+   * property: `--breakpoint-md: 48rem` in `src/styles/tokens.css` is the value of
+   * record and this is its one restatement. Tailwind's `theme()` is not available
+   * here — this file is imported by a component, not by the `@theme` entry point.
+   * ---------------------------------------------------------------------- */
+  @media (width < 48rem) {
+    @keyframes gpfloat {
+      0%,
+      100% {
+        transform: translateY(0) rotate(0deg);
+      }
+
+      50% {
+        transform: translateY(-10px) rotate(10deg);
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------------- *
+   * 5 · Reduced motion (05 §5.9, D-05.7).
+   *
+   * `animation: none`, not a shortened one: an ambient loop has no destination,
+   * so there is nothing to arrive at faster. `!important` rather than a more
+   * specific selector because the rule has to beat every `data-loop` and
+   * `data-speed` pair above at once, and because a reader should not have to
+   * count specificity to be sure the loops are off — the same reasoning as
+   * `view-transitions.css` §6.
+   * ---------------------------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .loop {
+      animation: none !important;
+    }
   }
 }

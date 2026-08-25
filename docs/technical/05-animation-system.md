@@ -253,6 +253,19 @@ leaf) loop in the references; the seven static section leaves and the two static
 with `loop={false}`, which drops the `.loop` class so no keyframes attach (04 §3.4 owns the per-instance
 placement and counts; the table above covers only the looping instances).
 
+**`ambient.css` sits in `@layer components`** (`gp-dln.304`). It is imported by `Leaf` / `Sun` / `ScrollCue`
+rather than by `globals.css`, so it ships as its own chunk, and a chunk naming no layer is *unlayered* — which
+in the cascade beats every layered declaration outright, specificity irrelevant. That made the loops
+unreachable from Tailwind: `.md\:[&>svg]\:animate-none>svg` (0,1,1) in `@layer utilities` lost to
+`.loop[data-loop="leaf"]` (0,2,0) on both counts, and only `animate-none!` won. `components` is the layer
+Tailwind v4 declares immediately before `utilities`, so wrapping the file there makes **any** utility outrank
+the loops on layer order alone. What that buys is the case `loop?: boolean` cannot express — a loop on at one
+breakpoint and off at another, written `md:[&>svg]:animate-none` on the caller's `className` with no `!` and
+no duplicate element (`sections/philosophy/layout.ts` is the instance that had to route around its absence).
+Two things are unchanged by design: within the layer the cascade is as before, so `data-speed` still overrides
+`data-loop` on source order; and §5.9's `animation: none !important` still wins over every utility, because
+`!important` reverses layer order and an important declaration in `components` beats one in `utilities`.
+
 Pausing: one observer per looping section — `AmbientScope`, 04 §3.3's name for it and this document's too —
 toggles `data-ambient="paused"` on the hero (and on philosophy at the mobile breakpoint), against
 `[data-ambient="paused"] .loop { animation-play-state: paused }`. It is dropped into the section's `decor`
@@ -510,6 +523,15 @@ html:active-view-transition-type(locale-swap)::view-transition-new(root) {
   snap and smooth scroll are compositor work; nothing reads layout on scroll.
 - Overflow: `html { overflow-x: clip }` (not `hidden`, so `position: sticky` and root snapping keep working)
   absorbs the gallery fly-in bleed (+150 px from the right edge on 390 px screens); sections never clip.
+- **Where each half is written.** The root declarations — the `:has()` snap rule, `scroll-behavior: smooth`
+  and its reduced-motion override — are all in `src/app/globals.css`, beside the `overflow-x: clip` they
+  depend on. The section half is `Section.tsx`'s `snap-start scroll-mt-(--nav-h)`, and the opt-in is
+  `data-snap-root` on the home `<main>` in `[locale]/page.tsx`. The three shipped in different waves and the
+  root half arrived last (`gp-dln.304`), so for several waves every `snap-start` on the site was inert:
+  `scroll-snap-align` does nothing until an ancestor declares `scroll-snap-type`, and nothing under `src/`
+  did. Neither half is a defect on its own, which is why nothing failed — treat them as one declaration in
+  three files, and note that `data-scroll-behavior="smooth"` on `<html>` is **not** the third: that is Next's
+  router opt-in and it makes no scroll smooth by itself.
 
 ### 5.9 Reduced-motion policy
 

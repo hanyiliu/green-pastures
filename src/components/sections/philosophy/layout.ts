@@ -164,19 +164,26 @@ export const PHILOSOPHY_BILINGUAL =
  * the split: the mobile philosophy leaf is one of the design's four looping
  * decorations and "the seven other section leaves are `loop={false}`".
  *
- * Size and position are ordinary `md:` overrides. **Looping is not.** `Leaf`
+ * Size and position are ordinary `md:` overrides. **Looping was not.** `Leaf`
  * attaches its keyframes with the `.loop` class, driven by the `loop` prop, and
  * a prop cannot hold a media query. Switching it off at `md` from a utility was
  * tried and measured: Tailwind emits `.md\:[&>svg]\:animate-none>svg`
- * (specificity 0,1,1) into `@layer utilities`, while `ambient.css` is imported
+ * (specificity 0,1,1) into `@layer utilities`, while `ambient.css` was imported
  * by the component and therefore **unlayered**, where `.loop[data-loop="leaf"]`
- * (0,2,0) beats it twice over — on specificity, and on the cascade's rule that
+ * (0,2,0) beat it twice over — on specificity, and on the cascade's rule that
  * unlayered normal declarations outrank every layered one. The desktop leaf
  * kept floating. Only `animate-none!` would have won, and an `!important`
  * animation shorthand fighting a stylesheet from another component is a trap
  * for whoever reads this next.
  *
- * So the corner is two instances behind a `hidden` / `md:block` toggle — no JS
+ * **That half is now fixed at the source** (`gp-dln.304`): `ambient.css` wraps
+ * itself in `@layer components`, so the utility above wins on layer order and
+ * a breakpoint-conditional loop no longer needs a second element. The corner
+ * nonetheless stays two instances, because looping was never the only thing
+ * splitting it — the two leaves are 24px and 34px at different offsets, and
+ * `Leaf` takes its size as a number prop, so one instance could only serve both
+ * by moving the size into a `[&>svg]:size-*` pair and giving up the prop. Two
+ * declarations that differ in three ways read better as two, they need no JS
  * branch (INV-04.4), and the count a reader *sees* stays 04 §3.4's ×1 / ×2.
  */
 

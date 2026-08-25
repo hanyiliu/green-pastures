@@ -409,7 +409,49 @@ export function masksWithin(scope: Locator): Locator[] {
 /**
  * Everything that has to be true of a page before any of it is photographed.
  *
- * Today that is one thing: the Turnstile script is answered by
+ * ── The root's two scroll behaviours are pinned off ────────────────────────
+ *
+ * `globals.css` gives the root `scroll-behavior: smooth` and the home page
+ * `scroll-snap-type: y proximity` under `html:has([data-snap-root])` (05 §5.8).
+ * Both break the same assumption — that `scrollTo(0, y)` leaves the page at `y`
+ * — and every helper here that walks or frames the page makes it. Three
+ * mechanisms, all measured on the container rather than reasoned about:
+ *
+ *   • **Snapping vs the walk.** {@link playEveryReveal} steps by a viewport at
+ *     a time; snapped, consecutive steps can resolve to the *same* section
+ *     start, so the walk stops advancing and every reveal below it stays at
+ *     `opacity: 0`. Eight `@visual` tests failed — the mobile ones by timing
+ *     out on that function's whole-page poll, the desktop ones by baselining
+ *     sections that had never entered, 9 % of a shot's pixels.
+ *   • **Smooth scroll vs the walk.** `scrollTo` then *animates*, and the walk's
+ *     two-frame wait does not outlast the animation: each step retargets the
+ *     one before it, so the intermediate positions are never visited. This one
+ *     is invisible to the `@visual` suite, which emulates reduced motion and so
+ *     gets `scroll-behavior: auto` from 05 §5.9 — and fires in `@a11y`, which
+ *     photographs nothing but borrows {@link openSettled} and does compare a
+ *     default page against a reduced one. It left 35 reveals hidden.
+ *   • **Snapping vs the capture.** `toHaveScreenshot` on a section taller than
+ *     the viewport has to scroll to capture it. `/zh-Hans`'s Visit section is
+ *     846 px in an 800 px viewport: unsnapped the capture scroll rests at 5823,
+ *     snapped at 5843, and the sticky nav lands 20 px further down the section
+ *     in one than the other.
+ *
+ * Pinning both costs the suite nothing it was measuring. They decide a *scroll
+ * position*; a baseline is a picture of *layout*, and no section paints
+ * differently for having been snapped or smoothly arrived at.
+ * `scroll-margin-top` — the part of 05 §5.8 a shot can actually see, because it
+ * is why a section clears the sticky nav — is honoured by `scrollIntoView`
+ * either way, so {@link scrollSectionIntoPlace} still frames every section
+ * exactly as before. This is the trade the rest of this file already makes: pin
+ * what could move between two runs rather than widen the tolerance to cover it.
+ *
+ * Neither behaviour is left untested; they are simply not a screenshot's job.
+ * `e2e/a11y-reduced-motion.spec.ts` asserts both against 05 §5.9, and lifts
+ * this pin to do it.
+ *
+ * ── The Turnstile stub ─────────────────────────────────────────────────────
+ *
+ * The Turnstile script is answered by
  * `e2e/form-support.ts`'s stub. 07 §1 loads Cloudflare's script when the Visit
  * section enters the viewport, which is precisely what photographing that
  * section does, and three things follow — each of which would be a defect in a
@@ -431,7 +473,35 @@ export function masksWithin(scope: Locator): Locator[] {
  * task-queue detail would be the wrong half of it to copy.
  */
 export async function preparePage(page: Page): Promise<void> {
+  await pinRootScrolling(page);
   await stubTurnstile(page);
+}
+
+/**
+ * Hold the root's two scroll behaviours off for every document this page loads.
+ *
+ * An init script rather than an injected stylesheet, because it has to survive
+ * the navigations the tests make after `preparePage` has run, and an inline
+ * `!important` on the root element beats `globals.css`'s rules without
+ * depending on where a `<style>` would land in the cascade. `documentElement`
+ * already exists when an init script runs at document-start; the listener is
+ * the belt-and-braces half for any document where it does not.
+ *
+ * A test that needs to read what the *stylesheet* says about either property
+ * has to lift the pin first — `e2e/a11y-reduced-motion.spec.ts` is the one that
+ * does, and it says so where it reads them.
+ */
+async function pinRootScrolling(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const pin = () => {
+      const root = document.documentElement.style;
+      root.setProperty("scroll-snap-type", "none", "important");
+      root.setProperty("scroll-behavior", "auto", "important");
+    };
+
+    if (document.documentElement) pin();
+    else document.addEventListener("DOMContentLoaded", pin, { once: true });
+  });
 }
 
 /**
@@ -522,6 +592,11 @@ const REVEAL_STEP_TIMEOUT_MS = 5_000;
  * than the viewport that straddles a step boundary shows at least half of itself
  * on one side of it, while an element taller than the viewport always covers
  * more than 16 % of itself when the viewport is inside it.
+ *
+ * **That argument assumes `scrollTo(0, y)` leaves the page at `y`**, which is
+ * true only because {@link preparePage} pins `scroll-snap-type: none`. On the
+ * live home page it is false, and the walk stalls where two steps resolve to
+ * one snap point; that function carries the measurement and the reasoning.
  *
  * The per-step wait is bounded and then gives up, deliberately: an element that
  * never arrives is a finding for the whole-page assertion below to report with

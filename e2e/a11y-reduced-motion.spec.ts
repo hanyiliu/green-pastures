@@ -208,13 +208,38 @@ test.describe("reduced-motion parity (05 §5.9, §5.14)", () => {
   }) => {
     const state = await withReducedMotion(browser, page, async (reduced) => {
       await openA11yPage(reduced, homeUrlFor(LOCALE));
-      return reduced.evaluate(() => ({
-        loops: [...document.querySelectorAll("[data-loop]")].map((node) => ({
-          which: node.getAttribute("data-loop") ?? "",
-          animationName: getComputedStyle(node).animationName,
-        })),
-        scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
-      }));
+      return reduced.evaluate(() => {
+        const root = document.documentElement;
+
+        // `preparePage` pins `scroll-snap-type: none` and `scroll-behavior:
+        // auto` inline on the root, so that a synthetic scroll walk lands where
+        // it aims (`visual-support.ts` carries the three measurements). Reading
+        // the computed style through that pin would answer with the pin, and
+        // both assertions below would pass without the stylesheet saying
+        // anything at all — which is the exact failure this test already had
+        // once. So the pin is lifted, the cascade is read, and it is put back.
+        const pinned = {
+          snap: root.style.getPropertyValue("scroll-snap-type"),
+          behavior: root.style.getPropertyValue("scroll-behavior"),
+        };
+        root.style.removeProperty("scroll-snap-type");
+        root.style.removeProperty("scroll-behavior");
+
+        const { scrollBehavior, scrollSnapType } = getComputedStyle(root);
+
+        if (pinned.snap) root.style.setProperty("scroll-snap-type", pinned.snap, "important");
+        if (pinned.behavior)
+          root.style.setProperty("scroll-behavior", pinned.behavior, "important");
+
+        return {
+          loops: [...document.querySelectorAll("[data-loop]")].map((node) => ({
+            which: node.getAttribute("data-loop") ?? "",
+            animationName: getComputedStyle(node).animationName,
+          })),
+          scrollBehavior,
+          scrollSnapType,
+        };
+      });
     });
 
     expect(state.loops.length, "the home page has no ambient loop to switch off").toBeGreaterThan(
@@ -224,8 +249,23 @@ test.describe("reduced-motion parity (05 §5.9, §5.14)", () => {
       expect(loop.animationName, `the ${loop.which} loop is still running`).toBe("none");
     }
 
-    // 05 §5.9's last-but-one row: `scroll-behavior: auto`, snap kept.
+    // 05 §5.9's last-but-one row, both halves: `scroll-behavior: auto`, snap
+    // kept.
+    //
+    // The first half was green before `globals.css` declared `scroll-behavior`
+    // at all (`gp-dln.304`) — `auto` is the property's initial value, so the
+    // assertion held whether or not any rule existed and could not have failed.
+    // It is load-bearing now: the root is `smooth`, and only the reduced-motion
+    // query turns it back.
+    //
+    // The second half is the one this row is easiest to get wrong. Snapping is
+    // where a scroll comes to *rest*, not motion, so it is deliberately not
+    // gated — gating it would move the destination rather than the journey, and
+    // a visitor who asked for less motion would land somewhere different from
+    // everyone else. `none` here means somebody wrapped the snap rule in the
+    // media query.
     expect(state.scrollBehavior).toBe("auto");
+    expect(state.scrollSnapType, "snapping is a destination, not motion").not.toBe("none");
   });
 
   test("the count-up is already at its final value @a11y", async ({ page, browser }) => {
