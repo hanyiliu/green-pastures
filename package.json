@@ -22,6 +22,7 @@
     "check:todo": "scripts/ci/todo-grep.sh",
     "check:coverage-report": "scripts/ci/coverage-report.sh",
     "check:budget": "tsx scripts/ci/build-budget.ts",
+    "check:tokens": "tsx scripts/ci/check-tokens.ts",
     "lighthouse": "lhci autorun --config=lighthouserc.cjs",
     "validate:content": "tsx scripts/validate-content.ts",
     "test": "vitest run",
@@ -31,7 +32,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:docker": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.62.1-noble npx --yes playwright test",
     "test:e2e:update": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.62.1-noble npx --yes playwright test --grep @visual --update-snapshots",
-    "verify": "pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:check && pnpm run check:todo && pnpm run validate:content --report --warn-locale zh-Hans --warn-locale zh-Hant && pnpm run check:coverage-report && pnpm run test && pnpm run build && pnpm run check:budget",
+    "verify": "pnpm run typecheck && pnpm run lint && pnpm run lint:css && pnpm run format:check && pnpm run check:todo && pnpm run check:tokens && pnpm run validate:content --report --warn-locale zh-Hans --warn-locale zh-Hant && pnpm run check:coverage-report && pnpm run test && pnpm run build && pnpm run check:budget",
     "verify:e2e": "pnpm run verify && pnpm run test:e2e"
   },
   "dependencies": {
