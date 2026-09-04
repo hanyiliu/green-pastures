@@ -136,10 +136,9 @@ describe("the section shell", () => {
  * -------------------------------------------------------------------------- */
 
 describe("the copy is the content tree's", () => {
-  it("renders the badge, the headline and the scroll cue from `home.hero`", () => {
+  it("renders the headline and the scroll cue from `home.hero`", () => {
     renderHero();
 
-    expect(screen.getByText(hero.badge)).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       plainTitle(hero.title).replace("\n", " "),
     );

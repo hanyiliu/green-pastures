@@ -133,8 +133,8 @@ become 6–18个月 and 4岁半 (in the tree already, at `home.json` → `hero.s
 
 | English | `zh-Hans` | `zh-Hant` (seed) | Status |
 |---|---|---|---|
-| Montessori | 蒙特梭利 | 蒙特梭利 | in the tree — `home.json` → `hero.badge` |
-| Montessori daycare | 蒙特梭利日托 | 蒙特梭利日托 | in the tree — `hero.badge` |
+| Montessori | 蒙特梭利 | 蒙特梭利 | in the tree — `home.json` → `hero.subtitle` |
+| Montessori daycare | 蒙特梭利日托 | 蒙特梭利日托 | proposed — English in `home.json` → `meta.title`; the hero badge that carried both translations was removed |
 | certified Montessori teachers | 认证蒙特梭利老师 | 認證蒙特梭利老師 | in the tree — `hero.subtitle` |
 | follow the child('s pace) | 跟随孩子的节奏 | 跟隨孩子的節奏 | in the tree — `philosophy.quote` |
 | practical life | 日常生活练习 | 日常生活練習 | proposed |
@@ -149,7 +149,7 @@ become 6–18个月 and 4岁半 (in the tree already, at `home.json` → `hero.s
 |---|---|---|---|
 | breakfast · lunch · snack | 早餐 · 午餐 · 点心 | 早餐 · 午餐 · 點心 | in the tree — `home.json` → `menu.title` |
 | bilingual (home) | 双语（之家） | 雙語（之家） | in the tree — `hero.subtitle` |
-| Fremont, CA | 加州弗里蒙特 | 加州弗里蒙特 | in the tree — `hero.badge` |
+| Fremont, CA | 加州弗里蒙特 | 加州弗里蒙特 | proposed — English in `common.json` → `footer.copyright`; the hero badge that carried both translations was removed |
 | Fremont parents | 弗里蒙特家长 | 弗里蒙特家長 | in the tree — `home.json` → `testimonials.countLine` |
 | reviews *(as counted: "47 reviews")* | 条评价 | 條評價 | in the tree — `testimonials.countLine` |
 | tour | 参观 | 參觀 | in the tree — see 2.2 |
