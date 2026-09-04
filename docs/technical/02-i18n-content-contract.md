@@ -360,8 +360,7 @@ keeps its straight apostrophes ("Child's age", "we'll"). Typographic characters 
 `–`, `→`, `↗`, `⌄`, `½`, `“ ”`, `…` — are stored as UTF-8 characters, never as entities.
 
 **Emoji.** One objective rule: emoji that sits **inline with text** in the same element stays in the string
-and is translated with it — `home.hero.badge` "🌿 Montessori daycare · Fremont, CA" / "🌿 蒙特梭利日托 ·
-加州弗里蒙特", `home.menu.title` "Fresh breakfast, lunch & snack 🍎", `home.visit.title`,
+and is translated with it — `home.menu.title` "Fresh breakfast, lunch & snack 🍎", `home.visit.title`,
 `home.philosophy.badgeCertified` "🌱 Certified Montessori credentials", and the dietary chips
 `collections.menu.dietary.vegetarian.label` "🥦 Vegetarian options daily" / `labelShort` "🥦 Vegetarian daily".
 Emoji that is a **standalone element** with no text beside it (the 56/48 px icon dots 🧸 🎨 for the assistant
@@ -890,7 +889,7 @@ must correct it; the substitution is mechanical except where noted.
 | Design area (`docs/design/README.md` section inventory) | Namespace / keys |
 |---|---|
 | Sticky nav, hamburger, footer links | `common.nav.<id>` (philosophy "Philosophy" / "教学理念", programs "Programs" / "课程班级", menu "Menu" / "餐点", gallery "Gallery" / "相册", reviews "Reviews" / "家长评价", team "Our Team" / "我们的团队", contact "Contact"), `common.nav.bookTour` "Book a tour" / "预约参观", `common.nav.menuOpen|menuClose`, `common.localeSwitcher.*`, `common.logo.alt` |
-| Hero | `home.hero.badge|title|subtitle|subtitleShort|ctaPrimary|ctaSecondary|trust.yelp|trust.ages|trust.agesShort|mealsCard.title|mealsCard.subtitle|mealsCard.subtitleShort|scrollCue|photo.alt` |
+| Hero | `home.hero.title|subtitle|subtitleShort|ctaPrimary|ctaSecondary|trust.yelp|trust.ages|trust.agesShort|mealsCard.title|mealsCard.subtitle|mealsCard.subtitleShort|scrollCue|photo.alt` |
 | Philosophy section | `home.philosophy.eyebrow|quote|attribution|badgeCertified|badgeBilingual|link|photo.alt` |
 | Programs section | `home.programs.eyebrow|title|intro|link` + `collections.programs.*` |
 | Menu section | `home.menu.eyebrow|title|intro|sampleLine|link`, `menu.meals.*`, `collections.menu.*` |

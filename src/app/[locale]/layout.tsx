@@ -135,7 +135,36 @@ export default async function LocaleLayout({
       className={`${fredoka.variable} ${nunito.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body className="bg-cream font-body text-body">
+      {/*
+        The page column, and the only reason `<body>` carries layout at all.
+
+        `min-h-dvh` + `flex flex-col` is the sticky-footer pattern: the page
+        element between `SiteHeader` and `SiteFooter` is the flex item that
+        grows, so a document shorter than the viewport puts the footer on the
+        window's bottom edge instead of leaving `--color-cream` — a near-white
+        — under it. It showed on the detail pages, whose panel is a colour of
+        its own: a *wide* window is what makes them short, because the content
+        column stops wrapping, and the band below the footer read as a hole in
+        a page that had painted its own ground. Measured at 2560×1200 before
+        this, `/en/menu` ended 258px above the bottom of the window.
+        `SubpageBar` writes the `grow` half; see its `PANEL`.
+
+        **It is unconditional, and that was measured rather than assumed.** The
+        home page is 6681px tall and never reaches `min-height`, but
+        `display: flex` re-lays its sections out as flex items, and a subpixel
+        shift there would move `@visual` baselines this change has no business
+        touching. So it was run alone in the pinned Playwright image — this
+        class list, the hero otherwise untouched — against the Visit section's
+        six success-panel baselines, which are the ones that turned out most
+        sensitive to anything moving above them on this page. All six pass. A
+        `body:has([data-subpage])` guard would buy nothing, and the classes
+        stay where every other class name in this repository lives.
+
+        `dvh` rather than `vh` for the reason `gallery/layout.ts` gives about
+        the lightbox: `100vh` is a mobile browser's *tall* viewport, so it
+        would put a scrollbar on every short page while the URL bar is showing.
+      */}
+      <body className="flex min-h-dvh flex-col bg-cream font-body text-body">
         {/*
           02 `D-02.16`: a client subtree receives only the namespaces it needs,
           never the whole tree and never `collections.*` wholesale. Everything

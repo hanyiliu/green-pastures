@@ -7,7 +7,6 @@ import { Sun } from "@/components/decor/Sun";
 import { BookTourButton } from "@/components/layout/BookTourButton";
 import { Section } from "@/components/layout/Section";
 import { Reveal } from "@/components/motion/Reveal";
-import { Chip } from "@/components/ui/Chip";
 import { PhotoSlot } from "@/components/ui/PhotoSlot";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getSite } from "@/content/site";
@@ -33,7 +32,7 @@ import { TrustRow } from "./TrustRow";
  * `docs/design/mobile/README.md` §1).
  *
  * The first designed section on the page and the one that carries the `h1`.
- * It composes what Phase 4 already built — `Section`, `Chip`, `SectionTitle`,
+ * It composes what Phase 4 already built — `Section`, `SectionTitle`,
  * `PhotoSlot`, `BookTourButton`, `Reveal`, `Sun`, `Leaf`, `ScrollCue` — and
  * adds only its own two leaves (`TrustRow`, `FloatingMealsCard`) and its
  * geometry (`layout.ts`, `D-04.6`).
@@ -150,8 +149,6 @@ export function HeroSection() {
       }
     >
       <Reveal id="hero.text" variant="rise" className={HERO_TEXT_COLUMN}>
-        <Chip>{t("badge")}</Chip>
-
         {/*
           The `\n` in `home.hero.title` is honoured `>= md` only: the desktop
           reference breaks after "Where small hands" (D L116) and the mobile one

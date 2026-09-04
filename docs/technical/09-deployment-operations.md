@@ -468,7 +468,7 @@ schedules it with the first content PR. It must contain, in this order:
    | Screen / element | File (under `content/en/`, `content/zh-Hans/` or `content/zh-Hant/`) | Top-level key |
    |---|---|---|
    | Top bar, menu, footer links, "Book a tour", language switch | `messages/common.json` | `nav`, `footer`, `localeSwitcher` |
-   | Home — hero headline, badge, buttons | `messages/home.json` | `hero` |
+   | Home — hero headline, buttons | `messages/home.json` | `hero` |
    | Home — philosophy quote, programs / menu / gallery / teachers intros, reviews line, visit block | `messages/home.json` | `philosophy`, `programs`, `menu`, `gallery`, `testimonials`, `teachers`, `visit` |
    | Philosophy page (principles, daily rhythm) | `messages/philosophy.json` | `principles`, `day` |
    | Programs / Menu / Gallery / Reviews / Team page chrome | `messages/<page>.json` | `kicker`, `heading`, `intro`, `footnote` |
