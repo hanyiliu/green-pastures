@@ -122,13 +122,46 @@ const BAR =
  * page's config, not the shell's: a page passes `contentClassName="max-w-235!"`
  * (235 × 4px = 940px, so no arbitrary value is needed) exactly as a home
  * `Section` overrides its own container.
+ *
+ * `grow justify-center` is the inside half of {@link PANEL}'s full-height
+ * panel. The column takes whatever height the panel gained and centres the
+ * page's blocks in it, so a short page — the Menu at a desk width is the
+ * clearest — sits in the middle of its ground rather than tucked under the
+ * bar with the rest of the panel empty below it. On a page whose content is
+ * already taller than the viewport both are inert: the panel is sized by its
+ * content, the column fills it exactly, and `justify-content` has no free
+ * space to distribute. Nothing here can push content off the top for the same
+ * reason — the box grows to fit rather than clipping, and the one clipping
+ * site in the build is `globals.css` (INV-05.2).
  */
 const CONTENT =
-  "mx-auto flex w-full max-w-content flex-col gap-4.5 px-5.5 pt-6 pb-12 md:gap-7 md:px-11 md:pt-9 md:pb-15";
+  "mx-auto flex w-full max-w-content grow flex-col justify-center gap-4.5 px-5.5 pt-6 pb-12 md:gap-7 md:px-11 md:pt-9 md:pb-15";
 
 /** The bar's kicker — Fredoka 600 on `--color-ink`. */
 const KICKER =
   "font-display text-(length:--subnav-kicker) font-semibold text-ink md:text-(length:--subnav-kicker-md)";
+
+/**
+ * The panel: the page's own ground, and the flex column the bar and the
+ * content column are the two items of.
+ *
+ * **`grow` is what keeps the bottom of the window off white.** `<body>` is a
+ * `min-h-dvh` flex column (see `app/[locale]/layout.tsx`), so this is the item
+ * that absorbs the leftover height when a detail page is shorter than the
+ * viewport — which a *wide* window is exactly what causes, the content column
+ * running out of rows to wrap. Without it the panel stopped at its content,
+ * the footer came straight after, and everything below was `--color-cream`
+ * from `<body>`: a near-white band under a page painted in a colour of its
+ * own. Only `--section-bg` should ever be visible between the header and the
+ * footer on these seven routes, and the two halves together are what make that
+ * true — neither does anything alone.
+ *
+ * `flex flex-col` is not a change of arrangement — the bar and the column were
+ * already two stacked blocks. It exists so `CONTENT`'s own `grow` has a flex
+ * container to grow in, and so the growth lands on the content rather than on
+ * the sticky bar.
+ */
+const PANEL = "flex grow flex-col bg-(color:--section-bg)";
 
 /**
  * The palette of the page's origin section — or, for a **standalone** route,
@@ -211,7 +244,7 @@ export function SubpageBar({
         ? {}
         : { [ORIGIN_HEADING_ATTRIBUTE]: homeHeadingId(route.homeAnchor) })}
       style={sectionRoleVariables(sectionId)}
-      className={withOverrides("SubpageBar", `bg-(color:--section-bg)`, className)}
+      className={withOverrides("SubpageBar", PANEL, className)}
     >
       <div className={BAR} style={BAR_TYPE}>
         {/*

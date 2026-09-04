@@ -152,6 +152,35 @@ describe("SubpageBar", () => {
     expect(container.querySelectorAll("main#main")).toHaveLength(1);
   });
 
+  it("grows the panel and centres the column, so a short page shows no cream", () => {
+    const { container } = renderShell(<SubpageBar routeId="menu">{null}</SubpageBar>);
+
+    // `<body>` is a `min-h-dvh` flex column, so `grow` on the panel is what
+    // takes the leftover height on a page shorter than the viewport — a wide
+    // window is exactly what makes a detail page short. Without it the panel
+    // stopped at its content and `--color-cream` showed under the footer.
+    // `locale-layout-fonts.test.ts` holds the other half of the pair.
+    const panel = container.querySelector<HTMLElement>("[data-subpage]");
+    expect(panel).toHaveClass("grow", "flex", "flex-col", "bg-(color:--section-bg)");
+
+    // The column takes that height in turn and centres the page's blocks in it.
+    expect(container.querySelector("main#main")).toHaveClass("grow", "justify-center");
+  });
+
+  it("lets a page narrow the column without giving up the growth (INV-04.5)", () => {
+    const { container } = renderShell(
+      <SubpageBar routeId="programs" contentClassName="max-w-220! gap-4!">
+        {null}
+      </SubpageBar>,
+    );
+
+    // Every page passes a `contentClassName`; none of them may cost the column
+    // the two classes above, which is what `withOverrides` guarantees by
+    // bucket — `max-w` and `gap` collide with neither `grow` nor `justify`.
+    const column = container.querySelector<HTMLElement>("main#main");
+    expect(column).toHaveClass("grow", "justify-center", "max-w-220!", "gap-4!");
+  });
+
   it("gives the Back pill a 44px hit area without changing the drawn pill (INV-04.7)", () => {
     renderShell(<SubpageBar routeId="gallery">{null}</SubpageBar>);
 
